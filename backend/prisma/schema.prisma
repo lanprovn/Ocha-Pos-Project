@@ -1,0 +1,312 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users - Staff, admin accounts
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(STAFF)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+  CUSTOMER
+}
+
+// Categories - Danh mục sản phẩm
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  image       String?
+  description String?
+  icon        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  products    Product[]
+
+  @@map("categories")
+}
+
+// Products - Sản phẩm
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  categoryId  String?
+  image       String?
+  rating      Decimal? @db.Decimal(3, 2)
+  discount    Decimal? @db.Decimal(5, 2)
+  stock       Int      @default(0)
+  isAvailable Boolean  @default(true)
+  isPopular   Boolean  @default(false)
+  tags        String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category    Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  sizes       ProductSize[]
+  toppings    ProductTopping[]
+  orderItems  OrderItem[]
+  stockData   Stock?
+  alerts      StockAlert[]
+  transactions StockTransaction[]
+  recipes     ProductRecipe[]
+
+  @@index([categoryId])
+  @@index([isAvailable])
+  @@index([isPopular])
+  @@index([createdAt])
+  @@index([categoryId, isAvailable])
+  @@map("products")
+}
+
+// Product Sizes - Kích thước sản phẩm
+model ProductSize {
+  id        String   @id @default(uuid())
+  productId String
+  name      String
+  extraPrice Decimal @db.Decimal(10, 2) @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_sizes")
+}
+
+// Product Toppings - Topping options
+model ProductTopping {
+  id        String   @id @default(uuid())
+  productId String
+  name      String
+  extraPrice Decimal @db.Decimal(10, 2) @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_toppings")
+}
+
+// Orders - Đơn hàng
+model Order {
+  id              String        @id @default(uuid())
+  orderNumber     String        @unique
+  status          OrderStatus   @default(PENDING)
+  totalAmount     Decimal       @db.Decimal(10, 2)
+  customerName    String?
+  customerPhone   String?
+  customerTable   String?
+  notes           String?
+  paymentMethod   PaymentMethod?
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentTransactionId String?
+  orderCreator    OrderCreator? @default(STAFF)
+  orderCreatorName String?
+  paidAt          DateTime?
+  paymentDate     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  items           OrderItem[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([paymentStatus])
+  @@index([status, createdAt])
+  @@index([customerPhone])
+  @@index([orderCreator])
+  @@map("orders")
+}
+
+enum OrderStatus {
+  CREATING
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  QR
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum OrderCreator {
+  STAFF
+  CUSTOMER
+}
+
+// Order Items - Chi tiết đơn hàng
+model OrderItem {
+  id              String   @id @default(uuid())
+  orderId         String
+  productId       String
+  quantity        Int
+  price           Decimal  @db.Decimal(10, 2)
+  subtotal        Decimal  @db.Decimal(10, 2)
+  selectedSize    String?
+  selectedToppings String[]
+  note            String?
+  createdAt       DateTime @default(now())
+
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product  @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([orderId, productId])
+  @@map("order_items")
+}
+
+// Ingredients - Nguyên liệu
+model Ingredient {
+  id        String   @id @default(uuid())
+  name      String
+  unit      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  stock     IngredientStock?
+  alerts    StockAlert[]
+  transactions StockTransaction[]
+  recipes   ProductRecipe[]
+
+  @@map("ingredients")
+}
+
+// Stock - Tồn kho sản phẩm
+model Stock {
+  id        String   @id @default(uuid())
+  productId String   @unique
+  quantity  Int      @default(0)
+  minStock  Int      @default(0)
+  maxStock  Int      @default(0)
+  unit      String   @default("pcs")
+  isActive  Boolean  @default(true)
+  lastUpdated DateTime @default(now())
+  createdAt DateTime   @default(now())
+
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("stock")
+}
+
+// Ingredient Stock - Tồn kho nguyên liệu
+model IngredientStock {
+  id          String   @id @default(uuid())
+  ingredientId String   @unique
+  quantity    Int      @default(0)
+  minStock    Int      @default(0)
+  maxStock    Int      @default(0)
+  isActive    Boolean  @default(true)
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  ingredient  Ingredient? @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@map("ingredient_stocks")
+}
+
+// Product Recipe - Công thức sản phẩm (liên kết Product với Ingredient)
+model ProductRecipe {
+  id           String   @id @default(uuid())
+  productId    String
+  ingredientId String
+  quantity     Decimal  @db.Decimal(10, 3) // Số lượng nguyên liệu cần cho 1 sản phẩm
+  unit         String   // Đơn vị (có thể khác với unit của ingredient)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, ingredientId]) // Mỗi sản phẩm chỉ có 1 công thức cho mỗi nguyên liệu
+  @@map("product_recipes")
+}
+
+// Stock Transactions - Lịch sử nhập/xuất
+model StockTransaction {
+  id          String              @id @default(uuid())
+  productId   String?
+  ingredientId String?
+  type        StockTransactionType
+  quantity    Int
+  reason      String?
+  userId      String?
+  timestamp   DateTime            @default(now())
+
+  product     Product?            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ingredient  Ingredient?         @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@index([timestamp])
+  @@index([type])
+  @@index([productId, timestamp])
+  @@index([ingredientId, timestamp])
+  @@index([userId])
+  @@map("stock_transactions")
+}
+
+enum StockTransactionType {
+  SALE
+  PURCHASE
+  ADJUSTMENT
+  RETURN
+}
+
+// Stock Alerts - Cảnh báo tồn kho
+model StockAlert {
+  id          String        @id @default(uuid())
+  productId   String?
+  ingredientId String?
+  type        StockAlertType
+  message     String
+  isRead      Boolean       @default(false)
+  timestamp   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  product     Product?      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ingredient  Ingredient?   @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@index([isRead])
+  @@index([timestamp])
+  @@index([type])
+  @@index([productId, isRead])
+  @@index([ingredientId, isRead])
+  @@map("stock_alerts")
+}
+
+enum StockAlertType {
+  LOW_STOCK
+  OUT_OF_STOCK
+  OVERSTOCK
+}
+
