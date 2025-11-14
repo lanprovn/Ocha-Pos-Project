@@ -109,7 +109,7 @@ Think of it as your all-in-one restaurant management system. Staff can take orde
    ```
 
 4. **Access the application**
-   - Frontend: http://localhost:5173
+   - Frontend: http://localhost:3000
    - Backend API: http://localhost:8080
    - API Docs: http://localhost:8080/api-docs
 
