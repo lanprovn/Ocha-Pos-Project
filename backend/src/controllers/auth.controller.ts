@@ -40,5 +40,7 @@ export class AuthController extends BaseController {
   });
 }
 
-export default new AuthController();
+// Export instance
+const authController = new AuthController();
+export default authController;
 

@@ -40,7 +40,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/login', authController.login.bind(authController));
+router.post('/login', authController.login);
 
 /**
  * @swagger
@@ -71,7 +71,7 @@ router.post('/login', authController.login.bind(authController));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/me', authenticate, authController.getMe.bind(authController));
+router.get('/me', authenticate, authController.getMe);
 
 export default router;
 

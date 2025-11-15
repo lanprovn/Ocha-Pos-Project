@@ -1,5 +1,8 @@
 import { Response } from 'express';
+import { ZodError } from 'zod';
 import logger from './logger';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
+import { sendError } from './response';
 
 /**
  * Custom error class for application errors
@@ -7,53 +10,47 @@ import logger from './logger';
 export class AppError extends Error {
   statusCode: number;
   isOperational: boolean;
+  details?: any;
 
-  constructor(message: string, statusCode: number = 500, isOperational: boolean = true) {
+  constructor(
+    message: string,
+    statusCode: number = HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    isOperational: boolean = true,
+    details?: any
+  ) {
     super(message);
     this.statusCode = statusCode;
     this.isOperational = isOperational;
+    this.details = details;
     Error.captureStackTrace(this, this.constructor);
   }
 }
 
 /**
- * User-friendly error messages
+ * Map Zod errors to user-friendly messages
  */
-const ERROR_MESSAGES: Record<string, string> = {
-  // Validation errors
-  'Validation error': 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.',
-  'ZodError': 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.',
-  
-  // Authentication errors
-  'Unauthorized': 'Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn.',
-  'Forbidden': 'Bạn không có quyền thực hiện thao tác này.',
-  'Invalid token': 'Token không hợp lệ. Vui lòng đăng nhập lại.',
-  
-  // Not found errors
-  'Not found': 'Không tìm thấy dữ liệu.',
-  'Route not found': 'Đường dẫn không tồn tại.',
-  
-  // Database errors
-  'Database error': 'Lỗi kết nối cơ sở dữ liệu. Vui lòng thử lại sau.',
-  'Unique constraint': 'Dữ liệu đã tồn tại trong hệ thống.',
-  
-  // File errors
-  'File not found': 'Không tìm thấy file.',
-  'File upload error': 'Lỗi khi upload file. Vui lòng thử lại.',
-  
-  // Payment errors
-  'Payment error': 'Lỗi khi xử lý thanh toán. Vui lòng thử lại.',
-  'Payment verification failed': 'Xác thực thanh toán thất bại.',
-  
-  // Generic errors
-  'Internal server error': 'Lỗi hệ thống. Vui lòng thử lại sau.',
-};
+function mapZodErrors(zodError: ZodError): string[] {
+  return zodError.errors.map((err) => {
+    const path = err.path.join('.');
+    return `${path}: ${err.message}`;
+  });
+}
 
 /**
  * Get user-friendly error message
  */
 function getUserFriendlyMessage(error: any): string {
-  const errorMessage = error.message || 'Internal server error';
+  // Handle Zod validation errors
+  if (error instanceof ZodError) {
+    return ERROR_MESSAGES.VALIDATION_ERROR;
+  }
+  
+  // Handle AppError
+  if (error instanceof AppError) {
+    return error.message;
+  }
+  
+  const errorMessage = error.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR;
   
   // Check if we have a custom message for this error
   for (const [key, message] of Object.entries(ERROR_MESSAGES)) {
@@ -67,7 +64,7 @@ function getUserFriendlyMessage(error: any): string {
     return errorMessage;
   }
   
-  return ERROR_MESSAGES['Internal server error'] || 'Đã xảy ra lỗi. Vui lòng thử lại sau.';
+  return ERROR_MESSAGES.INTERNAL_SERVER_ERROR;
 }
 
 /**
@@ -75,7 +72,25 @@ function getUserFriendlyMessage(error: any): string {
  */
 export function handleError(error: any, res: Response, req?: any): void {
   // Determine status code
-  const statusCode = error.statusCode || error.status || 500;
+  let statusCode: number = HTTP_STATUS.INTERNAL_SERVER_ERROR;
+  let userMessage: string = ERROR_MESSAGES.INTERNAL_SERVER_ERROR;
+  let details: any = undefined;
+  
+  // Handle different error types
+  if (error instanceof AppError) {
+    statusCode = error.statusCode;
+    userMessage = error.message;
+    details = error.details;
+  } else if (error instanceof ZodError) {
+    statusCode = HTTP_STATUS.BAD_REQUEST;
+    userMessage = ERROR_MESSAGES.VALIDATION_ERROR;
+    details = mapZodErrors(error);
+  } else if (error.statusCode) {
+    statusCode = error.statusCode;
+    userMessage = getUserFriendlyMessage(error);
+  } else {
+    userMessage = getUserFriendlyMessage(error);
+  }
   
   // Log error
   logger.error('Request error', {
@@ -88,29 +103,8 @@ export function handleError(error: any, res: Response, req?: any): void {
     userAgent: req?.get('user-agent'),
   });
   
-  // Get user-friendly message
-  const userMessage = getUserFriendlyMessage(error);
-  
-  // Prepare error response
-  const errorResponse: any = {
-    error: userMessage,
-    statusCode,
-  };
-  
-  // Add error details in development mode
-  if (process.env.NODE_ENV === 'development') {
-    errorResponse.details = {
-      message: error.message,
-      stack: error.stack,
-    };
-  }
-  
-  // Add validation errors if present
-  if (error.errors && Array.isArray(error.errors)) {
-    errorResponse.validationErrors = error.errors;
-  }
-  
-  res.status(statusCode).json(errorResponse);
+  // Send error response using standardized format
+  sendError(res, userMessage, statusCode, details);
 }
 
 /**
