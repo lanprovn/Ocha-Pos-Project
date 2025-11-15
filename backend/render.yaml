@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: ocha-pos-backend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: LOG_LEVEL
+        value: info
+    healthCheckPath: /health
+
+databases:
+  - name: ocha-pos-db
+    plan: free
+    databaseName: ocha_pos
+    user: ocha_pos_user
+
