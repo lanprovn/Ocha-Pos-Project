@@ -4,6 +4,7 @@ import stockService from '../services/stock.service';
 import { BaseController } from './base.controller';
 import { SUCCESS_MESSAGES } from '../constants';
 import { ValidationSchemas, validateOrThrow } from '../utils/validation';
+import { StockFilters } from '../types/stock.types';
 
 // ===== Schemas =====
 const createProductStockSchema = z.object({
@@ -221,7 +222,12 @@ export class StockController extends BaseController {
    * Get all alerts
    */
   getAllAlerts = this.asyncHandler(async (req: Request, res: Response) => {
-    const filters = validateOrThrow(alertFiltersSchema, req.query);
+    const validated = validateOrThrow(alertFiltersSchema, req.query);
+    const filters: StockFilters = {
+      productId: validated.productId,
+      ingredientId: validated.ingredientId,
+      isRead: typeof validated.isRead === 'boolean' ? validated.isRead : undefined,
+    };
     const alerts = await stockService.getAllAlerts(filters);
     this.success(res, alerts);
   });
