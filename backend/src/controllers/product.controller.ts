@@ -55,25 +55,26 @@ const idParamSchema = z.object({
   id: ValidationSchemas.uuid,
 });
 
-const paginationQuerySchema = z.object({
-  page: z.preprocess(
-    (val) => (val ? parseInt(String(val), 10) : undefined),
-    z.number().int().positive().optional()
-  ),
-  limit: z.preprocess(
-    (val) => (val ? parseInt(String(val), 10) : undefined),
-    z.number().int().positive().max(PAGINATION.MAX_LIMIT).optional()
-  ),
-});
-
 export class ProductController extends BaseController {
   /**
    * Get all products with optional pagination
    */
   getAll = this.asyncHandler(async (req: Request, res: Response) => {
-    const query = validateOrThrow(paginationQuerySchema, req.query);
-    const page = query.page ?? PAGINATION.DEFAULT_PAGE;
-    const limit = query.limit ?? PAGINATION.DEFAULT_LIMIT;
+    // Parse pagination params with defaults
+    const page = req.query.page 
+      ? parseInt(String(req.query.page), 10) 
+      : PAGINATION.DEFAULT_PAGE;
+    const limit = req.query.limit 
+      ? Math.min(parseInt(String(req.query.limit), 10), PAGINATION.MAX_LIMIT)
+      : PAGINATION.DEFAULT_LIMIT;
+
+    // Validate page and limit
+    if (isNaN(page) || page < 1) {
+      throw new AppError('Page phải là số nguyên dương.', HTTP_STATUS.BAD_REQUEST);
+    }
+    if (isNaN(limit) || limit < 1) {
+      throw new AppError('Limit phải là số nguyên dương.', HTTP_STATUS.BAD_REQUEST);
+    }
 
     const result = await productService.getAll(page, limit);
     
