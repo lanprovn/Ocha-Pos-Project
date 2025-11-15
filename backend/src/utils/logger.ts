@@ -3,9 +3,16 @@ import path from 'path';
 import fs from 'fs';
 
 // Create logs directory if it doesn't exist
+// Wrap in try-catch to handle permission errors in Railway
 const logsDir = path.join(__dirname, '../../logs');
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir, { recursive: true });
+try {
+  if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true });
+  }
+} catch (error: any) {
+  // Log to console if we can't create logs directory (Railway might not allow file writes)
+  console.warn(`⚠️  Could not create logs directory: ${error.message}`);
+  console.warn('⚠️  Logs will only be written to console');
 }
 
 // Define log format
