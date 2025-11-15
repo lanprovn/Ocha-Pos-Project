@@ -3,7 +3,7 @@ import productService from '../services/product.service';
 import { transformProduct } from '../utils/transform';
 import { z } from 'zod';
 import { BaseController } from './base.controller';
-import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, PAGINATION } from '../constants';
+import { SUCCESS_MESSAGES, PAGINATION } from '../constants';
 import { ValidationSchemas, validateOrThrow } from '../utils/validation';
 import { sendPaginated } from '../utils/response';
 
@@ -56,8 +56,14 @@ const idParamSchema = z.object({
 });
 
 const paginationQuerySchema = z.object({
-  page: z.string().optional().transform((val) => (val ? parseInt(val, 10) : undefined)),
-  limit: z.string().optional().transform((val) => (val ? parseInt(val, 10) : undefined)),
+  page: z.preprocess(
+    (val) => (val ? parseInt(String(val), 10) : undefined),
+    z.number().int().positive().optional()
+  ),
+  limit: z.preprocess(
+    (val) => (val ? parseInt(String(val), 10) : undefined),
+    z.number().int().positive().max(PAGINATION.MAX_LIMIT).optional()
+  ),
 });
 
 export class ProductController extends BaseController {
