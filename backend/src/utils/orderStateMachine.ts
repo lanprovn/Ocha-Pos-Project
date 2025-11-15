@@ -35,15 +35,20 @@ export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
   return ORDER_STATE_MACHINE[from].includes(to);
 }
 
+import { AppError } from './errorHandler';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
+
 /**
  * Validate order state transition
  * Throws error if transition is invalid
  */
 export function validateTransition(from: OrderStatus, to: OrderStatus): void {
   if (!canTransition(from, to)) {
-    throw new Error(
-      `Invalid order status transition: Cannot transition from "${from}" to "${to}". ` +
-      `Valid transitions from "${from}": ${ORDER_STATE_MACHINE[from].join(', ') || 'none (terminal state)'}`
+    const validTransitions = ORDER_STATE_MACHINE[from].join(', ') || 'none (terminal state)';
+    throw new AppError(
+      `${ERROR_MESSAGES.INVALID_ORDER_STATUS}. Không thể chuyển từ "${from}" sang "${to}". ` +
+      `Các trạng thái hợp lệ từ "${from}": ${validTransitions}`,
+      HTTP_STATUS.BAD_REQUEST
     );
   }
 }

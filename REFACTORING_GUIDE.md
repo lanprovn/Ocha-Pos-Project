@@ -41,7 +41,7 @@
 - [x] **UserController** - ✅ Completed
 - [x] **DashboardController** - ✅ Completed
 - [x] **StockController** - ✅ Completed
-- [ ] OrderController - Pending (most complex)
+- [x] **OrderController** - ✅ Completed (already refactored, improved orderStateMachine)
 - [ ] PaymentController - Pending
 - [ ] ReportsController - Pending
 - [ ] UploadController - Pending

@@ -2,292 +2,302 @@ import { Request, Response } from 'express';
 import orderService from '../services/order.service';
 import { emitOrderCreated, emitOrderUpdated, emitOrderStatusChanged } from '../socket/socket.io';
 import { z } from 'zod';
+import { BaseController } from './base.controller';
+import { AppError } from '../utils/errorHandler';
+import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, ORDER_STATUS, PAYMENT_STATUS, PAGINATION } from '../constants';
+import { ValidationSchemas, validateOrThrow } from '../utils/validation';
+import { sendPaginated } from '../utils/response';
+import { OrderFilters } from '../types/order.types';
+
+// ===== Schemas =====
+const orderItemSchema = z.object({
+  productId: ValidationSchemas.uuid,
+  quantity: z.number().int().positive('Số lượng phải là số nguyên dương.'),
+  price: ValidationSchemas.positiveNumber,
+  subtotal: ValidationSchemas.positiveNumber,
+  selectedSize: z.string().optional().nullable(),
+  selectedToppings: z.array(z.string()).optional(),
+  note: z.string().optional().nullable(),
+});
 
 const createOrderSchema = z.object({
-  body: z.object({
-    customerName: z.string().optional().nullable(),
-    customerPhone: z.string().optional().nullable(),
-    customerTable: z.string().optional().nullable(),
-    notes: z.string().optional().nullable(),
-    paymentMethod: z.enum(['CASH', 'QR']).optional(),
-    paymentStatus: z.enum(['PENDING', 'SUCCESS', 'FAILED']).optional(),
-    orderCreator: z.enum(['STAFF', 'CUSTOMER']).optional(),
-    orderCreatorName: z.string().optional().nullable(),
-    items: z.array(
-      z.object({
-        productId: z.string().uuid(),
-        quantity: z.number().int().positive(),
-        price: z.number().positive(),
-        subtotal: z.number().positive(),
-        selectedSize: z.string().optional().nullable(),
-        selectedToppings: z.array(z.string()).optional(),
-        note: z.string().optional().nullable(),
-      })
-    ).min(1),
-  }),
+  customerName: z.string().optional().nullable(),
+  customerPhone: z.string().optional().nullable(),
+  customerTable: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  paymentMethod: z.enum(['CASH', 'QR']).optional(),
+  paymentStatus: z.enum([PAYMENT_STATUS.PENDING, PAYMENT_STATUS.SUCCESS, PAYMENT_STATUS.FAILED]).optional(),
+  orderCreator: z.enum(['STAFF', 'CUSTOMER']).optional(),
+  orderCreatorName: z.string().optional().nullable(),
+  items: z.array(orderItemSchema).min(1, 'Đơn hàng phải có ít nhất một sản phẩm.'),
 });
 
 const updateOrderStatusSchema = z.object({
-  body: z.object({
-    status: z.enum(['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED']),
-  }),
-  params: z.object({
-    id: z.string().uuid(),
-  }),
+  status: z.enum([
+    ORDER_STATUS.PENDING,
+    ORDER_STATUS.CONFIRMED,
+    ORDER_STATUS.PREPARING,
+    ORDER_STATUS.READY,
+    ORDER_STATUS.COMPLETED,
+    ORDER_STATUS.CANCELLED,
+  ]),
 });
 
 const cancelOrderSchema = z.object({
-  params: z.object({
-    id: z.string().uuid(),
-  }),
-  body: z.object({
-    reason: z.string().optional(),
-  }).optional(),
+  reason: z.string().optional(),
 });
 
 const refundOrderSchema = z.object({
-  params: z.object({
-    id: z.string().uuid(),
-  }),
-  body: z.object({
-    refundReason: z.string().optional(),
-  }).optional(),
+  refundReason: z.string().optional(),
 });
 
-export class OrderController {
+const idParamSchema = z.object({
+  id: ValidationSchemas.uuid,
+});
+
+const dateParamSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Định dạng ngày không hợp lệ. Sử dụng YYYY-MM-DD.'),
+});
+
+const orderFiltersSchema = z.object({
+  status: z.enum([
+    ORDER_STATUS.CREATING,
+    ORDER_STATUS.PENDING,
+    ORDER_STATUS.CONFIRMED,
+    ORDER_STATUS.PREPARING,
+    ORDER_STATUS.READY,
+    ORDER_STATUS.COMPLETED,
+    ORDER_STATUS.CANCELLED,
+  ]).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  paymentMethod: z.enum(['CASH', 'QR']).optional(),
+  paymentStatus: z.enum([PAYMENT_STATUS.PENDING, PAYMENT_STATUS.SUCCESS, PAYMENT_STATUS.FAILED]).optional(),
+  page: z.preprocess(
+    (val) => (val ? parseInt(String(val), 10) : undefined),
+    z.number().int().positive().optional()
+  ),
+  limit: z.preprocess(
+    (val) => (val ? parseInt(String(val), 10) : undefined),
+    z.number().int().positive().max(PAGINATION.MAX_LIMIT).optional()
+  ),
+});
+
+const historyFiltersSchema = z.object({
+  status: z.enum([
+    ORDER_STATUS.CREATING,
+    ORDER_STATUS.PENDING,
+    ORDER_STATUS.CONFIRMED,
+    ORDER_STATUS.PREPARING,
+    ORDER_STATUS.READY,
+    ORDER_STATUS.COMPLETED,
+    ORDER_STATUS.CANCELLED,
+  ]).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  paymentMethod: z.enum(['CASH', 'QR']).optional(),
+  paymentStatus: z.enum([PAYMENT_STATUS.PENDING, PAYMENT_STATUS.SUCCESS, PAYMENT_STATUS.FAILED]).optional(),
+  page: z.preprocess(
+    (val) => (val ? parseInt(String(val), 10) : undefined),
+    z.number().int().positive().optional()
+  ),
+  limit: z.preprocess(
+    (val) => (val ? parseInt(String(val), 10) : undefined),
+    z.number().int().positive().max(PAGINATION.MAX_LIMIT).optional()
+  ),
+});
+
+export class OrderController extends BaseController {
   /**
    * Create or update draft order (cart đang tạo)
    */
-  async createOrUpdateDraft(req: Request, res: Response) {
-    try {
-      const validated = createOrderSchema.parse({ body: req.body });
-      const order = await orderService.createOrUpdateDraft(validated.body);
-      
-      // Emit Socket.io event for real-time updates
-      emitOrderUpdated(order);
-      
-      res.status(200).json(order);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
-    }
-  }
+  createOrUpdateDraft = this.asyncHandler(async (req: Request, res: Response) => {
+    const validated = validateOrThrow(createOrderSchema, req.body);
+    const order = await orderService.createOrUpdateDraft(validated);
+    
+    // Emit Socket.io event for real-time updates
+    emitOrderUpdated(order);
+    
+    this.success(res, order, 'Cập nhật đơn hàng nháp thành công.');
+  });
 
-  async create(req: Request, res: Response) {
-    try {
-      const validated = createOrderSchema.parse({ body: req.body });
-      const order = await orderService.create(validated.body);
-      
-      // Emit Socket.io event for real-time updates
-      emitOrderCreated(order);
-      
-      res.status(201).json(order);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
-    }
-  }
+  /**
+   * Create new order
+   */
+  create = this.asyncHandler(async (req: Request, res: Response) => {
+    const validated = validateOrThrow(createOrderSchema, req.body);
+    const order = await orderService.create(validated);
+    
+    // Emit Socket.io event for real-time updates
+    emitOrderCreated(order);
+    
+    this.created(res, order, SUCCESS_MESSAGES.ORDER_CREATED);
+  });
 
-  async getAll(req: Request, res: Response) {
-    try {
-      const filters = {
-        status: req.query.status as string | undefined,
-        startDate: req.query.startDate as string | undefined,
-        endDate: req.query.endDate as string | undefined,
-        paymentMethod: req.query.paymentMethod as string | undefined,
-        paymentStatus: req.query.paymentStatus as string | undefined,
-      };
+  /**
+   * Get all orders with filters and pagination
+   */
+  getAll = this.asyncHandler(async (req: Request, res: Response) => {
+    const query = validateOrThrow(orderFiltersSchema, req.query);
+    const page = query.page ?? PAGINATION.DEFAULT_PAGE;
+    const limit = query.limit ?? 50; // Default 50 for orders
 
-      // OPTIMIZED: Support pagination
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 50;
+    const filters = {
+      status: query.status,
+      startDate: query.startDate,
+      endDate: query.endDate,
+      paymentMethod: query.paymentMethod,
+      paymentStatus: query.paymentStatus,
+    };
 
-      const result = await orderService.findAll(filters, page, limit);
-      res.json(result);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  }
-
-  async getToday(_req: Request, res: Response) {
-    try {
-      const orders = await orderService.findToday();
-      res.json(orders);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  }
-
-  async getByDate(req: Request, res: Response): Promise<void> {
-    try {
-      const { date } = req.params;
-      // Validate date format (YYYY-MM-DD)
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
-        return;
-      }
-
-      const orders = await orderService.findByDate(date);
-      res.json(orders);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  }
-
-  async getById(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const order = await orderService.findById(id);
-      res.json(order);
-    } catch (error: any) {
-      if (error.message === 'Order not found') {
-        res.status(404).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
-    }
-  }
-
-  async updateStatus(req: Request, res: Response) {
-    try {
-      const validated = updateOrderStatusSchema.parse({
-        body: req.body,
-        params: req.params,
+    const result = await orderService.findAll(filters, page, limit);
+    
+    // Handle paginated response
+    if (result && 'data' in result && 'pagination' in result) {
+      sendPaginated(res, result.data, {
+        page: result.pagination.page,
+        limit: result.pagination.limit,
+        total: result.pagination.total,
+        totalPages: result.pagination.totalPages,
       });
-      const order = await orderService.updateStatus(validated.params.id, validated.body);
-      
-      // Emit Socket.io events for real-time updates
-      // Emit both order_updated (full order data) and order_status_changed (status only)
-      emitOrderUpdated(order);
-      emitOrderStatusChanged(order.id, order.status);
-      
-      res.json(order);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else if (error.message === 'Order not found') {
-        res.status(404).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
+    } else {
+      this.success(res, result);
     }
-  }
+  });
+
+  /**
+   * Get today's orders
+   */
+  getToday = this.asyncHandler(async (_req: Request, res: Response) => {
+    const orders = await orderService.findToday();
+    this.success(res, orders);
+  });
+
+  /**
+   * Get orders by date
+   */
+  getByDate = this.asyncHandler(async (req: Request, res: Response) => {
+    const { date } = validateOrThrow(dateParamSchema, req.params);
+    const orders = await orderService.findByDate(date);
+    this.success(res, orders);
+  });
+
+  /**
+   * Get order by ID
+   */
+  getById = this.asyncHandler(async (req: Request, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+    const order = await orderService.findById(id);
+    this.success(res, order);
+  });
+
+  /**
+   * Update order status
+   */
+  updateStatus = this.asyncHandler(async (req: Request, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+    const validated = validateOrThrow(updateOrderStatusSchema, req.body);
+    const order = await orderService.updateStatus(id, validated);
+    
+    // Emit Socket.io events for real-time updates
+    emitOrderUpdated(order);
+    emitOrderStatusChanged(order.id, order.status);
+    
+    this.success(res, order, SUCCESS_MESSAGES.ORDER_UPDATED);
+  });
 
   /**
    * Cancel order
    */
-  async cancelOrder(req: Request, res: Response) {
-    try {
-      const validated = cancelOrderSchema.parse({ params: req.params, body: req.body });
-      const order = await orderService.cancelOrder(validated.params.id, validated.body?.reason);
-      
-      // Emit Socket.io events
-      emitOrderUpdated(order);
-      emitOrderStatusChanged(order.id, 'CANCELLED');
-      
-      res.json({ message: 'Order cancelled successfully', order });
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else if (error.message === 'Order not found') {
-        res.status(404).json({ error: error.message });
-      } else {
-        res.status(400).json({ error: error.message });
-      }
-    }
-  }
+  cancelOrder = this.asyncHandler(async (req: Request, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+    const validated = validateOrThrow(cancelOrderSchema, req.body || {});
+    const order = await orderService.cancelOrder(id, validated.reason);
+    
+    // Emit Socket.io events
+    emitOrderUpdated(order);
+    emitOrderStatusChanged(order.id, ORDER_STATUS.CANCELLED);
+    
+    this.success(res, { order }, SUCCESS_MESSAGES.ORDER_CANCELLED);
+  });
 
   /**
    * Refund order
    */
-  async refundOrder(req: Request, res: Response) {
-    try {
-      const validated = refundOrderSchema.parse({ params: req.params, body: req.body });
-      const order = await orderService.refundOrder(validated.params.id, validated.body?.refundReason);
-      
-      // Emit Socket.io events
-      emitOrderUpdated(order);
-      emitOrderStatusChanged(order.id, 'CANCELLED');
-      
-      res.json({ message: 'Order refunded successfully', order });
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else if (error.message === 'Order not found') {
-        res.status(404).json({ error: error.message });
-      } else {
-        res.status(400).json({ error: error.message });
-      }
-    }
-  }
+  refundOrder = this.asyncHandler(async (req: Request, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+    const validated = validateOrThrow(refundOrderSchema, req.body || {});
+    const order = await orderService.refundOrder(id, validated.refundReason);
+    
+    // Emit Socket.io events
+    emitOrderUpdated(order);
+    emitOrderStatusChanged(order.id, ORDER_STATUS.CANCELLED);
+    
+    this.success(res, { order }, 'Hoàn tiền đơn hàng thành công.');
+  });
 
   /**
    * Get order history with pagination
    */
-  async getHistory(req: Request, res: Response) {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 20;
-      const filters: any = {};
+  getHistory = this.asyncHandler(async (req: Request, res: Response) => {
+    const query = validateOrThrow(historyFiltersSchema, req.query);
+    const page = query.page ?? PAGINATION.DEFAULT_PAGE;
+    const limit = query.limit ?? 20;
 
-      if (req.query.status) filters.status = req.query.status;
-      if (req.query.startDate) filters.startDate = req.query.startDate;
-      if (req.query.endDate) filters.endDate = req.query.endDate;
-      if (req.query.paymentMethod) filters.paymentMethod = req.query.paymentMethod;
-      if (req.query.paymentStatus) filters.paymentStatus = req.query.paymentStatus;
+    const filters: OrderFilters = {
+      ...(query.status && { status: query.status }),
+      ...(query.startDate && { startDate: query.startDate }),
+      ...(query.endDate && { endDate: query.endDate }),
+      ...(query.paymentMethod && { paymentMethod: query.paymentMethod }),
+      ...(query.paymentStatus && { paymentStatus: query.paymentStatus }),
+    };
 
-      const result = await orderService.getHistory(page, limit, filters);
-      res.json(result);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    const result = await orderService.getHistory(page, limit, filters);
+    
+    // Handle paginated response
+    if (result && 'data' in result && 'pagination' in result) {
+      sendPaginated(res, result.data, {
+        page: result.pagination.page,
+        limit: result.pagination.limit,
+        total: result.pagination.total,
+        totalPages: result.pagination.totalPages,
+      });
+    } else {
+      this.success(res, result);
     }
-  }
+  });
 
   /**
    * Print receipt (return order data formatted for receipt)
    */
-  async printReceipt(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const order = await orderService.findById(id);
+  printReceipt = this.asyncHandler(async (req: Request, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+    const order = await orderService.findById(id);
 
-      // Format receipt data
-      const receipt = {
-        orderNumber: order.orderNumber,
-        date: order.createdAt,
-        customerName: order.customerName || 'Khách vãng lai',
-        customerPhone: order.customerPhone || '',
-        customerTable: order.customerTable || '',
-        items: order.items.map((item: any) => ({
-          name: item.product.name,
-          quantity: item.quantity,
-          price: parseFloat(item.price),
-          subtotal: parseFloat(item.subtotal),
-        })),
-        subtotal: parseFloat(order.totalAmount),
-        total: parseFloat(order.totalAmount),
-        paymentMethod: order.paymentMethod,
-        paymentStatus: order.paymentStatus,
-        notes: order.notes,
-      };
+    // Format receipt data
+    const receipt = {
+      orderNumber: order.orderNumber,
+      date: order.createdAt,
+      customerName: order.customerName || 'Khách vãng lai',
+      customerPhone: order.customerPhone || '',
+      customerTable: order.customerTable || '',
+      items: order.items.map((item: any) => ({
+        name: item.product.name,
+        quantity: item.quantity,
+        price: parseFloat(item.price),
+        subtotal: parseFloat(item.subtotal),
+      })),
+      subtotal: parseFloat(order.totalAmount),
+      total: parseFloat(order.totalAmount),
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
+      notes: order.notes,
+    };
 
-      res.json(receipt);
-    } catch (error: any) {
-      if (error.message === 'Order not found') {
-        res.status(404).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
-    }
-  }
-
+    this.success(res, receipt);
+  });
 }
 
-export default new OrderController();
-
+// Export instance
+const orderController = new OrderController();
+export default orderController;
