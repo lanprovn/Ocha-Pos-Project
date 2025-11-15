@@ -29,10 +29,24 @@ const app: Express = express();
 // Security middleware
 app.use(helmet());
 
-// CORS
+// CORS - Normalize FRONTEND_URL (remove trailing slash)
+const normalizedFrontendUrl = env.FRONTEND_URL.replace(/\/$/, '');
 app.use(
   cors({
-    origin: env.FRONTEND_URL,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Normalize origin (remove trailing slash)
+      const normalizedOrigin = origin.replace(/\/$/, '');
+      
+      // Check if origin matches FRONTEND_URL (with or without trailing slash)
+      if (normalizedOrigin === normalizedFrontendUrl || origin === env.FRONTEND_URL) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   })
 );
