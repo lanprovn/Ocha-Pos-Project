@@ -2,148 +2,132 @@ import { Request, Response } from 'express';
 import productService from '../services/product.service';
 import { transformProduct } from '../utils/transform';
 import { z } from 'zod';
+import { BaseController } from './base.controller';
+import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, PAGINATION } from '../constants';
+import { ValidationSchemas, validateOrThrow } from '../utils/validation';
+import { sendPaginated } from '../utils/response';
 
 const createProductSchema = z.object({
-  body: z.object({
-    name: z.string().min(1),
-    description: z.string().optional(),
-    price: z.number().positive(),
-    categoryId: z.string().uuid().optional(),
-    image: z.string().url().optional(),
-    rating: z.number().min(0).max(5).optional(),
-    discount: z.number().min(0).max(100).optional(),
-    stock: z.number().int().min(0).optional(),
-    isAvailable: z.boolean().optional(),
-    isPopular: z.boolean().optional(),
-    tags: z.array(z.string()).optional(),
-    sizes: z
-      .array(
-        z.object({
-          name: z.string(),
-          extraPrice: z.number().min(0),
-        })
-      )
-      .optional(),
-    toppings: z
-      .array(
-        z.object({
-          name: z.string(),
-          extraPrice: z.number().min(0),
-        })
-      )
-      .optional(),
-  }),
+  name: z.string().min(1, 'Tên sản phẩm là bắt buộc.'),
+  description: z.string().optional(),
+  price: ValidationSchemas.positiveNumber,
+  categoryId: ValidationSchemas.uuid.optional(),
+  image: z.string().url('URL hình ảnh không hợp lệ.').optional().or(z.literal('')),
+  rating: z.number().min(0).max(5, 'Đánh giá phải từ 0 đến 5.').optional(),
+  discount: z.number().min(0).max(100, 'Giảm giá phải từ 0 đến 100.').optional(),
+  stock: z.number().int().min(0, 'Số lượng không được âm.').optional(),
+  isAvailable: z.boolean().optional(),
+  isPopular: z.boolean().optional(),
+  tags: z.array(z.string()).optional(),
+  sizes: z
+    .array(
+      z.object({
+        name: z.string().min(1, 'Tên size là bắt buộc.'),
+        extraPrice: z.number().min(0, 'Giá thêm không được âm.'),
+      })
+    )
+    .optional(),
+  toppings: z
+    .array(
+      z.object({
+        name: z.string().min(1, 'Tên topping là bắt buộc.'),
+        extraPrice: z.number().min(0, 'Giá thêm không được âm.'),
+      })
+    )
+    .optional(),
 });
 
 const updateProductSchema = z.object({
-  body: z.object({
-    name: z.string().min(1).optional(),
-    description: z.string().optional(),
-    price: z.number().positive().optional(),
-    categoryId: z.string().uuid().optional(),
-    image: z.string().url().optional(),
-    rating: z.number().min(0).max(5).optional(),
-    discount: z.number().min(0).max(100).optional(),
-    stock: z.number().int().min(0).optional(),
-    isAvailable: z.boolean().optional(),
-    isPopular: z.boolean().optional(),
-    tags: z.array(z.string()).optional(),
-  }),
-  params: z.object({
-    id: z.string().uuid(),
-  }),
+  name: z.string().min(1, 'Tên sản phẩm là bắt buộc.').optional(),
+  description: z.string().optional(),
+  price: ValidationSchemas.positiveNumber.optional(),
+  categoryId: ValidationSchemas.uuid.optional(),
+  image: z.string().url('URL hình ảnh không hợp lệ.').optional().or(z.literal('')),
+  rating: z.number().min(0).max(5, 'Đánh giá phải từ 0 đến 5.').optional(),
+  discount: z.number().min(0).max(100, 'Giảm giá phải từ 0 đến 100.').optional(),
+  stock: z.number().int().min(0, 'Số lượng không được âm.').optional(),
+  isAvailable: z.boolean().optional(),
+  isPopular: z.boolean().optional(),
+  tags: z.array(z.string()).optional(),
 });
 
-export class ProductController {
-  async getAll(req: Request, res: Response) {
-    try {
-      // OPTIMIZED: Support pagination
-      const page = req.query.page ? parseInt(req.query.page as string) : undefined;
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+const idParamSchema = z.object({
+  id: ValidationSchemas.uuid,
+});
 
-      const result = await productService.getAll(page, limit);
-      
-      // Handle paginated response or array response (backward compatibility)
-      if (result && 'data' in result && 'pagination' in result) {
-        const transformed = result.data.map(transformProduct);
-        res.json({
-          data: transformed,
-          pagination: result.pagination,
-        });
-      } else {
-        // Backward compatibility: array response
-        const transformed = (result as any[]).map(transformProduct);
-        res.json(transformed);
-      }
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  }
+const paginationQuerySchema = z.object({
+  page: z.string().optional().transform((val) => (val ? parseInt(val, 10) : undefined)),
+  limit: z.string().optional().transform((val) => (val ? parseInt(val, 10) : undefined)),
+});
 
-  async getById(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const product = await productService.getById(id);
-      const transformed = transformProduct(product);
-      res.json(transformed);
-    } catch (error: any) {
-      if (error.message === 'Product not found') {
-        res.status(404).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
-    }
-  }
+export class ProductController extends BaseController {
+  /**
+   * Get all products with optional pagination
+   */
+  getAll = this.asyncHandler(async (req: Request, res: Response) => {
+    const query = validateOrThrow(paginationQuerySchema, req.query);
+    const page = query.page || PAGINATION.DEFAULT_PAGE;
+    const limit = query.limit || PAGINATION.DEFAULT_LIMIT;
 
-  async create(req: Request, res: Response) {
-    try {
-      const validated = createProductSchema.parse({ body: req.body });
-      const product = await productService.create(validated.body);
-      const transformed = transformProduct(product);
-      res.status(201).json(transformed);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
-    }
-  }
-
-  async update(req: Request, res: Response) {
-    try {
-      const validated = updateProductSchema.parse({
-        body: req.body,
-        params: req.params,
+    const result = await productService.getAll(page, limit);
+    
+    // Handle paginated response
+    if (result && 'data' in result && 'pagination' in result) {
+      const transformed = result.data.map(transformProduct);
+      sendPaginated(res, transformed, {
+        page: result.pagination.page,
+        limit: result.pagination.limit,
+        total: result.pagination.total,
       });
-      const product = await productService.update(validated.params.id, validated.body);
-      const transformed = transformProduct(product);
-      res.json(transformed);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else if (error.message === 'Product not found') {
-        res.status(404).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
+    } else {
+      // Backward compatibility: array response
+      const transformed = (result as any[]).map(transformProduct);
+      this.success(res, transformed);
     }
-  }
+  });
 
-  async delete(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      await productService.delete(id);
-      res.json({ message: 'Product deleted successfully' });
-    } catch (error: any) {
-      if (error.message === 'Product not found') {
-        res.status(404).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
-    }
-  }
+  /**
+   * Get product by ID
+   */
+  getById = this.asyncHandler(async (req: Request, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+    const product = await productService.getById(id);
+    const transformed = transformProduct(product);
+    this.success(res, transformed);
+  });
+
+  /**
+   * Create new product
+   */
+  create = this.asyncHandler(async (req: Request, res: Response) => {
+    const validated = validateOrThrow(createProductSchema, req.body);
+    const product = await productService.create(validated);
+    const transformed = transformProduct(product);
+    this.created(res, transformed, SUCCESS_MESSAGES.CREATED);
+  });
+
+  /**
+   * Update product
+   */
+  update = this.asyncHandler(async (req: Request, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+    const validated = validateOrThrow(updateProductSchema, req.body);
+    const product = await productService.update(id, validated);
+    const transformed = transformProduct(product);
+    this.success(res, transformed, SUCCESS_MESSAGES.UPDATED);
+  });
+
+  /**
+   * Delete product
+   */
+  delete = this.asyncHandler(async (req: Request, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+    await productService.delete(id);
+    this.success(res, { message: 'Xóa sản phẩm thành công.' });
+  });
 }
 
-export default new ProductController();
+// Export instance
+const productController = new ProductController();
+export default productController;
 

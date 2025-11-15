@@ -1,6 +1,8 @@
 import prisma from '../config/database';
 import { CreateProductInput, UpdateProductInput } from '../types/product.types';
 import { Decimal } from '@prisma/client/runtime/library';
+import { AppError } from '../utils/errorHandler';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
 
 export class ProductService {
   /**
@@ -63,7 +65,7 @@ export class ProductService {
     });
 
     if (!product) {
-      throw new Error('Product not found');
+      throw new AppError(ERROR_MESSAGES.PRODUCT_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     return product;
@@ -111,7 +113,7 @@ export class ProductService {
     });
 
     if (!product) {
-      throw new Error('Product not found');
+      throw new AppError(ERROR_MESSAGES.PRODUCT_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     const updateData: any = { ...data };
@@ -143,7 +145,7 @@ export class ProductService {
     });
 
     if (!product) {
-      throw new Error('Product not found');
+      throw new AppError(ERROR_MESSAGES.PRODUCT_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     await prisma.product.delete({
