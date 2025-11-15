@@ -72,8 +72,8 @@ export class ProductController extends BaseController {
    */
   getAll = this.asyncHandler(async (req: Request, res: Response) => {
     const query = validateOrThrow(paginationQuerySchema, req.query);
-    const page = query.page || PAGINATION.DEFAULT_PAGE;
-    const limit = query.limit || PAGINATION.DEFAULT_LIMIT;
+    const page = query.page ?? PAGINATION.DEFAULT_PAGE;
+    const limit = query.limit ?? PAGINATION.DEFAULT_LIMIT;
 
     const result = await productService.getAll(page, limit);
     
