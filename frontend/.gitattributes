@@ -1,0 +1,24 @@
+# GitHub Linguist configuration
+*.css linguist-vendored
+dist/ linguist-vendored
+build/ linguist-vendored
+node_modules/ linguist-vendored
+src/_legacy_styles/ linguist-vendored
+
+# TypeScript files
+*.ts linguist-language=TypeScript
+*.tsx linguist-language=TypeScript
+
+# JavaScript files (if any)
+*.js linguist-language=JavaScript
+*.jsx linguist-language=JavaScript
+
+# Markdown files
+*.md linguist-language=Markdown
+
+# JSON files
+*.json linguist-language=JSON
+
+# YAML files
+*.yml linguist-language=YAML
+*.yaml linguist-language=YAML
