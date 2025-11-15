@@ -20,7 +20,31 @@ const envSchema = z.object({
   QR_TEMPLATE: z.enum(['print', 'compact2', 'compact', 'qr_only']).default('print'),
 });
 
-const env = envSchema.parse(process.env);
+let env: z.infer<typeof envSchema>;
+
+try {
+  env = envSchema.parse(process.env);
+} catch (error: any) {
+  // Log to console directly (logger might not be initialized yet)
+  console.error('❌ Environment validation failed:');
+  if (error.errors) {
+    error.errors.forEach((err: any) => {
+      console.error(`  - ${err.path.join('.')}: ${err.message}`);
+    });
+  } else {
+    console.error(`  ${error.message}`);
+  }
+  console.error('\n📋 Required environment variables:');
+  console.error('  - DATABASE_URL (required)');
+  console.error('  - JWT_SECRET (required, min 32 characters)');
+  console.error('\n📋 Optional environment variables:');
+  console.error('  - NODE_ENV (default: development)');
+  console.error('  - PORT (default: 8080)');
+  console.error('  - FRONTEND_URL (default: http://localhost:5173)');
+  console.error('  - BACKEND_URL (default: http://localhost:8080)');
+  console.error('  - LOG_LEVEL (default: info)');
+  process.exit(1);
+}
 
 export default env;
 
