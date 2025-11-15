@@ -1,8 +1,8 @@
-import prisma from '../config/database';
 import { comparePassword, hashPassword } from '../utils/bcrypt';
 import logger from '../utils/logger';
 import { AppError } from '../utils/errorHandler';
 import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
+import { userRepository } from '../repositories';
 
 export interface CreateUserInput {
   email: string;
@@ -29,22 +29,13 @@ export interface ResetPasswordInput {
 }
 
 export class UserService {
+  constructor(private repository = userRepository) {}
+
   /**
    * Get user by ID
    */
   async findById(id: string) {
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    const user = await this.repository.findByIdSafe(id);
 
     if (!user) {
       throw new AppError(ERROR_MESSAGES.USER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
@@ -57,22 +48,7 @@ export class UserService {
    * Get all users
    */
   async getAll() {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    return users;
+    return this.repository.findAll();
   }
 
   /**
@@ -80,9 +56,7 @@ export class UserService {
    */
   async create(data: CreateUserInput) {
     // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: data.email },
-    });
+    const existingUser = await this.repository.findByEmail(data.email);
 
     if (existingUser) {
       throw new AppError(ERROR_MESSAGES.EMAIL_ALREADY_EXISTS, HTTP_STATUS.CONFLICT);
@@ -92,22 +66,9 @@ export class UserService {
     const hashedPassword = await hashPassword(data.password);
 
     // Create user
-    const user = await prisma.user.create({
-      data: {
-        email: data.email,
-        password: hashedPassword,
-        name: data.name,
-        role: data.role || 'STAFF',
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+    const user = await this.repository.create({
+      ...data,
+      password: hashedPassword,
     });
 
     logger.info('User created', { userId: user.id, email: user.email, role: user.role });
@@ -119,44 +80,23 @@ export class UserService {
    */
   async update(id: string, data: UpdateUserInput) {
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id },
-    });
+    const existingUser = await this.repository.findById(id);
 
     if (!existingUser) {
-      throw new Error('User not found');
+      throw new AppError(ERROR_MESSAGES.USER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     // Check if email already exists (if updating email)
     if (data.email && data.email !== existingUser.email) {
-      const emailExists = await prisma.user.findUnique({
-        where: { email: data.email },
-      });
+      const emailExists = await this.repository.findByEmail(data.email);
 
       if (emailExists) {
-        throw new Error('Email already exists');
+        throw new AppError(ERROR_MESSAGES.EMAIL_ALREADY_EXISTS, HTTP_STATUS.CONFLICT);
       }
     }
 
     // Update user
-    const user = await prisma.user.update({
-      where: { id },
-      data: {
-        ...(data.email && { email: data.email }),
-        ...(data.name && { name: data.name }),
-        ...(data.role && { role: data.role }),
-        ...(data.isActive !== undefined && { isActive: data.isActive }),
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    const user = await this.repository.update(id, data);
 
     logger.info('User updated', { userId: user.id, email: user.email });
     return user;
@@ -167,21 +107,17 @@ export class UserService {
    */
   async delete(id: string) {
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id },
-    });
+    const existingUser = await this.repository.findById(id);
 
     if (!existingUser) {
-      throw new Error('User not found');
+      throw new AppError(ERROR_MESSAGES.USER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     // Prevent deleting yourself
     // This check will be done in controller using req.user
 
     // Delete user
-    await prisma.user.delete({
-      where: { id },
-    });
+    await this.repository.delete(id);
 
     logger.info('User deleted', { userId: id, email: existingUser.email });
     return { message: 'User deleted successfully' };
@@ -192,9 +128,7 @@ export class UserService {
    */
   async changePassword(id: string, data: ChangePasswordInput) {
     // Find user
-    const user = await prisma.user.findUnique({
-      where: { id },
-    });
+    const user = await this.repository.findById(id);
 
     if (!user) {
       throw new AppError(ERROR_MESSAGES.USER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
@@ -210,12 +144,7 @@ export class UserService {
     const hashedPassword = await hashPassword(data.newPassword);
 
     // Update password
-    await prisma.user.update({
-      where: { id },
-      data: {
-        password: hashedPassword,
-      },
-    });
+    await this.repository.updatePassword(id, hashedPassword);
 
     logger.info('Password changed', { userId: id, email: user.email });
     return { message: 'Password changed successfully' };
@@ -226,9 +155,7 @@ export class UserService {
    */
   async resetPassword(data: ResetPasswordInput) {
     // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email: data.email },
-    });
+    const user = await this.repository.findByEmail(data.email);
 
     if (!user) {
       throw new AppError(ERROR_MESSAGES.USER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
@@ -238,12 +165,7 @@ export class UserService {
     const hashedPassword = await hashPassword(data.newPassword);
 
     // Update password
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        password: hashedPassword,
-      },
-    });
+    await this.repository.updatePassword(user.id, hashedPassword);
 
     logger.info('Password reset', { userId: user.id, email: user.email });
     return { message: 'Password reset successfully' };

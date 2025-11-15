@@ -4,7 +4,7 @@ import orderService from '../services/order.service';
 import { z } from 'zod';
 import { BaseController } from './base.controller';
 import { AppError } from '../utils/errorHandler';
-import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, PAYMENT_STATUS } from '../constants';
+import { HTTP_STATUS, ERROR_MESSAGES, PAYMENT_STATUS } from '../constants';
 import { ValidationSchemas, validateOrThrow } from '../utils/validation';
 import env from '../config/env';
 

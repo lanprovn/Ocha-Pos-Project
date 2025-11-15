@@ -3,11 +3,10 @@ import orderService from '../services/order.service';
 import { emitOrderCreated, emitOrderUpdated, emitOrderStatusChanged } from '../socket/socket.io';
 import { z } from 'zod';
 import { BaseController } from './base.controller';
-import { AppError } from '../utils/errorHandler';
-import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, ORDER_STATUS, PAYMENT_STATUS, PAGINATION } from '../constants';
+import { SUCCESS_MESSAGES, ORDER_STATUS, PAGINATION } from '../constants';
 import { ValidationSchemas, validateOrThrow } from '../utils/validation';
 import { sendPaginated } from '../utils/response';
-import { OrderFilters, CreateOrderInput } from '../types/order.types';
+import { CreateOrderInput } from '../types/order.types';
 
 // ===== Schemas =====
 const orderItemSchema = z.object({
@@ -147,16 +146,22 @@ export class OrderController extends BaseController {
    */
   getAll = this.asyncHandler(async (req: Request, res: Response) => {
     const query = validateOrThrow(orderFiltersSchema, req.query);
-    const page = query.page ?? PAGINATION.DEFAULT_PAGE;
-    const limit = query.limit ?? 50; // Default 50 for orders
+    const page = (query.page as number | undefined) ?? PAGINATION.DEFAULT_PAGE;
+    const limit = (query.limit as number | undefined) ?? 50; // Default 50 for orders
 
-    const filters = {
-      status: query.status,
-      startDate: query.startDate,
-      endDate: query.endDate,
-      paymentMethod: query.paymentMethod,
-      paymentStatus: query.paymentStatus,
-    };
+    const filters: {
+      status?: string;
+      startDate?: string;
+      endDate?: string;
+      paymentMethod?: string;
+      paymentStatus?: string;
+    } = {};
+    
+    if (query.status) filters.status = query.status;
+    if (query.startDate) filters.startDate = query.startDate;
+    if (query.endDate) filters.endDate = query.endDate;
+    if (query.paymentMethod) filters.paymentMethod = query.paymentMethod;
+    if (query.paymentStatus) filters.paymentStatus = query.paymentStatus;
 
     const result = await orderService.findAll(filters, page, limit);
     
@@ -166,7 +171,6 @@ export class OrderController extends BaseController {
         page: result.pagination.page,
         limit: result.pagination.limit,
         total: result.pagination.total,
-        totalPages: result.pagination.totalPages,
       });
     } else {
       this.success(res, result);
@@ -205,7 +209,7 @@ export class OrderController extends BaseController {
   updateStatus = this.asyncHandler(async (req: Request, res: Response) => {
     const { id } = validateOrThrow(idParamSchema, req.params);
     const validated = validateOrThrow(updateOrderStatusSchema, req.body);
-    const order = await orderService.updateStatus(id, validated);
+    const order = await orderService.updateStatus(id, { status: validated.status });
     
     // Emit Socket.io events for real-time updates
     emitOrderUpdated(order);
@@ -249,16 +253,22 @@ export class OrderController extends BaseController {
    */
   getHistory = this.asyncHandler(async (req: Request, res: Response) => {
     const query = validateOrThrow(historyFiltersSchema, req.query);
-    const page = query.page ?? PAGINATION.DEFAULT_PAGE;
-    const limit = query.limit ?? 20;
+    const page = (query.page as number | undefined) ?? PAGINATION.DEFAULT_PAGE;
+    const limit = (query.limit as number | undefined) ?? 20;
 
-    const filters: OrderFilters = {
-      ...(query.status && { status: query.status }),
-      ...(query.startDate && { startDate: query.startDate }),
-      ...(query.endDate && { endDate: query.endDate }),
-      ...(query.paymentMethod && { paymentMethod: query.paymentMethod }),
-      ...(query.paymentStatus && { paymentStatus: query.paymentStatus }),
-    };
+    const filters: {
+      status?: string;
+      startDate?: string;
+      endDate?: string;
+      paymentMethod?: string;
+      paymentStatus?: string;
+    } = {};
+    
+    if (query.status) filters.status = query.status;
+    if (query.startDate) filters.startDate = query.startDate;
+    if (query.endDate) filters.endDate = query.endDate;
+    if (query.paymentMethod) filters.paymentMethod = query.paymentMethod;
+    if (query.paymentStatus) filters.paymentStatus = query.paymentStatus;
 
     const result = await orderService.getHistory(page, limit, filters);
     
@@ -268,7 +278,6 @@ export class OrderController extends BaseController {
         page: result.pagination.page,
         limit: result.pagination.limit,
         total: result.pagination.total,
-        totalPages: result.pagination.totalPages,
       });
     } else {
       this.success(res, result);

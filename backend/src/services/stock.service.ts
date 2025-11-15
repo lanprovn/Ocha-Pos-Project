@@ -1,4 +1,3 @@
-import prisma from '../config/database';
 import {
   UpdateStockProductInput,
   UpdateStockIngredientInput,
@@ -13,38 +12,24 @@ import {
 import { emitDashboardUpdate, emitStockAlert } from '../socket/socket.io';
 import { AppError } from '../utils/errorHandler';
 import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
+import { stockRepository, productRepository } from '../repositories';
+import prisma from '../config/database';
 
 export class StockService {
+  constructor(
+    private repository = stockRepository,
+    private productRepo = productRepository
+  ) {}
+
   // ========== Product Stock ==========
 
   async getAllProductStocks() {
-    const stocks = await prisma.stock.findMany({
-      include: {
-        product: {
-          include: {
-            category: true,
-          },
-        },
-      },
-      orderBy: {
-        lastUpdated: 'desc',
-      },
-    });
-
+    const stocks = await this.repository.findAllProductStocks();
     return stocks.map((stock) => this.transformProductStock(stock));
   }
 
   async getProductStockById(id: string) {
-    const stock = await prisma.stock.findUnique({
-      where: { id },
-      include: {
-        product: {
-          include: {
-            category: true,
-          },
-        },
-      },
-    });
+    const stock = await this.repository.findProductStockById(id);
 
     if (!stock) {
       throw new AppError(ERROR_MESSAGES.PRODUCT_STOCK_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
@@ -54,33 +39,13 @@ export class StockService {
   }
 
   async updateProductStock(id: string, data: UpdateStockProductInput) {
-    const stock = await prisma.stock.findUnique({
-      where: { id },
-    });
+    const stock = await this.repository.findProductStockById(id);
 
     if (!stock) {
       throw new AppError(ERROR_MESSAGES.PRODUCT_STOCK_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    const updateData: any = {};
-    if (data.quantity !== undefined) updateData.quantity = data.quantity;
-    if (data.minStock !== undefined) updateData.minStock = data.minStock;
-    if (data.maxStock !== undefined) updateData.maxStock = data.maxStock;
-    if (data.unit !== undefined) updateData.unit = data.unit;
-    if (data.isActive !== undefined) updateData.isActive = data.isActive;
-    updateData.lastUpdated = new Date();
-
-    const updated = await prisma.stock.update({
-      where: { id },
-      data: updateData,
-      include: {
-        product: {
-          include: {
-            category: true,
-          },
-        },
-      },
-    });
+    const updated = await this.repository.updateProductStock(id, data);
 
     // PRODUCTION READY: Emit stock update event for real-time sync
     try {
@@ -115,83 +80,42 @@ export class StockService {
   }
 
   async createProductStock(data: CreateProductStockInput) {
-    const product = await prisma.product.findUnique({
-      where: { id: data.productId },
-      include: { category: true },
-    });
+    const product = await this.productRepo.findById(data.productId);
 
     if (!product) {
       throw new AppError(ERROR_MESSAGES.PRODUCT_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    const existing = await prisma.stock.findUnique({
-      where: { productId: data.productId },
-    });
+    const existing = await this.repository.findProductStockByProductId(data.productId);
 
     if (existing) {
       throw new AppError(ERROR_MESSAGES.STOCK_ALREADY_EXISTS, HTTP_STATUS.CONFLICT);
     }
 
-    const stock = await prisma.stock.create({
-      data: {
-        productId: data.productId,
-        quantity: data.quantity ?? 0,
-        minStock: data.minStock ?? 0,
-        maxStock: data.maxStock ?? 0,
-        unit: data.unit ?? 'pcs',
-        isActive: data.isActive ?? true,
-        lastUpdated: new Date(),
-      },
-      include: {
-        product: {
-          include: {
-            category: true,
-          },
-        },
-      },
-    });
-
+    const stock = await this.repository.createProductStock(data);
     return this.transformProductStock(stock);
   }
 
   async deleteProductStock(id: string) {
-    const stock = await prisma.stock.findUnique({
-      where: { id },
-    });
+    const stock = await this.repository.findProductStockById(id);
 
     if (!stock) {
       throw new AppError(ERROR_MESSAGES.PRODUCT_STOCK_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    await prisma.stock.delete({
-      where: { id },
-    });
-
+    await this.repository.delete(id);
     return { message: 'Product stock deleted successfully' };
   }
 
   // ========== Ingredient Stock ==========
 
   async getAllIngredientStocks() {
-    const stocks = await prisma.ingredientStock.findMany({
-      include: {
-        ingredient: true,
-      },
-      orderBy: {
-        lastUpdated: 'desc',
-      },
-    });
-
+    const stocks = await this.repository.findAllIngredientStocks();
     return stocks.map((stock) => this.transformIngredientStock(stock));
   }
 
   async getIngredientStockById(id: string) {
-    const stock = await prisma.ingredientStock.findUnique({
-      where: { id },
-      include: {
-        ingredient: true,
-      },
-    });
+    const stock = await this.repository.findIngredientStockById(id);
 
     if (!stock) {
       throw new AppError(ERROR_MESSAGES.INGREDIENT_STOCK_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
@@ -201,31 +125,13 @@ export class StockService {
   }
 
   async updateIngredientStock(id: string, data: UpdateStockIngredientInput) {
-    const stock = await prisma.ingredientStock.findUnique({
-      where: { id },
-      include: {
-        ingredient: true,
-      },
-    });
+    const stock = await this.repository.findIngredientStockById(id);
 
     if (!stock) {
       throw new AppError(ERROR_MESSAGES.INGREDIENT_STOCK_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    const updateData: any = {};
-    if (data.quantity !== undefined) updateData.quantity = data.quantity;
-    if (data.minStock !== undefined) updateData.minStock = data.minStock;
-    if (data.maxStock !== undefined) updateData.maxStock = data.maxStock;
-    if (data.isActive !== undefined) updateData.isActive = data.isActive;
-    updateData.lastUpdated = new Date();
-
-    let updated = await prisma.ingredientStock.update({
-      where: { id },
-      data: updateData,
-      include: {
-        ingredient: true,
-      },
-    });
+    let updated = await this.repository.updateIngredientStock(id, data);
 
     // PRODUCTION READY: Emit stock update event for real-time sync
     try {
@@ -257,46 +163,19 @@ export class StockService {
     }
 
     if ((data.name !== undefined || data.unit !== undefined) && stock.ingredient) {
-      await prisma.ingredient.update({
-        where: { id: stock.ingredientId },
-        data: {
-          name: data.name !== undefined ? data.name : stock.ingredient.name,
-          unit: data.unit !== undefined ? data.unit : stock.ingredient.unit,
-        },
+      await this.repository.updateIngredient(stock.ingredientId, {
+        name: data.name !== undefined ? data.name : stock.ingredient.name,
+        unit: data.unit !== undefined ? data.unit : stock.ingredient.unit,
       });
 
-      updated = await prisma.ingredientStock.findUnique({
-        where: { id },
-        include: {
-          ingredient: true,
-        },
-      }) as any;
+      updated = await this.repository.findIngredientStockById(id) as any;
     }
 
     return this.transformIngredientStock(updated);
   }
 
   async createIngredient(data: CreateIngredientInput) {
-    const ingredient = await prisma.ingredient.create({
-      data: {
-        name: data.name,
-        unit: data.unit,
-      },
-    });
-
-    const stock = await prisma.ingredientStock.create({
-      data: {
-        ingredientId: ingredient.id,
-        quantity: data.quantity ?? 0,
-        minStock: data.minStock ?? 0,
-        maxStock: data.maxStock ?? 0,
-        isActive: data.isActive ?? true,
-        lastUpdated: new Date(),
-      },
-      include: {
-        ingredient: true,
-      },
-    });
+    const stock = await this.repository.createIngredientWithStock(data);
 
     return this.transformIngredientStock(stock);
   }
@@ -370,19 +249,13 @@ export class StockService {
   // ========== Stock Transactions ==========
 
   async createTransaction(data: CreateStockTransactionInput) {
-    const transaction = await prisma.stockTransaction.create({
-      data: {
-        productId: data.productId || null,
-        ingredientId: data.ingredientId || null,
-        type: data.type,
-        quantity: data.quantity,
-        reason: data.reason || null,
-        userId: data.userId || null,
-      },
-      include: {
-        product: true,
-        ingredient: true,
-      },
+    const transaction = await this.repository.createStockTransaction({
+      productId: data.productId || null,
+      ingredientId: data.ingredientId || null,
+      type: data.type,
+      quantity: data.quantity,
+      reason: data.reason || null,
+      userId: data.userId || null,
     });
 
     // Update stock quantity if productId or ingredientId provided
@@ -421,32 +294,13 @@ export class StockService {
     return this.transformTransaction(transaction);
   }
 
-  async getAllTransactions(filters?: StockFilters) {
-    const where: any = {};
-
-    if (filters?.productId) {
-      where.productId = filters.productId;
-    }
-
-    if (filters?.ingredientId) {
-      where.ingredientId = filters.ingredientId;
-    }
-
-    const transactions = await prisma.stockTransaction.findMany({
-      where,
-      include: {
-        product: true,
-        ingredient: true,
-      },
-      orderBy: {
-        timestamp: 'desc',
-      },
-    });
-
+  async getAllTransactions(filters?: StockFilters, page: number = 1, limit: number = 50) {
+    const { transactions } = await this.repository.findStockTransactions(filters || {}, page, limit);
     return transactions.map((t) => this.transformTransaction(t));
   }
 
   async getTransactionById(id: string) {
+    // Note: Repository doesn't have findById for transactions yet, using direct query for now
     const transaction = await prisma.stockTransaction.findUnique({
       where: { id },
       include: {
@@ -465,53 +319,24 @@ export class StockService {
   // ========== Stock Alerts ==========
 
   async createAlert(data: CreateStockAlertInput) {
-    const alert = await prisma.stockAlert.create({
-      data: {
-        productId: data.productId || null,
-        ingredientId: data.ingredientId || null,
-        type: data.type,
-        message: data.message,
-        isRead: false,
-      },
-      include: {
-        product: true,
-        ingredient: true,
-      },
+    const alert = await this.repository.createStockAlert({
+      productId: data.productId || null,
+      ingredientId: data.ingredientId || null,
+      type: data.type,
+      message: data.message,
+      isRead: false,
     });
 
     return this.transformAlert(alert);
   }
 
-  async getAllAlerts(filters?: StockFilters) {
-    const where: any = {};
-
-    if (filters?.productId) {
-      where.productId = filters.productId;
-    }
-
-    if (filters?.ingredientId) {
-      where.ingredientId = filters.ingredientId;
-    }
-
-    if (filters?.isRead !== undefined) {
-      where.isRead = filters.isRead;
-    }
-
-    const alerts = await prisma.stockAlert.findMany({
-      where,
-      include: {
-        product: true,
-        ingredient: true,
-      },
-      orderBy: {
-        timestamp: 'desc',
-      },
-    });
-
+  async getAllAlerts(filters?: StockFilters, page: number = 1, limit: number = 50) {
+    const { alerts } = await this.repository.findStockAlerts(filters || {}, page, limit);
     return alerts.map((a) => this.transformAlert(a));
   }
 
   async getAlertById(id: string) {
+    // Note: Repository doesn't have findById for alerts yet, using direct query for now
     const alert = await prisma.stockAlert.findUnique({
       where: { id },
       include: {
@@ -536,16 +361,9 @@ export class StockService {
       throw new AppError(ERROR_MESSAGES.STOCK_ALERT_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    const updated = await prisma.stockAlert.update({
-      where: { id },
-      data: {
-        isRead: data.isRead !== undefined ? data.isRead : alert.isRead,
-        message: data.message !== undefined ? data.message : alert.message,
-      },
-      include: {
-        product: true,
-        ingredient: true,
-      },
+    const updated = await this.repository.updateStockAlert(id, {
+      isRead: data.isRead !== undefined ? data.isRead : alert.isRead,
+      resolvedAt: data.isRead ? new Date() : undefined,
     });
 
     return this.transformAlert(updated);
@@ -560,15 +378,9 @@ export class StockService {
       throw new AppError(ERROR_MESSAGES.STOCK_ALERT_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    const updated = await prisma.stockAlert.update({
-      where: { id },
-      data: {
-        isRead: true,
-      },
-      include: {
-        product: true,
-        ingredient: true,
-      },
+    const updated = await this.repository.updateStockAlert(id, {
+      isResolved: true,
+      resolvedAt: new Date(),
     });
 
     return this.transformAlert(updated);
@@ -597,30 +409,14 @@ export class StockService {
    * PRODUCTION READY: Prevents overselling by reserving stock when order is created
    */
   async reserveProductStock(productId: string, quantity: number): Promise<void> {
-    await prisma.stock.update({
-      where: { productId },
-      data: {
-        reservedQuantity: {
-          increment: quantity,
-        },
-        lastUpdated: new Date(),
-      },
-    });
+    await this.repository.updateProductStockQuantity(productId, 0, quantity);
   }
 
   /**
    * Release reserved stock (when order cancelled or failed)
    */
   async releaseProductStock(productId: string, quantity: number): Promise<void> {
-    await prisma.stock.update({
-      where: { productId },
-      data: {
-        reservedQuantity: {
-          decrement: quantity,
-        },
-        lastUpdated: new Date(),
-      },
-    });
+    await this.repository.updateProductStockQuantity(productId, 0, -quantity);
   }
 
   /**

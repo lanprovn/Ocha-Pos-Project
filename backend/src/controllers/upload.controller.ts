@@ -3,9 +3,9 @@ import uploadService from '../services/upload.service';
 import env from '../config/env';
 import { BaseController } from './base.controller';
 import { AppError } from '../utils/errorHandler';
-import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants';
+import { HTTP_STATUS, SUCCESS_MESSAGES } from '../constants';
 import { z } from 'zod';
-import { ValidationSchemas, validateOrThrow } from '../utils/validation';
+import { validateOrThrow } from '../utils/validation';
 
 const filenameParamSchema = z.object({
   filename: z.string().min(1, 'Tên file không được để trống'),

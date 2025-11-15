@@ -1,22 +1,13 @@
-import prisma from '../config/database';
 import { CreateCategoryInput, UpdateCategoryInput } from '../types/product.types';
 import { AppError } from '../utils/errorHandler';
 import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
+import { categoryRepository } from '../repositories';
 
 export class CategoryService {
+  constructor(private repository = categoryRepository) {}
+
   async getAll() {
-    const categories = await prisma.category.findMany({
-      include: {
-        _count: {
-          select: {
-            products: true,
-          },
-        },
-      },
-      orderBy: {
-        name: 'asc',
-      },
-    });
+    const categories = await this.repository.findAllWithCount();
 
     return categories.map((category) => ({
       ...category,
@@ -25,22 +16,7 @@ export class CategoryService {
   }
 
   async getById(id: string) {
-    const category = await prisma.category.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            products: true,
-          },
-        },
-        products: {
-          take: 10,
-          orderBy: {
-            createdAt: 'desc',
-          },
-        },
-      },
-    });
+    const category = await this.repository.findByIdWithProducts(id);
 
     if (!category) {
       throw new AppError(ERROR_MESSAGES.CATEGORY_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
@@ -53,38 +29,27 @@ export class CategoryService {
   }
 
   async create(data: CreateCategoryInput) {
-    return prisma.category.create({
-      data,
-    });
+    return this.repository.create(data);
   }
 
   async update(id: string, data: UpdateCategoryInput) {
-    const category = await prisma.category.findUnique({
-      where: { id },
-    });
+    const category = await this.repository.findById(id);
 
     if (!category) {
       throw new AppError(ERROR_MESSAGES.CATEGORY_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    return prisma.category.update({
-      where: { id },
-      data,
-    });
+    return this.repository.update(id, data);
   }
 
   async delete(id: string) {
-    const category = await prisma.category.findUnique({
-      where: { id },
-    });
+    const category = await this.repository.findById(id);
 
     if (!category) {
       throw new AppError(ERROR_MESSAGES.CATEGORY_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    await prisma.category.delete({
-      where: { id },
-    });
+    await this.repository.delete(id);
 
     return { message: 'Category deleted successfully' };
   }

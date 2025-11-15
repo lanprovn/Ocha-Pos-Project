@@ -40,6 +40,10 @@ export interface StockFilters {
   productId?: string;
   ingredientId?: string;
   isRead?: boolean;
+  isResolved?: boolean;
+  type?: 'SALE' | 'PURCHASE' | 'ADJUSTMENT' | 'RETURN' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'OVERSTOCK';
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface CreateProductStockInput {

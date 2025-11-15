@@ -15,6 +15,7 @@ export const HTTP_STATUS = {
   CONFLICT: 409,
   UNPROCESSABLE_ENTITY: 422,
   INTERNAL_SERVER_ERROR: 500,
+  NOT_IMPLEMENTED: 501,
 } as const;
 
 // ===== Error Messages =====
@@ -89,6 +90,7 @@ export const SUCCESS_MESSAGES = {
 // ===== Order Status =====
 export const ORDER_STATUS = {
   CREATING: 'CREATING',
+  PENDING: 'PENDING',
   CONFIRMED: 'CONFIRMED',
   PREPARING: 'PREPARING',
   READY: 'READY',

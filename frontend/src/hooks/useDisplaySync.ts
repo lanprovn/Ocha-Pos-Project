@@ -14,17 +14,30 @@ export function useDisplaySync(): UseDisplaySyncReturn {
   // Sử dụng ref để tránh recreate channel mỗi lần render
   const channelRef = useRef<BroadcastChannel | null>(null);
   
-  if (!channelRef.current) {
-    try {
-      channelRef.current = new BroadcastChannel(DISPLAY_CHANNEL_NAME);
-    } catch (error) {
-      console.warn('Failed to create BroadcastChannel:', error);
-      channelRef.current = null;
+  // Initialize channel in useEffect to avoid issues during SSR or strict mode
+  useEffect(() => {
+    if (!channelRef.current) {
+      try {
+        channelRef.current = new BroadcastChannel(DISPLAY_CHANNEL_NAME);
+      } catch (error) {
+        console.warn('Failed to create BroadcastChannel:', error);
+        channelRef.current = null;
+      }
     }
-  }
+    
+    return () => {
+      // Cleanup on unmount
+      if (channelRef.current) {
+        try {
+          channelRef.current.close();
+        } catch (error) {
+          // Ignore errors during cleanup
+        }
+        channelRef.current = null;
+      }
+    };
+  }, []);
   
-  const channel = channelRef.current;
-
   /**
    * Gửi dữ liệu giỏ hàng đến Customer Display
    * @param cartItems - Danh sách sản phẩm trong giỏ
@@ -62,12 +75,25 @@ export function useDisplaySync(): UseDisplaySyncReturn {
         data: displayData
       };
       
-      // Check if channel is available before posting message
+      // Get channel from ref (always get latest)
+      const channel = channelRef.current;
+      
+      // Check if channel is available and open before posting message
       if (channel) {
         try {
+          // Check if channel is still open (BroadcastChannel doesn't have readyState, so we use try-catch)
           channel.postMessage(message);
-        } catch (error) {
-          console.warn('Failed to post message to channel:', error);
+        } catch (error: any) {
+          // Channel might be closed, recreate it
+          if (error.name === 'InvalidStateError' || error.message?.includes('closed')) {
+            try {
+              channelRef.current = new BroadcastChannel(DISPLAY_CHANNEL_NAME);
+              channelRef.current.postMessage(message);
+            } catch (retryError) {
+              // Silently fail - localStorage fallback will handle it
+            }
+          }
+          // Silently fail - localStorage fallback will handle it
         }
       }
 
@@ -98,7 +124,7 @@ export function useDisplaySync(): UseDisplaySyncReturn {
         console.error('Failed to save to localStorage:', storageError);
       }
     }
-  }, [channel]);
+  }, []);
 
   /**
    * Lắng nghe dữ liệu từ POS
@@ -116,6 +142,7 @@ export function useDisplaySync(): UseDisplaySyncReturn {
     };
 
     // Lắng nghe BroadcastChannel
+    const channel = channelRef.current;
     try {
       if (channel) {
         channel.addEventListener('message', handleMessage);
@@ -198,6 +225,7 @@ export function useDisplaySync(): UseDisplaySyncReturn {
 
     // Cleanup function
     return () => {
+      const channel = channelRef.current;
       try {
         if (channel) {
           channel.removeEventListener('message', handleMessage);
@@ -211,20 +239,8 @@ export function useDisplaySync(): UseDisplaySyncReturn {
         clearInterval(intervalId);
       }
     };
-  }, [channel]);
-
-  // Cleanup khi component unmount
-  useEffect(() => {
-    return () => {
-      try {
-        if (channelRef.current) {
-          channelRef.current.close();
-        }
-      } catch (error) {
-        console.warn('Failed to close channel:', error);
-      }
-    };
   }, []);
+
 
   return {
     sendToDisplay,

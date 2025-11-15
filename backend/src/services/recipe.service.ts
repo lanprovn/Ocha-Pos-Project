@@ -1,42 +1,24 @@
-import prisma from '../config/database';
 import { CreateRecipeInput, UpdateRecipeInput, RecipeItem } from '../types/recipe.types';
-import { Decimal } from '@prisma/client/runtime/library';
 import { AppError } from '../utils/errorHandler';
 import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
+import { recipeRepository } from '../repositories';
 
 export class RecipeService {
+  constructor(private repository = recipeRepository) {}
+
   /**
    * Create recipe item
    */
   async create(data: CreateRecipeInput): Promise<RecipeItem> {
     // Check if recipe already exists
-    const existing = await prisma.productRecipe.findUnique({
-      where: {
-        productId_ingredientId: {
-          productId: data.productId,
-          ingredientId: data.ingredientId,
-        },
-      },
-    });
+    const existing = await this.repository.findByProductAndIngredient(data.productId, data.ingredientId);
 
     if (existing) {
       // Update existing recipe
       return this.update(existing.id, { quantity: data.quantity, unit: data.unit });
     }
 
-    const recipe = await prisma.productRecipe.create({
-      data: {
-        productId: data.productId,
-        ingredientId: data.ingredientId,
-        quantity: new Decimal(data.quantity),
-        unit: data.unit,
-      },
-      include: {
-        product: true,
-        ingredient: true,
-      },
-    });
-
+    const recipe = await this.repository.create(data);
     return this.transformRecipe(recipe);
   }
 
@@ -44,17 +26,7 @@ export class RecipeService {
    * Get all recipes for a product
    */
   async getByProduct(productId: string): Promise<RecipeItem[]> {
-    const recipes = await prisma.productRecipe.findMany({
-      where: { productId },
-      include: {
-        product: true,
-        ingredient: true,
-      },
-      orderBy: {
-        createdAt: 'asc',
-      },
-    });
-
+    const recipes = await this.repository.findByProductId(productId);
     return recipes.map((recipe) => this.transformRecipe(recipe));
   }
 
@@ -62,17 +34,7 @@ export class RecipeService {
    * Get all recipes for an ingredient
    */
   async getByIngredient(ingredientId: string): Promise<RecipeItem[]> {
-    const recipes = await prisma.productRecipe.findMany({
-      where: { ingredientId },
-      include: {
-        product: true,
-        ingredient: true,
-      },
-      orderBy: {
-        createdAt: 'asc',
-      },
-    });
-
+    const recipes = await this.repository.findByIngredientId(ingredientId);
     return recipes.map((recipe) => this.transformRecipe(recipe));
   }
 
@@ -80,13 +42,7 @@ export class RecipeService {
    * Get recipe by ID
    */
   async getById(id: string): Promise<RecipeItem> {
-    const recipe = await prisma.productRecipe.findUnique({
-      where: { id },
-      include: {
-        product: true,
-        ingredient: true,
-      },
-    });
+    const recipe = await this.repository.findById(id);
 
     if (!recipe) {
       throw new AppError(ERROR_MESSAGES.RECIPE_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
@@ -100,31 +56,13 @@ export class RecipeService {
    */
   async update(id: string, data: UpdateRecipeInput): Promise<RecipeItem> {
     // Check if recipe exists
-    const existing = await prisma.productRecipe.findUnique({
-      where: { id },
-    });
+    const existing = await this.repository.findById(id);
 
     if (!existing) {
       throw new AppError(ERROR_MESSAGES.RECIPE_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    const updateData: any = {};
-    if (data.quantity !== undefined) {
-      updateData.quantity = new Decimal(data.quantity);
-    }
-    if (data.unit !== undefined) {
-      updateData.unit = data.unit;
-    }
-
-    const recipe = await prisma.productRecipe.update({
-      where: { id },
-      data: updateData,
-      include: {
-        product: true,
-        ingredient: true,
-      },
-    });
-
+    const recipe = await this.repository.update(id, data);
     return this.transformRecipe(recipe);
   }
 
@@ -133,44 +71,27 @@ export class RecipeService {
    */
   async delete(id: string): Promise<void> {
     // Check if recipe exists
-    const existing = await prisma.productRecipe.findUnique({
-      where: { id },
-    });
+    const existing = await this.repository.findById(id);
 
     if (!existing) {
       throw new AppError(ERROR_MESSAGES.RECIPE_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    await prisma.productRecipe.delete({
-      where: { id },
-    });
+    await this.repository.delete(id);
   }
 
   /**
    * Delete all recipes for a product
    */
   async deleteByProduct(productId: string): Promise<void> {
-    await prisma.productRecipe.deleteMany({
-      where: { productId },
-    });
+    await this.repository.deleteByProductId(productId);
   }
 
   /**
    * Get recipes for multiple products (for order processing)
    */
   async getByProducts(productIds: string[]): Promise<RecipeItem[]> {
-    const recipes = await prisma.productRecipe.findMany({
-      where: {
-        productId: {
-          in: productIds,
-        },
-      },
-      include: {
-        product: true,
-        ingredient: true,
-      },
-    });
-
+    const recipes = await this.repository.findByProductIds(productIds);
     return recipes.map((recipe) => this.transformRecipe(recipe));
   }
 

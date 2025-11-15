@@ -3,6 +3,9 @@
  * Ensures valid order status transitions and prevents invalid states
  */
 
+import { AppError } from './errorHandler';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
+
 export type OrderStatus = 
   | 'CREATING' 
   | 'PENDING' 

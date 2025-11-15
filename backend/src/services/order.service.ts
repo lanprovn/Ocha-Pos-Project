@@ -1,16 +1,22 @@
-import prisma from '../config/database';
 import { CreateOrderInput, OrderFilters, UpdateOrderStatusInput, UpdateOrderInput } from '../types/order.types';
 import { CreateStockTransactionInput } from '../types/stock.types';
-import { Decimal } from '@prisma/client/runtime/library';
 import recipeService from './recipe.service';
 import stockService from './stock.service';
 import logger from '../utils/logger';
 import { emitDashboardUpdate, emitOrderStatusChanged } from '../socket/socket.io';
 import { validateTransition, type OrderStatus } from '../utils/orderStateMachine';
 import { AppError } from '../utils/errorHandler';
-import { HTTP_STATUS, ERROR_MESSAGES, ORDER_STATUS } from '../constants';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
+import { orderRepository, productRepository, stockRepository } from '../repositories';
+import prisma from '../config/database';
 
 export class OrderService {
+  constructor(
+    private repository = orderRepository,
+    private productRepo = productRepository,
+    private stockRepo = stockRepository
+  ) {}
+
   /**
    * Generate unique order number
    * Optimized: Uses timestamp + random to avoid collisions and reduce database queries
@@ -26,59 +32,15 @@ export class OrderService {
    * Tìm draft order theo orderCreator và orderCreatorName, nếu có thì update, không thì tạo mới
    */
   async createOrUpdateDraft(data: CreateOrderInput) {
-    // Calculate total amount from items
-    const totalAmount = data.items.reduce((sum, item) => {
-      return sum + item.subtotal;
-    }, 0);
-
     // Tìm draft order đang tạo (status = CREATING) của cùng một người tạo
-    const existingDraft = await prisma.order.findFirst({
-      where: {
-        status: 'CREATING',
-        orderCreator: data.orderCreator || 'STAFF',
-        orderCreatorName: data.orderCreatorName || null,
-      },
-      include: {
-        items: true,
-      },
-    });
+    const existingDraft = await this.repository.findDraftByCreator(
+      data.orderCreator || 'STAFF',
+      data.orderCreatorName || null
+    );
 
     if (existingDraft) {
       // Update existing draft order
-      // Xóa items cũ và tạo items mới
-      await prisma.orderItem.deleteMany({
-        where: { orderId: existingDraft.id },
-      });
-
-      const updated = await prisma.order.update({
-        where: { id: existingDraft.id },
-        data: {
-          totalAmount: new Decimal(totalAmount),
-          customerName: data.customerName || null,
-          customerPhone: data.customerPhone || null,
-          customerTable: data.customerTable || null,
-          notes: data.notes || null,
-          items: {
-            create: data.items.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: new Decimal(item.price),
-              subtotal: new Decimal(item.subtotal),
-              selectedSize: item.selectedSize || null,
-              selectedToppings: item.selectedToppings || [],
-              note: item.note || null,
-            })),
-          },
-        },
-        include: {
-          items: {
-            include: {
-              product: true,
-            },
-          },
-        },
-      });
-
+      const updated = await this.repository.updateDraft(existingDraft.id, data);
       return this.transformOrder(updated);
     } else {
       // Create new draft order
@@ -86,47 +48,18 @@ export class OrderService {
       
       // OPTIMIZED: Order number now includes timestamp + random, collision probability is extremely low
       // Only check once instead of looping
-      const existing = await prisma.order.findUnique({
-        where: { orderNumber },
-      });
+      const existing = await this.repository.findByOrderNumber(orderNumber);
       
       // If collision (extremely rare), regenerate once
       if (existing) {
         orderNumber = this.generateOrderNumber();
       }
 
-      const order = await prisma.order.create({
-        data: {
-          orderNumber,
-          status: 'CREATING',
-          totalAmount: new Decimal(totalAmount),
-          customerName: data.customerName || null,
-          customerPhone: data.customerPhone || null,
-          customerTable: data.customerTable || null,
-          notes: data.notes || null,
-          paymentMethod: null,
-          paymentStatus: 'PENDING',
-          orderCreator: data.orderCreator || 'STAFF',
-          orderCreatorName: data.orderCreatorName || null,
-          items: {
-            create: data.items.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: new Decimal(item.price),
-              subtotal: new Decimal(item.subtotal),
-              selectedSize: item.selectedSize || null,
-              selectedToppings: item.selectedToppings || [],
-              note: item.note || null,
-            })),
-          },
-        },
-        include: {
-          items: {
-            include: {
-              product: true,
-            },
-          },
-        },
+      const order = await this.repository.createWithItems({
+        ...data,
+        orderNumber,
+        status: 'CREATING',
+        paymentStatus: 'PENDING',
       });
 
       return this.transformOrder(order);
@@ -138,13 +71,7 @@ export class OrderService {
    */
   async deleteDraftOrders(orderCreator: 'STAFF' | 'CUSTOMER', orderCreatorName?: string | null) {
     try {
-      await prisma.order.deleteMany({
-        where: {
-          status: 'CREATING',
-          orderCreator,
-          orderCreatorName: orderCreatorName || null,
-        },
-      });
+      await this.repository.deleteDraftsByCreator(orderCreator, orderCreatorName);
     } catch (error: any) {
       logger.error('Error deleting draft orders', { error: error.message, stack: error.stack });
       // Không throw error để không block flow
@@ -274,13 +201,8 @@ export class OrderService {
     // OPTIMIZED: Batch query tất cả stocks một lần thay vì query từng item (fix N+1 problem)
     const productIds = data.items.map(item => item.productId);
     const [stocks, products] = await Promise.all([
-      prisma.stock.findMany({
-        where: { productId: { in: productIds } },
-      }),
-      prisma.product.findMany({
-        where: { id: { in: productIds } },
-        select: { id: true, name: true },
-      }),
+      this.stockRepo.findProductStocksByProductIds(productIds),
+      this.productRepo.findByIds(productIds),
     ]);
 
     // Create maps for quick lookup
@@ -319,18 +241,11 @@ export class OrderService {
         })
     );
 
-    // Calculate total amount from items
-    const totalAmount = data.items.reduce((sum, item) => {
-      return sum + item.subtotal;
-    }, 0);
-
     // Generate order number
     // OPTIMIZED: Order number now includes timestamp + random, collision probability is extremely low
     // Only check once instead of looping
     let orderNumber = this.generateOrderNumber();
-    const existing = await prisma.order.findUnique({
-      where: { orderNumber },
-    });
+    const existing = await this.repository.findByOrderNumber(orderNumber);
     
     // If collision (extremely rare), regenerate once
     if (existing) {
@@ -338,39 +253,11 @@ export class OrderService {
     }
 
     // Create order with items
-    const order = await prisma.order.create({
-      data: {
-        orderNumber,
-        status: 'PENDING',
-        totalAmount: new Decimal(totalAmount),
-        customerName: data.customerName || null,
-        customerPhone: data.customerPhone || null,
-        customerTable: data.customerTable || null,
-        notes: data.notes || null,
-        paymentMethod: data.paymentMethod || null,
-        paymentStatus: data.paymentStatus || 'PENDING',
-        orderCreator: data.orderCreator || 'STAFF',
-        orderCreatorName: data.orderCreatorName || null,
-        paidAt: data.paymentStatus === 'SUCCESS' ? new Date() : null,
-        items: {
-          create: data.items.map((item) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            price: new Decimal(item.price),
-            subtotal: new Decimal(item.subtotal),
-            selectedSize: item.selectedSize || null,
-            selectedToppings: item.selectedToppings || [],
-            note: item.note || null,
-          })),
-        },
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
+    const order = await this.repository.createWithItems({
+      ...data,
+      orderNumber,
+      status: 'PENDING',
+      paymentStatus: data.paymentStatus || 'PENDING',
     });
 
     return this.transformOrder(order);
@@ -381,52 +268,7 @@ export class OrderService {
    * OPTIMIZED: Added pagination to prevent loading too many orders at once
    */
   async findAll(filters?: OrderFilters, page: number = 1, limit: number = 50) {
-    const skip = (page - 1) * limit;
-    const where: any = {};
-
-    if (filters?.status) {
-      where.status = filters.status;
-    }
-
-    if (filters?.paymentMethod) {
-      where.paymentMethod = filters.paymentMethod;
-    }
-
-    if (filters?.paymentStatus) {
-      where.paymentStatus = filters.paymentStatus;
-    }
-
-    if (filters?.startDate) {
-      const startDate = new Date(filters.startDate);
-      startDate.setHours(0, 0, 0, 0);
-      where.createdAt = { ...where.createdAt, gte: startDate };
-    }
-
-    if (filters?.endDate) {
-      const endDate = new Date(filters.endDate);
-      endDate.setHours(23, 59, 59, 999);
-      where.createdAt = { ...where.createdAt, lte: endDate };
-    }
-
-    // Get total count and orders in parallel
-    const [total, orders] = await Promise.all([
-      prisma.order.count({ where }),
-      prisma.order.findMany({
-        where,
-        skip,
-        take: limit,
-        include: {
-          items: {
-            include: {
-              product: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      }),
-    ]);
+    const { orders, total } = await this.repository.findManyWithFilters(filters, page, limit);
 
     return {
       data: orders.map((order) => this.transformOrder(order)),
@@ -444,44 +286,9 @@ export class OrderService {
    * Chỉ load draft orders (CREATING) được tạo trong 1 giờ gần nhất để tránh load draft orders cũ
    */
   async findToday() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
     // Thời gian 1 giờ trước (để filter draft orders cũ)
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-
-    const orders = await prisma.order.findMany({
-      where: {
-        createdAt: {
-          gte: today,
-          lt: tomorrow,
-        },
-        // Chỉ load draft orders (CREATING) được tạo trong 1 giờ gần nhất
-        // Các orders khác (PENDING, COMPLETED, etc.) load bình thường
-        OR: [
-          { status: { not: 'CREATING' } },
-          {
-            status: 'CREATING',
-            createdAt: {
-              gte: oneHourAgo,
-            },
-          },
-        ],
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
+    const orders = await this.repository.findToday(oneHourAgo);
     return orders.map((order) => this.transformOrder(order));
   }
 
@@ -489,30 +296,7 @@ export class OrderService {
    * Get orders by date (YYYY-MM-DD)
    */
   async findByDate(date: string) {
-    const startDate = new Date(date);
-    startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(date);
-    endDate.setHours(23, 59, 59, 999);
-
-    const orders = await prisma.order.findMany({
-      where: {
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
+    const orders = await this.repository.findByDate(date);
     return orders.map((order) => this.transformOrder(order));
   }
 
@@ -522,16 +306,7 @@ export class OrderService {
    * Nếu đã thanh toán thì cần refund
    */
   async cancelOrder(orderId: string, reason?: string) {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
-    });
+    const order = await this.repository.findByIdWithItems(orderId);
 
     if (!order) {
       throw new AppError(ERROR_MESSAGES.ORDER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
@@ -606,16 +381,7 @@ export class OrderService {
    * Chỉ có thể refund order đã thanh toán (paymentStatus = SUCCESS)
    */
   async refundOrder(orderId: string, refundReason?: string) {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
-    });
+    const order = await this.repository.findByIdWithItems(orderId);
 
     if (!order) {
       throw new AppError(ERROR_MESSAGES.ORDER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
@@ -627,21 +393,20 @@ export class OrderService {
     }
 
     // Update order: set paymentStatus to FAILED và status to CANCELLED
-    const refundedOrder = await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        paymentStatus: 'FAILED',
-        status: 'CANCELLED',
-        notes: refundReason ? `${order.notes || ''}\n[REFUNDED]: ${refundReason}`.trim() : order.notes,
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
+    const refundedOrder = await this.repository.updateOrder(orderId, {
+      paymentStatus: 'FAILED',
+      status: 'CANCELLED',
     });
+
+    // Update notes separately
+    if (refundReason) {
+      await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          notes: `${order.notes || ''}\n[REFUNDED]: ${refundReason}`.trim(),
+        },
+      });
+    }
 
     logger.info('Order refunded', { orderId, orderNumber: order.orderNumber, refundReason });
 
@@ -652,16 +417,7 @@ export class OrderService {
    * Get order by ID
    */
   async findById(id: string) {
-    const order = await prisma.order.findUnique({
-      where: { id },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
-    });
+    const order = await this.repository.findByIdWithItems(id);
 
     if (!order) {
       throw new AppError(ERROR_MESSAGES.ORDER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
@@ -674,51 +430,7 @@ export class OrderService {
    * Get order history with pagination
    */
   async getHistory(page: number = 1, limit: number = 20, filters?: OrderFilters) {
-    const skip = (page - 1) * limit;
-
-    const where: any = {};
-
-    // Apply filters
-    if (filters?.status) {
-      where.status = filters.status;
-    }
-    if (filters?.startDate || filters?.endDate) {
-      where.createdAt = {};
-      if (filters.startDate) {
-        where.createdAt.gte = new Date(filters.startDate);
-      }
-      if (filters.endDate) {
-        const endDate = new Date(filters.endDate);
-        endDate.setHours(23, 59, 59, 999);
-        where.createdAt.lte = endDate;
-      }
-    }
-    if (filters?.paymentMethod) {
-      where.paymentMethod = filters.paymentMethod;
-    }
-    if (filters?.paymentStatus) {
-      where.paymentStatus = filters.paymentStatus;
-    }
-
-    // Get total count
-    const total = await prisma.order.count({ where });
-
-    // Get orders
-    const orders = await prisma.order.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
-    });
+    const { orders, total } = await this.repository.findManyWithFilters(filters, page, limit);
 
     return {
       data: orders.map((order) => this.transformOrder(order)),
@@ -736,9 +448,7 @@ export class OrderService {
    * PRODUCTION READY: Validates state transitions using state machine
    */
   async updateStatus(id: string, data: UpdateOrderStatusInput) {
-    const order = await prisma.order.findUnique({
-      where: { id },
-    });
+    const order = await this.repository.findById(id);
 
     if (!order) {
       throw new AppError(ERROR_MESSAGES.ORDER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
@@ -758,23 +468,11 @@ export class OrderService {
       throw error;
     }
 
-    const updated = await prisma.order.update({
-      where: { id },
-      data: {
-        status: data.status,
-        ...(data.status === 'COMPLETED' && !order.paidAt && {
-          paidAt: new Date(),
-          paymentStatus: 'SUCCESS',
-        }),
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
-    });
+    const paymentData = data.status === 'COMPLETED' && !order.paidAt
+      ? { paymentStatus: 'SUCCESS' as const }
+      : undefined;
+
+    const updated = await this.repository.updateStatus(id, data.status, paymentData);
 
     // Nếu order chuyển sang COMPLETED:
     // 1. Xóa draft orders của cùng orderCreator
@@ -937,32 +635,13 @@ export class OrderService {
    * Update order (general update)
    */
   async update(id: string, data: UpdateOrderInput) {
-    const order = await prisma.order.findUnique({
-      where: { id },
-    });
+    const order = await this.repository.findById(id);
 
     if (!order) {
       throw new AppError(ERROR_MESSAGES.ORDER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    const updateData: any = {};
-    if (data.paymentStatus !== undefined) updateData.paymentStatus = data.paymentStatus;
-    if (data.paymentTransactionId !== undefined) updateData.paymentTransactionId = data.paymentTransactionId;
-    if (data.paymentDate !== undefined) updateData.paymentDate = data.paymentDate;
-    if (data.status !== undefined) updateData.status = data.status;
-
-    const updated = await prisma.order.update({
-      where: { id },
-      data: updateData,
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
-    });
-
+    const updated = await this.repository.updateOrder(id, data);
     return this.transformOrder(updated);
   }
 
@@ -970,16 +649,7 @@ export class OrderService {
    * Get order by orderNumber (for payment callback)
    */
   async getByOrderNumber(orderNumber: string) {
-    const order = await prisma.order.findUnique({
-      where: { orderNumber },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
-    });
+    const order = await this.repository.findByOrderNumber(orderNumber);
 
     if (!order) {
       return null;

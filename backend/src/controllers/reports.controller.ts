@@ -15,7 +15,7 @@ export class ReportsController extends BaseController {
     const query = validateOrThrow(revenueSummaryQuerySchema, req.query);
     
     const summary = await reportsService.getRevenueSummary(
-      query.period,
+      query.period || 'day',
       query.startDate,
       query.endDate
     );

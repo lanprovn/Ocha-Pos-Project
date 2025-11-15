@@ -1,10 +1,11 @@
-import prisma from '../config/database';
 import { CreateProductInput, UpdateProductInput } from '../types/product.types';
-import { Decimal } from '@prisma/client/runtime/library';
 import { AppError } from '../utils/errorHandler';
 import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
+import { productRepository } from '../repositories';
 
 export class ProductService {
+  constructor(private repository = productRepository) {}
+
   /**
    * Get all products with optional pagination
    * OPTIMIZED: Added pagination to prevent loading too many products at once
@@ -12,23 +13,7 @@ export class ProductService {
   async getAll(page?: number, limit?: number) {
     // If pagination params provided, return paginated result
     if (page !== undefined && limit !== undefined) {
-      const skip = (page - 1) * limit;
-      
-      const [total, products] = await Promise.all([
-        prisma.product.count(),
-        prisma.product.findMany({
-          skip,
-          take: limit,
-          include: {
-            category: true,
-            sizes: true,
-            toppings: true,
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-        }),
-      ]);
+      const { products, total } = await this.repository.findManyPaginated(page, limit);
 
       return {
         data: products,
@@ -42,27 +27,11 @@ export class ProductService {
     }
 
     // Backward compatibility: return all products if no pagination params
-    return prisma.product.findMany({
-      include: {
-        category: true,
-        sizes: true,
-        toppings: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    return this.repository.findAll(true);
   }
 
   async getById(id: string) {
-    const product = await prisma.product.findUnique({
-      where: { id },
-      include: {
-        category: true,
-        sizes: true,
-        toppings: true,
-      },
-    });
+    const product = await this.repository.findByIdWithRelations(id);
 
     if (!product) {
       throw new AppError(ERROR_MESSAGES.PRODUCT_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
@@ -72,85 +41,27 @@ export class ProductService {
   }
 
   async create(data: CreateProductInput) {
-    const { sizes, toppings, ...productData } = data;
-
-    const product = await prisma.product.create({
-      data: {
-        ...productData,
-        price: new Decimal(productData.price),
-        rating: productData.rating ? new Decimal(productData.rating) : null,
-        discount: productData.discount ? new Decimal(productData.discount) : null,
-        sizes: sizes
-          ? {
-              create: sizes.map((s) => ({
-                name: s.name,
-                extraPrice: new Decimal(s.extraPrice),
-              })),
-            }
-          : undefined,
-        toppings: toppings
-          ? {
-              create: toppings.map((t) => ({
-                name: t.name,
-                extraPrice: new Decimal(t.extraPrice),
-              })),
-            }
-          : undefined,
-      },
-      include: {
-        category: true,
-        sizes: true,
-        toppings: true,
-      },
-    });
-
-    return product;
+    return this.repository.create(data);
   }
 
   async update(id: string, data: UpdateProductInput) {
-    const product = await prisma.product.findUnique({
-      where: { id },
-    });
+    const product = await this.repository.findById(id);
 
     if (!product) {
       throw new AppError(ERROR_MESSAGES.PRODUCT_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    const updateData: any = { ...data };
-    
-    if (data.price !== undefined) {
-      updateData.price = new Decimal(data.price);
-    }
-    if (data.rating !== undefined) {
-      updateData.rating = data.rating ? new Decimal(data.rating) : null;
-    }
-    if (data.discount !== undefined) {
-      updateData.discount = data.discount ? new Decimal(data.discount) : null;
-    }
-
-    return prisma.product.update({
-      where: { id },
-      data: updateData,
-      include: {
-        category: true,
-        sizes: true,
-        toppings: true,
-      },
-    });
+    return this.repository.update(id, data);
   }
 
   async delete(id: string) {
-    const product = await prisma.product.findUnique({
-      where: { id },
-    });
+    const product = await this.repository.findById(id);
 
     if (!product) {
       throw new AppError(ERROR_MESSAGES.PRODUCT_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    await prisma.product.delete({
-      where: { id },
-    });
+    await this.repository.delete(id);
 
     return { message: 'Product deleted successfully' };
   }

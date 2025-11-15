@@ -12,6 +12,10 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Mật khẩu là bắt buộc.'),
 });
 
+const refreshTokenSchema = z.object({
+  refreshToken: z.string().min(1, 'Refresh token là bắt buộc.'),
+});
+
 export class AuthController extends BaseController {
   /**
    * Login user
@@ -25,6 +29,20 @@ export class AuthController extends BaseController {
     
     // Send success response
     this.success(res, result, 'Đăng nhập thành công.');
+  });
+
+  /**
+   * Refresh access token
+   */
+  refreshToken = this.asyncHandler(async (req: Request, res: Response) => {
+    // Validate input
+    const validated = validateOrThrow(refreshTokenSchema, req.body);
+    
+    // Call service
+    const result = await authService.refreshToken(validated);
+    
+    // Send success response
+    this.success(res, result, 'Token đã được làm mới thành công.');
   });
 
   /**

@@ -43,6 +43,18 @@ async function startServer() {
       });
       console.log(`✅ Server is running on port ${PORT}`);
     });
+
+    // Handle server errors
+    httpServer.on('error', (error: any) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use. Please stop the other process or use a different port.`);
+        logger.error(`Port ${PORT} is already in use`, { error: error.message });
+      } else {
+        console.error('❌ Server error:', error.message);
+        logger.error('Server error', { error: error.message, stack: error.stack });
+      }
+      process.exit(1);
+    });
   } catch (error: any) {
     console.error('❌ Failed to start server:');
     console.error(error.message);
