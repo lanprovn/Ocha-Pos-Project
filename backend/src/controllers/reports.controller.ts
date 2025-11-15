@@ -1,31 +1,47 @@
 import { Request, Response } from 'express';
 import reportsService from '../services/reports.service';
+import { BaseController } from './base.controller';
+import { z } from 'zod';
+import { ValidationSchemas, validateOrThrow } from '../utils/validation';
 
-export class ReportsController {
-  async getRevenueSummary(req: Request, res: Response) {
-    try {
-      const period = (req.query.period as 'day' | 'week' | 'month') || 'day';
-      const startDate = req.query.startDate as string | undefined;
-      const endDate = req.query.endDate as string | undefined;
-      
-      const summary = await reportsService.getRevenueSummary(period, startDate, endDate);
-      res.json(summary);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  }
+const revenueSummaryQuerySchema = z.object({
+  period: z.enum(['day', 'week', 'month']).optional().default('day'),
+  startDate: ValidationSchemas.dateString.optional(),
+  endDate: ValidationSchemas.dateString.optional(),
+});
 
-  async exportOrders(req: Request, res: Response) {
-    try {
-      const filters: any = {};
+export class ReportsController extends BaseController {
+  getRevenueSummary = this.asyncHandler(async (req: Request, res: Response) => {
+    const query = validateOrThrow(revenueSummaryQuerySchema, req.query);
+    
+    const summary = await reportsService.getRevenueSummary(
+      query.period,
+      query.startDate,
+      query.endDate
+    );
+    
+    this.success(res, summary);
+  });
 
-      if (req.query.status) filters.status = req.query.status;
-      if (req.query.startDate) filters.startDate = req.query.startDate;
-      if (req.query.endDate) filters.endDate = req.query.endDate;
-      if (req.query.paymentMethod) filters.paymentMethod = req.query.paymentMethod;
-      if (req.query.paymentStatus) filters.paymentStatus = req.query.paymentStatus;
+  exportOrders = this.asyncHandler(async (req: Request, res: Response) => {
+    const filtersSchema = z.object({
+      status: z.string().optional(),
+      startDate: ValidationSchemas.dateString.optional(),
+      endDate: ValidationSchemas.dateString.optional(),
+      paymentMethod: z.string().optional(),
+      paymentStatus: z.string().optional(),
+    });
 
-      const exportData = await reportsService.exportOrders(filters);
+    const query = validateOrThrow(filtersSchema, req.query);
+    const filters: Record<string, string> = {};
+    
+    if (query.status) filters.status = query.status;
+    if (query.startDate) filters.startDate = query.startDate;
+    if (query.endDate) filters.endDate = query.endDate;
+    if (query.paymentMethod) filters.paymentMethod = query.paymentMethod;
+    if (query.paymentStatus) filters.paymentStatus = query.paymentStatus;
+
+    const exportData = await reportsService.exportOrders(filters);
 
       // Set headers for CSV download with UTF-8 encoding
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -79,10 +95,7 @@ export class ReportsController {
       const csvContent = BOM + csvRows.join('\n');
 
       res.send(csvContent);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  }
+  });
 }
 
 export default new ReportsController();

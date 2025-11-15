@@ -37,6 +37,7 @@ export const ERROR_MESSAGES = {
   PRODUCT_NOT_FOUND: 'Không tìm thấy sản phẩm.',
   ORDER_NOT_FOUND: 'Không tìm thấy đơn hàng.',
   CATEGORY_NOT_FOUND: 'Không tìm thấy danh mục.',
+  RECIPE_NOT_FOUND: 'Không tìm thấy công thức.',
   
   // Database
   DATABASE_ERROR: 'Lỗi kết nối cơ sở dữ liệu. Vui lòng thử lại sau.',
@@ -82,6 +83,7 @@ export const SUCCESS_MESSAGES = {
   ORDER_UPDATED: 'Cập nhật đơn hàng thành công.',
   ORDER_CANCELLED: 'Hủy đơn hàng thành công.',
   PAYMENT_SUCCESS: 'Thanh toán thành công.',
+  FILE_UPLOADED: 'Upload file thành công.',
 } as const;
 
 // ===== Order Status =====
@@ -98,10 +100,10 @@ export type OrderStatusType = typeof ORDER_STATUS[keyof typeof ORDER_STATUS];
 
 // ===== Payment Status =====
 export const PAYMENT_STATUS = {
-  PENDING: 'pending',
-  SUCCESS: 'success',
-  FAILED: 'failed',
-  REFUNDED: 'refunded',
+  PENDING: 'PENDING',
+  SUCCESS: 'SUCCESS',
+  FAILED: 'FAILED',
+  REFUNDED: 'REFUNDED',
 } as const;
 
 export type PaymentStatusType = typeof PAYMENT_STATUS[keyof typeof PAYMENT_STATUS];

@@ -3,6 +3,8 @@ import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import logger from '../utils/logger';
+import { AppError } from '../utils/errorHandler';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
 
 // Đảm bảo thư mục uploads tồn tại
 const uploadsDir = path.join(__dirname, '../../uploads/images');
@@ -67,18 +69,17 @@ export class UploadService {
   /**
    * Xóa file
    */
-  deleteFile(filename: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const filePath = this.getFilePath(filename);
-      
-      if (!fs.existsSync(filePath)) {
-        reject(new Error('File không tồn tại'));
-        return;
-      }
+  async deleteFile(filename: string): Promise<void> {
+    const filePath = this.getFilePath(filename);
+    
+    if (!fs.existsSync(filePath)) {
+      throw new AppError(ERROR_MESSAGES.FILE_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
+    }
 
+    return new Promise((resolve, reject) => {
       fs.unlink(filePath, (error) => {
         if (error) {
-          reject(error);
+          reject(new AppError(ERROR_MESSAGES.FILE_UPLOAD_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR));
         } else {
           resolve();
         }

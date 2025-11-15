@@ -41,12 +41,12 @@
 - [x] **UserController** - ✅ Completed
 - [x] **DashboardController** - ✅ Completed
 - [x] **StockController** - ✅ Completed
-- [x] **OrderController** - ✅ Completed (already refactored, improved orderStateMachine)
-- [ ] PaymentController - Pending
-- [ ] ReportsController - Pending
-- [ ] UploadController - Pending
-- [ ] RecipeController - Pending
-- [ ] QRController - Pending
+- [x] **OrderController** - ✅ Completed (most complex)
+- [x] **PaymentController** - ✅ Completed
+- [x] **ReportsController** - ✅ Completed
+- [x] **UploadController** - ✅ Completed
+- [x] **RecipeController** - ✅ Completed
+- [x] **QRController** - ✅ Completed
 
 ### 2. Service Layer Improvements
 - [x] Better error handling trong services (sử dụng AppError)
@@ -54,6 +54,8 @@
 - [x] **ProductService** - ✅ Updated to use AppError
 - [x] **UserService** - ✅ Updated to use AppError
 - [x] **StockService** - ✅ Updated to use AppError
+- [x] **RecipeService** - ✅ Updated to use AppError
+- [x] **UploadService** - ✅ Updated to use AppError
 - [ ] Tạo base service class (nếu cần)
 - [ ] Standardize service return types
 - [ ] Extract common business logic

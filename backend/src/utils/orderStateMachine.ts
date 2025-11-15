@@ -35,9 +35,6 @@ export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
   return ORDER_STATE_MACHINE[from].includes(to);
 }
 
-import { AppError } from './errorHandler';
-import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
-
 /**
  * Validate order state transition
  * Throws error if transition is invalid

@@ -1,125 +1,89 @@
 import { Request, Response } from 'express';
 import recipeService from '../services/recipe.service';
 import { z } from 'zod';
+import { BaseController } from './base.controller';
+import { ValidationSchemas, validateOrThrow } from '../utils/validation';
+import { SUCCESS_MESSAGES } from '../constants';
 
 const createRecipeSchema = z.object({
-  body: z.object({
-    productId: z.string().uuid(),
-    ingredientId: z.string().uuid(),
-    quantity: z.number().positive(),
-    unit: z.string().min(1),
-  }),
+  productId: ValidationSchemas.uuid,
+  ingredientId: ValidationSchemas.uuid,
+  quantity: ValidationSchemas.positiveNumber,
+  unit: z.string().min(1, 'Đơn vị không được để trống'),
 });
 
 const updateRecipeSchema = z.object({
-  body: z.object({
-    quantity: z.number().positive().optional(),
-    unit: z.string().min(1).optional(),
-  }),
-  params: z.object({
-    id: z.string().uuid(),
-  }),
+  quantity: ValidationSchemas.positiveNumber.optional(),
+  unit: z.string().min(1, 'Đơn vị không được để trống').optional(),
 });
 
-export class RecipeController {
+const idParamSchema = z.object({
+  id: ValidationSchemas.uuid,
+});
+
+const productIdParamSchema = z.object({
+  productId: ValidationSchemas.uuid,
+});
+
+const ingredientIdParamSchema = z.object({
+  ingredientId: ValidationSchemas.uuid,
+});
+
+export class RecipeController extends BaseController {
   /**
    * Create or update recipe
    */
-  async create(req: Request, res: Response) {
-    try {
-      const validated = createRecipeSchema.parse({ body: req.body });
-      const recipe = await recipeService.create(validated.body);
-      res.status(201).json(recipe);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
-    }
-  }
+  create = this.asyncHandler(async (req: Request, res: Response) => {
+    const validated = validateOrThrow(createRecipeSchema, req.body);
+    const recipe = await recipeService.create(validated);
+    this.created(res, recipe, SUCCESS_MESSAGES.CREATED);
+  });
 
   /**
    * Get recipes by product
    */
-  async getByProduct(req: Request, res: Response) {
-    try {
-      const { productId } = req.params;
-      const recipes = await recipeService.getByProduct(productId);
-      res.json(recipes);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  }
+  getByProduct = this.asyncHandler(async (req: Request, res: Response) => {
+    const { productId } = validateOrThrow(productIdParamSchema, req.params);
+    const recipes = await recipeService.getByProduct(productId);
+    this.success(res, recipes);
+  });
 
   /**
    * Get recipes by ingredient
    */
-  async getByIngredient(req: Request, res: Response) {
-    try {
-      const { ingredientId } = req.params;
-      const recipes = await recipeService.getByIngredient(ingredientId);
-      res.json(recipes);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  }
+  getByIngredient = this.asyncHandler(async (req: Request, res: Response) => {
+    const { ingredientId } = validateOrThrow(ingredientIdParamSchema, req.params);
+    const recipes = await recipeService.getByIngredient(ingredientId);
+    this.success(res, recipes);
+  });
 
   /**
    * Get recipe by ID
    */
-  async getById(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const recipe = await recipeService.getById(id);
-      res.json(recipe);
-    } catch (error: any) {
-      if (error.message === 'Recipe not found') {
-        res.status(404).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
-    }
-  }
+  getById = this.asyncHandler(async (req: Request, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+    const recipe = await recipeService.getById(id);
+    this.success(res, recipe);
+  });
 
   /**
    * Update recipe
    */
-  async update(req: Request, res: Response) {
-    try {
-      const validated = updateRecipeSchema.parse({
-        body: req.body,
-        params: req.params,
-      });
-      const recipe = await recipeService.update(validated.params.id, validated.body);
-      res.json(recipe);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else if (error.message === 'Recipe not found') {
-        res.status(404).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
-    }
-  }
+  update = this.asyncHandler(async (req: Request, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+    const validated = validateOrThrow(updateRecipeSchema, req.body);
+    const recipe = await recipeService.update(id, validated);
+    this.success(res, recipe, SUCCESS_MESSAGES.UPDATED);
+  });
 
   /**
    * Delete recipe
    */
-  async delete(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      await recipeService.delete(id);
-      res.json({ message: 'Recipe deleted successfully' });
-    } catch (error: any) {
-      if (error.message === 'Recipe not found') {
-        res.status(404).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
-    }
-  }
+  delete = this.asyncHandler(async (req: Request, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+    await recipeService.delete(id);
+    this.success(res, null, SUCCESS_MESSAGES.DELETED);
+  });
 }
 
 export default new RecipeController();

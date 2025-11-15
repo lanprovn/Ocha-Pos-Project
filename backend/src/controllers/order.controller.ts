@@ -7,7 +7,7 @@ import { AppError } from '../utils/errorHandler';
 import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, ORDER_STATUS, PAYMENT_STATUS, PAGINATION } from '../constants';
 import { ValidationSchemas, validateOrThrow } from '../utils/validation';
 import { sendPaginated } from '../utils/response';
-import { OrderFilters } from '../types/order.types';
+import { OrderFilters, CreateOrderInput } from '../types/order.types';
 
 // ===== Schemas =====
 const orderItemSchema = z.object({
@@ -26,7 +26,7 @@ const createOrderSchema = z.object({
   customerTable: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   paymentMethod: z.enum(['CASH', 'QR']).optional(),
-  paymentStatus: z.enum([PAYMENT_STATUS.PENDING, PAYMENT_STATUS.SUCCESS, PAYMENT_STATUS.FAILED]).optional(),
+  paymentStatus: z.enum(['PENDING', 'SUCCESS', 'FAILED']).optional(),
   orderCreator: z.enum(['STAFF', 'CUSTOMER']).optional(),
   orderCreatorName: z.string().optional().nullable(),
   items: z.array(orderItemSchema).min(1, 'Đơn hàng phải có ít nhất một sản phẩm.'),
@@ -72,7 +72,7 @@ const orderFiltersSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   paymentMethod: z.enum(['CASH', 'QR']).optional(),
-  paymentStatus: z.enum([PAYMENT_STATUS.PENDING, PAYMENT_STATUS.SUCCESS, PAYMENT_STATUS.FAILED]).optional(),
+  paymentStatus: z.enum(['PENDING', 'SUCCESS', 'FAILED']).optional(),
   page: z.preprocess(
     (val) => (val ? parseInt(String(val), 10) : undefined),
     z.number().int().positive().optional()
@@ -96,7 +96,7 @@ const historyFiltersSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   paymentMethod: z.enum(['CASH', 'QR']).optional(),
-  paymentStatus: z.enum([PAYMENT_STATUS.PENDING, PAYMENT_STATUS.SUCCESS, PAYMENT_STATUS.FAILED]).optional(),
+  paymentStatus: z.enum(['PENDING', 'SUCCESS', 'FAILED']).optional(),
   page: z.preprocess(
     (val) => (val ? parseInt(String(val), 10) : undefined),
     z.number().int().positive().optional()
@@ -113,7 +113,11 @@ export class OrderController extends BaseController {
    */
   createOrUpdateDraft = this.asyncHandler(async (req: Request, res: Response) => {
     const validated = validateOrThrow(createOrderSchema, req.body);
-    const order = await orderService.createOrUpdateDraft(validated);
+    const orderInput: CreateOrderInput = {
+      ...validated,
+      paymentStatus: validated.paymentStatus as 'PENDING' | 'SUCCESS' | 'FAILED' | undefined,
+    };
+    const order = await orderService.createOrUpdateDraft(orderInput);
     
     // Emit Socket.io event for real-time updates
     emitOrderUpdated(order);
@@ -126,7 +130,11 @@ export class OrderController extends BaseController {
    */
   create = this.asyncHandler(async (req: Request, res: Response) => {
     const validated = validateOrThrow(createOrderSchema, req.body);
-    const order = await orderService.create(validated);
+    const orderInput: CreateOrderInput = {
+      ...validated,
+      paymentStatus: validated.paymentStatus as 'PENDING' | 'SUCCESS' | 'FAILED' | undefined,
+    };
+    const order = await orderService.create(orderInput);
     
     // Emit Socket.io event for real-time updates
     emitOrderCreated(order);

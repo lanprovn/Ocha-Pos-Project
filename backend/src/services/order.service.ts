@@ -7,6 +7,8 @@ import stockService from './stock.service';
 import logger from '../utils/logger';
 import { emitDashboardUpdate, emitOrderStatusChanged } from '../socket/socket.io';
 import { validateTransition, type OrderStatus } from '../utils/orderStateMachine';
+import { AppError } from '../utils/errorHandler';
+import { HTTP_STATUS, ERROR_MESSAGES, ORDER_STATUS } from '../constants';
 
 export class OrderService {
   /**
@@ -292,7 +294,7 @@ export class OrderService {
         const availableStock = stock.quantity - (stock.reservedQuantity || 0);
         if (availableStock < item.quantity) {
           const product = productMap.get(item.productId);
-          throw new Error(
+          throw new AppError(
             `Không đủ tồn kho cho sản phẩm "${product?.name || item.productId}". ` +
             `Tồn kho khả dụng: ${availableStock}, yêu cầu: ${item.quantity}`
           );
@@ -532,7 +534,7 @@ export class OrderService {
     });
 
     if (!order) {
-      throw new Error('Order not found');
+      throw new AppError(ERROR_MESSAGES.ORDER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     // PRODUCTION READY: Validate state transition
@@ -551,7 +553,7 @@ export class OrderService {
 
     // Nếu đã thanh toán thì cần refund trước
     if (order.paymentStatus === 'SUCCESS') {
-      throw new Error('Order has been paid. Please refund first before canceling.');
+      throw new AppError('Đơn hàng đã thanh toán. Vui lòng hoàn tiền trước khi hủy.', HTTP_STATUS.BAD_REQUEST);
     }
 
     // PRODUCTION READY: Release reserved stock in transaction
@@ -616,12 +618,12 @@ export class OrderService {
     });
 
     if (!order) {
-      throw new Error('Order not found');
+      throw new AppError(ERROR_MESSAGES.ORDER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     // Chỉ có thể refund order đã thanh toán
     if (order.paymentStatus !== 'SUCCESS') {
-      throw new Error('Order has not been paid. Cannot refund unpaid order.');
+      throw new AppError('Đơn hàng chưa thanh toán. Không thể hoàn tiền.', HTTP_STATUS.BAD_REQUEST);
     }
 
     // Update order: set paymentStatus to FAILED và status to CANCELLED
@@ -662,7 +664,7 @@ export class OrderService {
     });
 
     if (!order) {
-      throw new Error('Order not found');
+      throw new AppError(ERROR_MESSAGES.ORDER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     return this.transformOrder(order);
@@ -739,7 +741,7 @@ export class OrderService {
     });
 
     if (!order) {
-      throw new Error('Order not found');
+      throw new AppError(ERROR_MESSAGES.ORDER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     // PRODUCTION READY: Validate state transition
@@ -837,7 +839,7 @@ export class OrderService {
       });
 
       if (!order) {
-        throw new Error('Order not found');
+        throw new AppError(ERROR_MESSAGES.ORDER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
       }
 
       const updateData: any = {
@@ -940,7 +942,7 @@ export class OrderService {
     });
 
     if (!order) {
-      throw new Error('Order not found');
+      throw new AppError(ERROR_MESSAGES.ORDER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     const updateData: any = {};

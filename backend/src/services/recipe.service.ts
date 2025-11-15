@@ -1,6 +1,8 @@
 import prisma from '../config/database';
 import { CreateRecipeInput, UpdateRecipeInput, RecipeItem } from '../types/recipe.types';
 import { Decimal } from '@prisma/client/runtime/library';
+import { AppError } from '../utils/errorHandler';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
 
 export class RecipeService {
   /**
@@ -87,7 +89,7 @@ export class RecipeService {
     });
 
     if (!recipe) {
-      throw new Error('Recipe not found');
+      throw new AppError(ERROR_MESSAGES.RECIPE_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     return this.transformRecipe(recipe);
@@ -97,6 +99,15 @@ export class RecipeService {
    * Update recipe
    */
   async update(id: string, data: UpdateRecipeInput): Promise<RecipeItem> {
+    // Check if recipe exists
+    const existing = await prisma.productRecipe.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new AppError(ERROR_MESSAGES.RECIPE_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
+    }
+
     const updateData: any = {};
     if (data.quantity !== undefined) {
       updateData.quantity = new Decimal(data.quantity);
@@ -121,6 +132,15 @@ export class RecipeService {
    * Delete recipe
    */
   async delete(id: string): Promise<void> {
+    // Check if recipe exists
+    const existing = await prisma.productRecipe.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new AppError(ERROR_MESSAGES.RECIPE_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
+    }
+
     await prisma.productRecipe.delete({
       where: { id },
     });

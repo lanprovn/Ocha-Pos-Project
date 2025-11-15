@@ -1,80 +1,62 @@
 import { Request, Response } from 'express';
 import uploadService from '../services/upload.service';
 import env from '../config/env';
-import logger from '../utils/logger';
+import { BaseController } from './base.controller';
+import { AppError } from '../utils/errorHandler';
+import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants';
+import { z } from 'zod';
+import { ValidationSchemas, validateOrThrow } from '../utils/validation';
 
-export class UploadController {
+const filenameParamSchema = z.object({
+  filename: z.string().min(1, 'Tên file không được để trống'),
+});
+
+export class UploadController extends BaseController {
   /**
    * Upload image
    */
-  async uploadImage(req: Request, res: Response): Promise<void> {
-    try {
-      if (!req.file) {
-        res.status(400).json({ error: 'Không có file được upload' });
-        return;
-      }
-
-      const filename = req.file.filename;
-      const fileUrl = uploadService.getFileUrl(filename);
-      const fullUrl = `${env.BACKEND_URL}${fileUrl}`;
-
-      res.status(201).json({
-        message: 'Upload thành công',
-        filename,
-        url: fileUrl,
-        fullUrl,
-        size: req.file.size,
-        mimetype: req.file.mimetype,
-      });
-    } catch (error: any) {
-      logger.error('Upload error', { error: error.message, stack: error.stack, filename: req.file?.filename });
-      res.status(500).json({ error: error.message || 'Lỗi khi upload file' });
+  uploadImage = this.asyncHandler(async (req: Request, res: Response) => {
+    if (!req.file) {
+      throw new AppError('Không có file được upload.', HTTP_STATUS.BAD_REQUEST);
     }
-  }
+
+    const filename = req.file.filename;
+    const fileUrl = uploadService.getFileUrl(filename);
+    const fullUrl = `${env.BACKEND_URL}${fileUrl}`;
+
+    this.created(res, {
+      filename,
+      url: fileUrl,
+      fullUrl,
+      size: req.file.size,
+      mimetype: req.file.mimetype,
+    }, SUCCESS_MESSAGES.FILE_UPLOADED || 'Upload thành công.');
+  });
 
   /**
    * Delete image
    */
-  async deleteImage(req: Request, res: Response): Promise<void> {
-    try {
-      const { filename } = req.params;
+  deleteImage = this.asyncHandler(async (req: Request, res: Response) => {
+    const { filename } = validateOrThrow(filenameParamSchema, req.params);
 
-      if (!filename) {
-        res.status(400).json({ error: 'Tên file không được để trống' });
-        return;
-      }
+    await uploadService.deleteFile(filename);
 
-      await uploadService.deleteFile(filename);
-
-      res.json({ message: 'Xóa file thành công' });
-    } catch (error: any) {
-      logger.error('Delete error', { error: error.message, stack: error.stack, filename: req.params.filename });
-      if (error.message === 'File không tồn tại') {
-        res.status(404).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: error.message || 'Lỗi khi xóa file' });
-      }
-    }
-  }
+    this.success(res, null, SUCCESS_MESSAGES.DELETED);
+  });
 
   /**
    * List all uploaded images
    */
-  async listImages(_req: Request, res: Response): Promise<void> {
-    try {
-      const files = uploadService.listFiles();
-      const images = files.map((filename) => ({
-        filename,
-        url: uploadService.getFileUrl(filename),
-        fullUrl: `${env.BACKEND_URL}${uploadService.getFileUrl(filename)}`,
-      }));
+  listImages = this.asyncHandler(async (_req: Request, res: Response) => {
+    const files = uploadService.listFiles();
+    const images = files.map((filename) => ({
+      filename,
+      url: uploadService.getFileUrl(filename),
+      fullUrl: `${env.BACKEND_URL}${uploadService.getFileUrl(filename)}`,
+    }));
 
-      res.json({ images, count: images.length });
-    } catch (error: any) {
-      logger.error('List images error', { error: error.message, stack: error.stack });
-      res.status(500).json({ error: error.message || 'Lỗi khi lấy danh sách hình ảnh' });
-    }
-  }
+    this.success(res, { images, count: images.length });
+  });
 }
 
 export default new UploadController();
