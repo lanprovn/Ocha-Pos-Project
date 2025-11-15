@@ -14,6 +14,21 @@ Dự án OCHA POS của bạn có các đặc điểm quan trọng:
 
 ## 🏆 Đề Xuất Tốt Nhất: **Railway + Vercel** ⭐⭐⭐⭐⭐
 
+## 🚀 Option Đơn Giản Nhất: **Render.com** ⭐⭐⭐⭐⭐ (Cho Người Mới)
+
+**👉 Xem hướng dẫn chi tiết: [`DEPLOY_SIMPLE.md`](./DEPLOY_SIMPLE.md)**
+
+### Tại Sao Render.com Đơn Giản Hơn?
+
+✅ **1 Platform cho TẤT CẢ**: Backend + Frontend + Database  
+✅ **Chỉ cần 1 Account**: Không cần Railway + Netlify riêng  
+✅ **File Config Sẵn**: Đã có `render.yaml` → Chỉ cần connect GitHub  
+✅ **Deploy trong 5 phút**: Tự động setup mọi thứ  
+
+**⚠️ Lưu ý**: Backend sẽ sleep sau 15 phút không dùng (nhưng có thể dùng UptimeRobot free để ping)
+
+---
+
 ### Tại Sao Chọn Railway + Vercel?
 
 #### ✅ Ưu Điểm
@@ -53,15 +68,20 @@ Dự án OCHA POS của bạn có các đặc điểm quan trọng:
 
 ## 📋 So Sánh Các Options
 
-| Tiêu Chí | Railway + Vercel ⭐ | Render + Vercel | Supabase + Railway + Vercel | Fly.io + Vercel |
-|----------|---------------------|-----------------|----------------------------|------------------|
-| **Backend Sleep** | ❌ Không | ✅ Có (15 phút) | ❌ Không | ❌ Không |
-| **Socket.io Support** | ✅ Tốt | ⚠️ Có thể bị ngắt | ✅ Tốt | ✅ Tốt |
+| Tiêu Chí | Railway + Vercel ⭐ | Render.com ⭐⭐ | Supabase + Railway + Vercel | Fly.io + Vercel |
+|----------|---------------------|----------------|----------------------------|------------------|
+| **Số Platform** | 2 | **1** ✅ | 3 | 2 |
+| **Số Account** | 2 | **1** ✅ | 3 | 2 |
+| **Setup Time** | 15 phút | **5 phút** ✅ | 20 phút | 30 phút |
+| **Backend Sleep** | ❌ Không | ⚠️ Có (15 phút)* | ❌ Không | ❌ Không |
+| **Socket.io Support** | ✅ Tốt | ⚠️ Có thể bị ngắt* | ✅ Tốt | ✅ Tốt |
 | **Database Free** | ✅ 1GB | ⚠️ 90 ngày | ✅ 500MB | ✅ 3GB |
-| **Setup Difficulty** | ⭐⭐ Dễ | ⭐⭐⭐ Trung bình | ⭐⭐⭐ Khó hơn | ⭐⭐⭐⭐ Khó |
-| **Uptime** | ✅ 24/7 | ⚠️ Sleep | ✅ 24/7 | ✅ 24/7 |
+| **Setup Difficulty** | ⭐⭐ Dễ | **⭐ Rất Dễ** ✅ | ⭐⭐⭐ Khó hơn | ⭐⭐⭐⭐ Khó |
+| **Uptime** | ✅ 24/7 | ⚠️ Sleep* | ✅ 24/7 | ✅ 24/7 |
 | **Cost** | ✅ $0 (nếu < $5) | ✅ $0 | ✅ $0 | ✅ $0 |
-| **Best For POS** | ✅✅✅ | ❌ | ✅✅ | ✅✅ |
+| **Best For POS** | ✅✅✅ | ✅✅ (với UptimeRobot) | ✅✅ | ✅✅ |
+
+*Có thể dùng UptimeRobot (free) để ping backend → Không sleep
 
 ---
 
