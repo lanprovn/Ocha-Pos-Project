@@ -37,13 +37,14 @@
 - [x] Remove duplicate error handling code
 - [x] **AuthController** - ✅ Completed
 - [x] **CategoryController** - ✅ Completed
-- [ ] ProductController - In progress
+- [x] **ProductController** - ✅ Completed (with pagination support)
 - [ ] OrderController - Pending
 - [ ] Other controllers - Pending
 
 ### 2. Service Layer Improvements
 - [x] Better error handling trong services (sử dụng AppError)
 - [x] **CategoryService** - ✅ Updated to use AppError
+- [x] **ProductService** - ✅ Updated to use AppError
 - [ ] Tạo base service class (nếu cần)
 - [ ] Standardize service return types
 - [ ] Extract common business logic
