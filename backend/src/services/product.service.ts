@@ -3,7 +3,43 @@ import { CreateProductInput, UpdateProductInput } from '../types/product.types';
 import { Decimal } from '@prisma/client/runtime/library';
 
 export class ProductService {
-  async getAll() {
+  /**
+   * Get all products with optional pagination
+   * OPTIMIZED: Added pagination to prevent loading too many products at once
+   */
+  async getAll(page?: number, limit?: number) {
+    // If pagination params provided, return paginated result
+    if (page !== undefined && limit !== undefined) {
+      const skip = (page - 1) * limit;
+      
+      const [total, products] = await Promise.all([
+        prisma.product.count(),
+        prisma.product.findMany({
+          skip,
+          take: limit,
+          include: {
+            category: true,
+            sizes: true,
+            toppings: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        }),
+      ]);
+
+      return {
+        data: products,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    }
+
+    // Backward compatibility: return all products if no pagination params
     return prisma.product.findMany({
       include: {
         category: true,

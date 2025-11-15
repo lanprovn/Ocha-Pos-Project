@@ -9,7 +9,7 @@ const createOrderSchema = z.object({
     customerPhone: z.string().optional().nullable(),
     customerTable: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
-    paymentMethod: z.enum(['CASH', 'CARD', 'QR']).optional(),
+    paymentMethod: z.enum(['CASH', 'QR']).optional(),
     paymentStatus: z.enum(['PENDING', 'SUCCESS', 'FAILED']).optional(),
     orderCreator: z.enum(['STAFF', 'CUSTOMER']).optional(),
     orderCreatorName: z.string().optional().nullable(),
@@ -104,8 +104,12 @@ export class OrderController {
         paymentStatus: req.query.paymentStatus as string | undefined,
       };
 
-      const orders = await orderService.findAll(filters);
-      res.json(orders);
+      // OPTIMIZED: Support pagination
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      const result = await orderService.findAll(filters, page, limit);
+      res.json(result);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

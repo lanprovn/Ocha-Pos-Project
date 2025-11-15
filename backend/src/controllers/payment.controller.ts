@@ -109,16 +109,25 @@ export class PaymentController {
         return res.redirect(`${frontendUrl}/checkout?error=order_not_found`);
       }
 
-      // Cập nhật order status
-      await orderService.update(order.id, {
-        paymentStatus: callback.status === 'success' ? 'SUCCESS' : 'FAILED',
-        paymentTransactionId: callback.transactionId,
-        paymentDate: callback.transactionDate ? new Date(callback.transactionDate) : new Date(),
-      });
-
-      // Nếu thanh toán thành công, cập nhật order status thành COMPLETED
+      // PRODUCTION READY: Use atomic updateStatusWithPayment to prevent race conditions
+      // This ensures payment status and order status are updated together in a transaction
       if (callback.status === 'success') {
-        await orderService.updateStatus(order.id, { status: 'COMPLETED' });
+        await orderService.updateStatusWithPayment(
+          order.id,
+          'COMPLETED',
+          {
+            paymentStatus: 'SUCCESS',
+            paymentTransactionId: callback.transactionId,
+            paymentDate: callback.transactionDate ? new Date(callback.transactionDate) : new Date(),
+          }
+        );
+      } else {
+        // Payment failed - only update payment status, keep order status as PENDING
+        await orderService.update(order.id, {
+          paymentStatus: 'FAILED',
+          paymentTransactionId: callback.transactionId,
+          paymentDate: callback.transactionDate ? new Date(callback.transactionDate) : new Date(),
+        });
       }
 
       // Redirect về frontend

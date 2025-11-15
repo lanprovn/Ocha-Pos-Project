@@ -4,6 +4,7 @@ import env from './config/env';
 import prisma from './config/database';
 import { initializeSocketIO } from './socket/socket.io';
 import logger from './utils/logger';
+import { startDraftOrderCleanupJob } from './jobs/draftOrderCleanup.job';
 
 const PORT = parseInt(env.PORT, 10);
 
@@ -18,6 +19,9 @@ async function startServer() {
 
     // Initialize Socket.io
     initializeSocketIO(httpServer);
+
+    // PRODUCTION READY: Start background jobs
+    startDraftOrderCleanupJob();
 
     // Start server
     httpServer.listen(PORT, () => {

@@ -86,7 +86,7 @@ router.post('/draft', orderController.createOrUpdateDraft.bind(orderController))
  *         name: paymentMethod
  *         schema:
  *           type: string
- *           enum: [CASH, CARD, QR]
+ *           enum: [CASH, QR]
  *         description: Filter by payment method
  *       - in: query
  *         name: paymentStatus

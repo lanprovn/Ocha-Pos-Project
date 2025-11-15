@@ -99,14 +99,15 @@ export class QRController {
         return res.status(404).json({ error: 'Order not found' });
       }
 
-      // Cập nhật payment status
-      await orderService.update(orderId, {
-        paymentStatus: 'SUCCESS',
-        paymentDate: new Date(),
-      });
-
-      // Cập nhật order status thành COMPLETED sau khi thanh toán thành công
-      await orderService.updateStatus(orderId, { status: 'COMPLETED' });
+      // PRODUCTION READY: Use atomic updateStatusWithPayment to prevent race conditions
+      await orderService.updateStatusWithPayment(
+        orderId,
+        'COMPLETED',
+        {
+          paymentStatus: 'SUCCESS',
+          paymentDate: new Date(),
+        }
+      );
 
       const updatedOrder = await orderService.findById(orderId);
       return res.json({

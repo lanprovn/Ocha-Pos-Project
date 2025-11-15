@@ -2,6 +2,7 @@ import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import env from '../config/env';
 import logger from '../utils/logger';
+import { emitWithRetry, startSocketEventRetry } from '../utils/socketEventQueue';
 
 // Socket.io event types
 export interface ServerToClientEvents {
@@ -100,6 +101,9 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
     });
   });
 
+  // PRODUCTION READY: Start socket event retry mechanism
+  startSocketEventRetry();
+
   logger.info('Socket.io initialized successfully');
   return io;
 }
@@ -121,31 +125,35 @@ export function getIO(): SocketIOServer<
 
 /**
  * Emit order created event
+ * PRODUCTION READY: Uses retry mechanism
  */
 export function emitOrderCreated(order: any): void {
   if (io) {
-    io.to('orders').emit('order_created', order);
-    io.to('dashboard').emit('dashboard_update', { type: 'order_created', order });
+    emitWithRetry('order_created', order, 'orders');
+    emitWithRetry('dashboard_update', { type: 'order_created', order }, 'dashboard');
   }
 }
 
 /**
  * Emit order updated event
+ * PRODUCTION READY: Uses retry mechanism
  */
 export function emitOrderUpdated(order: any): void {
   if (io) {
-    io.to('orders').emit('order_updated', order);
-    io.to('dashboard').emit('dashboard_update', { type: 'order_updated', order });
+    emitWithRetry('order_updated', order, 'orders');
+    emitWithRetry('dashboard_update', { type: 'order_updated', order }, 'dashboard');
   }
 }
 
 /**
  * Emit order status changed event
+ * PRODUCTION READY: Uses retry mechanism
  */
 export function emitOrderStatusChanged(orderId: string, status: string): void {
   if (io) {
-    io.to('orders').emit('order_status_changed', { orderId, status });
-    io.to('display').emit('order_status_changed', { orderId, status });
+    const data = { orderId, status };
+    emitWithRetry('order_status_changed', data, 'orders');
+    emitWithRetry('order_status_changed', data, 'display');
   }
 }
 
@@ -169,10 +177,11 @@ export function emitStockAlert(alert: any): void {
 
 /**
  * Emit dashboard update event
+ * PRODUCTION READY: Uses retry mechanism
  */
 export function emitDashboardUpdate(data: any): void {
   if (io) {
-    io.to('dashboard').emit('dashboard_update', data);
+    emitWithRetry('dashboard_update', data, 'dashboard');
   }
 }
 

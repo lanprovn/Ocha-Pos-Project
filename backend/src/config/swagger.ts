@@ -361,7 +361,7 @@ const options: swaggerJsdoc.Options = {
             },
             paymentMethod: {
               type: 'string',
-              enum: ['CASH', 'CARD', 'QR'],
+              enum: ['CASH', 'QR'],
               nullable: true,
             },
             paymentStatus: {
@@ -407,7 +407,7 @@ const options: swaggerJsdoc.Options = {
             notes: { type: 'string', nullable: true },
             paymentMethod: {
               type: 'string',
-              enum: ['CASH', 'CARD', 'QR'],
+              enum: ['CASH', 'QR'],
             },
             paymentStatus: {
               type: 'string',

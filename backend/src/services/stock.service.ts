@@ -10,6 +10,7 @@ import {
   CreateIngredientInput,
   UpdateIngredientInput,
 } from '../types/stock.types';
+import { emitDashboardUpdate, emitStockAlert } from '../socket/socket.io';
 
 export class StockService {
   // ========== Product Stock ==========
@@ -78,6 +79,35 @@ export class StockService {
         },
       },
     });
+
+    // PRODUCTION READY: Emit stock update event for real-time sync
+    try {
+      emitDashboardUpdate({
+        type: 'stock_update',
+        stockId: updated.id,
+        productId: updated.productId,
+        newQuantity: updated.quantity,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Check and emit low stock alert
+      if (updated.quantity <= updated.minStock && updated.quantity > 0) {
+        emitStockAlert({
+          type: 'LOW_STOCK',
+          productId: updated.productId,
+          message: `Sản phẩm "${updated.product?.name || 'Unknown'}" sắp hết hàng. Tồn kho: ${updated.quantity}`,
+        });
+      } else if (updated.quantity === 0) {
+        emitStockAlert({
+          type: 'OUT_OF_STOCK',
+          productId: updated.productId,
+          message: `Sản phẩm "${updated.product?.name || 'Unknown'}" đã hết hàng`,
+        });
+      }
+    } catch (socketError: any) {
+      // Don't throw - stock update should succeed even if socket fails
+      console.warn('Failed to emit stock update event', socketError);
+    }
 
     return this.transformProductStock(updated);
   }
@@ -194,6 +224,35 @@ export class StockService {
         ingredient: true,
       },
     });
+
+    // PRODUCTION READY: Emit stock update event for real-time sync
+    try {
+      emitDashboardUpdate({
+        type: 'stock_update',
+        stockId: updated.id,
+        ingredientId: updated.ingredientId,
+        newQuantity: updated.quantity,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Check and emit low stock alert
+      if (updated.quantity <= updated.minStock && updated.quantity > 0) {
+        emitStockAlert({
+          type: 'LOW_STOCK',
+          ingredientId: updated.ingredientId,
+          message: `Nguyên liệu "${updated.ingredient?.name || 'Unknown'}" sắp hết. Tồn kho: ${updated.quantity}`,
+        });
+      } else if (updated.quantity === 0) {
+        emitStockAlert({
+          type: 'OUT_OF_STOCK',
+          ingredientId: updated.ingredientId,
+          message: `Nguyên liệu "${updated.ingredient?.name || 'Unknown'}" đã hết`,
+        });
+      }
+    } catch (socketError: any) {
+      // Don't throw - stock update should succeed even if socket fails
+      console.warn('Failed to emit stock update event', socketError);
+    }
 
     if ((data.name !== undefined || data.unit !== undefined) && stock.ingredient) {
       await prisma.ingredient.update({
@@ -327,8 +386,34 @@ export class StockService {
     // Update stock quantity if productId or ingredientId provided
     if (data.productId) {
       await this.updateProductStockFromTransaction(data.productId, data.type, data.quantity);
+      
+      // PRODUCTION READY: Emit stock update event
+      try {
+        emitDashboardUpdate({
+          type: 'stock_update',
+          productId: data.productId,
+          transactionType: data.type,
+          quantity: data.quantity,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (socketError: any) {
+        console.warn('Failed to emit stock update event', socketError);
+      }
     } else if (data.ingredientId) {
       await this.updateIngredientStockFromTransaction(data.ingredientId, data.type, data.quantity);
+      
+      // PRODUCTION READY: Emit stock update event
+      try {
+        emitDashboardUpdate({
+          type: 'stock_update',
+          ingredientId: data.ingredientId,
+          transactionType: data.type,
+          quantity: data.quantity,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (socketError: any) {
+        console.warn('Failed to emit stock update event', socketError);
+      }
     }
 
     return this.transformTransaction(transaction);
@@ -503,6 +588,82 @@ export class StockService {
     return { message: 'Stock alert deleted successfully' };
   }
 
+  // ========== Stock Reservation Methods (PRODUCTION READY) ==========
+
+  /**
+   * Reserve stock for a pending order
+   * PRODUCTION READY: Prevents overselling by reserving stock when order is created
+   */
+  async reserveProductStock(productId: string, quantity: number): Promise<void> {
+    await prisma.stock.update({
+      where: { productId },
+      data: {
+        reservedQuantity: {
+          increment: quantity,
+        },
+        lastUpdated: new Date(),
+      },
+    });
+  }
+
+  /**
+   * Release reserved stock (when order cancelled or failed)
+   */
+  async releaseProductStock(productId: string, quantity: number): Promise<void> {
+    await prisma.stock.update({
+      where: { productId },
+      data: {
+        reservedQuantity: {
+          decrement: quantity,
+        },
+        lastUpdated: new Date(),
+      },
+    });
+  }
+
+  /**
+   * Reserve ingredient stock for a pending order
+   */
+  async reserveIngredientStock(ingredientId: string, quantity: number): Promise<void> {
+    await prisma.ingredientStock.update({
+      where: { ingredientId },
+      data: {
+        reservedQuantity: {
+          increment: quantity,
+        },
+        lastUpdated: new Date(),
+      },
+    });
+  }
+
+  /**
+   * Release reserved ingredient stock
+   */
+  async releaseIngredientStock(ingredientId: string, quantity: number): Promise<void> {
+    await prisma.ingredientStock.update({
+      where: { ingredientId },
+      data: {
+        reservedQuantity: {
+          decrement: quantity,
+        },
+        lastUpdated: new Date(),
+      },
+    });
+  }
+
+  /**
+   * Get available stock (quantity - reservedQuantity)
+   */
+  async getAvailableProductStock(productId: string): Promise<number> {
+    const stock = await prisma.stock.findUnique({
+      where: { productId },
+      select: { quantity: true, reservedQuantity: true },
+    });
+
+    if (!stock) return 0;
+    return Math.max(0, stock.quantity - stock.reservedQuantity);
+  }
+
   // ========== Helper Methods ==========
 
   private async updateProductStockFromTransaction(
@@ -568,6 +729,8 @@ export class StockService {
       id: stock.id,
       productId: stock.productId,
       currentStock: stock.quantity,
+      reservedStock: stock.reservedQuantity || 0, // PRODUCTION READY: Include reserved quantity
+      availableStock: Math.max(0, stock.quantity - (stock.reservedQuantity || 0)), // Available = quantity - reserved
       minStock: stock.minStock,
       maxStock: stock.maxStock,
       unit: stock.unit,

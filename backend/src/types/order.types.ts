@@ -13,7 +13,7 @@ export interface CreateOrderInput {
   customerPhone?: string | null;
   customerTable?: string | null;
   notes?: string | null;
-  paymentMethod?: 'CASH' | 'CARD' | 'QR';
+  paymentMethod?: 'CASH' | 'QR';
   paymentStatus?: 'PENDING' | 'SUCCESS' | 'FAILED';
   orderCreator?: 'STAFF' | 'CUSTOMER';
   orderCreatorName?: string | null;

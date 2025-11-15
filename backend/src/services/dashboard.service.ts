@@ -5,10 +5,12 @@ export class DashboardService {
    * Get dashboard statistics
    */
   async getStats() {
-    // Overview stats
-    const totalProducts = await prisma.product.count();
-    const totalIngredients = await prisma.ingredient.count();
-    const totalOrders = await prisma.order.count();
+    // OPTIMIZED: Parallelize count queries for better performance
+    const [totalProducts, totalIngredients, totalOrders] = await Promise.all([
+      prisma.product.count(),
+      prisma.ingredient.count(),
+      prisma.order.count(),
+    ]);
 
     // Today's stats - Always use current date, no caching
     // Reset to start of today (local time)
@@ -33,16 +35,14 @@ export class DashboardService {
       return sum + parseFloat(order.totalAmount.toString());
     }, 0);
 
-    // Total revenue
-    const allOrders = await prisma.order.findMany({
-      select: {
+    // OPTIMIZED: Use aggregate query instead of loading all orders
+    // This is much faster and uses less memory
+    const totalRevenueResult = await prisma.order.aggregate({
+      _sum: {
         totalAmount: true,
       },
     });
-
-    const totalRevenue = allOrders.reduce((sum, order) => {
-      return sum + parseFloat(order.totalAmount.toString());
-    }, 0);
+    const totalRevenue = parseFloat(totalRevenueResult._sum.totalAmount?.toString() || '0');
 
     // Average order value
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
@@ -84,11 +84,12 @@ export class DashboardService {
       }
     });
 
-    // Top products (by quantity sold)
+    // OPTIMIZED: Top products (by quantity sold) - Fix N+1 queries
     const topProductsData = await prisma.orderItem.groupBy({
       by: ['productId'],
       _sum: {
         quantity: true,
+        subtotal: true, // Use subtotal sum instead of querying all items
       },
       _count: {
         id: true,
@@ -101,36 +102,30 @@ export class DashboardService {
       take: 10,
     });
 
-    const topProducts = await Promise.all(
-      topProductsData.map(async (item) => {
-        const product = await prisma.product.findUnique({
-          where: { id: item.productId },
-          include: {
-            category: true,
-          },
-        });
+    // Batch query all products at once instead of individual queries
+    const productIds = topProductsData.map(item => item.productId);
+    const products = await prisma.product.findMany({
+      where: {
+        id: { in: productIds },
+      },
+      include: {
+        category: true,
+      },
+    });
 
-        // Calculate revenue for this product
-        const productOrders = await prisma.orderItem.findMany({
-          where: { productId: item.productId },
-          select: {
-            subtotal: true,
-          },
-        });
+    // Create map for quick lookup
+    const productMap = new Map(products.map(p => [p.id, p]));
 
-        const revenue = productOrders.reduce((sum, order) => {
-          return sum + parseFloat(order.subtotal.toString());
-        }, 0);
-
-        return {
-          productId: item.productId,
-          productName: product?.name || 'Unknown',
-          category: product?.category?.name || '',
-          quantitySold: item._sum.quantity || 0,
-          revenue: revenue.toString(),
-        };
-      })
-    );
+    const topProducts = topProductsData.map((item) => {
+      const product = productMap.get(item.productId);
+      return {
+        productId: item.productId,
+        productName: product?.name || 'Unknown',
+        category: product?.category?.name || '',
+        quantitySold: item._sum.quantity || 0,
+        revenue: (item._sum.subtotal?.toString() || '0'), // Use aggregated subtotal
+      };
+    });
 
     // Hourly revenue (last 24 hours)
     const last24Hours = new Date();
@@ -165,30 +160,29 @@ export class DashboardService {
       orderCount: data.orderCount,
     }));
 
-    // Low stock alerts
-    // Low stock products - quantity <= minStock
-    const allProductStocks = await prisma.stock.findMany({
-      where: {
-        isActive: true,
-      },
-      include: {
-        product: true,
-      },
-    });
+    // OPTIMIZED: Parallelize stock queries
+    const [allProductStocks, allIngredientStocks] = await Promise.all([
+      prisma.stock.findMany({
+        where: {
+          isActive: true,
+        },
+        include: {
+          product: true,
+        },
+      }),
+      prisma.ingredientStock.findMany({
+        where: {
+          isActive: true,
+        },
+        include: {
+          ingredient: true,
+        },
+      }),
+    ]);
 
     const lowStockProducts = allProductStocks.filter(
       (stock) => stock.quantity <= stock.minStock
     );
-
-    // Low stock ingredients - quantity <= minStock
-    const allIngredientStocks = await prisma.ingredientStock.findMany({
-      where: {
-        isActive: true,
-      },
-      include: {
-        ingredient: true,
-      },
-    });
 
     const lowStockIngredients = allIngredientStocks.filter(
       (stock) => stock.quantity <= stock.minStock
@@ -315,7 +309,7 @@ export class DashboardService {
         total: parseFloat(order.totalAmount.toString()),
         items: order.items.length,
         customerName: order.customerName || 'Khách hàng',
-        paymentMethod: (order.paymentMethod?.toLowerCase() || 'cash') as 'cash' | 'card' | 'qr',
+        paymentMethod: (order.paymentMethod?.toLowerCase() || 'cash') as 'cash' | 'qr',
         products: order.items.map((item) => ({
           name: item.product.name,
           quantity: item.quantity,
