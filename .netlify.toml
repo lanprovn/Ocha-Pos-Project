@@ -1,12 +1,8 @@
 [build]
   base = "frontend"
-  command = "npm run build"
+  command = "git submodule deinit --all -f || true && npm run build"
   publish = "frontend/dist"
 
 [build.environment]
   NODE_VERSION = "18"
-
-# Disable Git submodules
-[build]
-  ignore = "git submodule"
 
