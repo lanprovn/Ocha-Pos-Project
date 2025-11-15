@@ -109,7 +109,11 @@ Dự án OCHA POS của bạn có các đặc điểm quan trọng:
 
 ---
 
-## 🚀 Hướng Dẫn Deploy Railway + Vercel
+## 🚀 Hướng Dẫn Deploy Railway + Netlify
+
+**👉 Xem hướng dẫn chi tiết từng bước: [`DEPLOY_STEP_BY_STEP.md`](./DEPLOY_STEP_BY_STEP.md)**
+
+## 🚀 Hướng Dẫn Deploy Railway + Vercel (Cũ)
 
 ### Bước 1: Railway Backend + Database (10 phút)
 
