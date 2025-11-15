@@ -6,7 +6,8 @@ import { initializeSocketIO } from './socket/socket.io';
 import logger from './utils/logger';
 import { startDraftOrderCleanupJob } from './jobs/draftOrderCleanup.job';
 
-const PORT = parseInt(env.PORT, 10);
+// Railway automatically sets PORT environment variable
+const PORT = parseInt(process.env.PORT || env.PORT, 10);
 
 async function startServer() {
   try {

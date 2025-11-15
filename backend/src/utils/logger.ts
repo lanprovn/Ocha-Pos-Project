@@ -64,14 +64,13 @@ const logger = winston.createLogger({
   ],
 });
 
-// Add console transport for non-production environments
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(
-    new winston.transports.Console({
-      format: consoleFormat,
-    })
-  );
-}
+// Always add console transport (important for Railway/cloud platforms)
+// Railway and other cloud platforms need console output to display logs
+logger.add(
+  new winston.transports.Console({
+    format: process.env.NODE_ENV === 'production' ? logFormat : consoleFormat,
+  })
+);
 
 export default logger;
 
