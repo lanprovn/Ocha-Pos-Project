@@ -9,6 +9,7 @@
     "build": "npm run prisma:generate && tsc",
     "start": "node dist/server.js",
     "start:prod": "npm run prisma:migrate:deploy && npm run check:dist && node start-server.js",
+    "seed:prod": "npx ts-node prisma/seed.ts",
     "test:node": "node -e \"console.log('Node.js is working'); process.exit(0);\"",
     "check:dist": "node -e \"const fs = require('fs'); console.log('dist/server.js exists:', fs.existsSync('dist/server.js')); if (fs.existsSync('dist/server.js')) { console.log('File size:', fs.statSync('dist/server.js').size, 'bytes'); }\"",
     "prisma:generate": "prisma generate",
