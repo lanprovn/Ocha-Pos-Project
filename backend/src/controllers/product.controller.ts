@@ -3,7 +3,8 @@ import productService from '../services/product.service';
 import { transformProduct } from '../utils/transform';
 import { z } from 'zod';
 import { BaseController } from './base.controller';
-import { SUCCESS_MESSAGES, PAGINATION } from '../constants';
+import { AppError } from '../utils/errorHandler';
+import { HTTP_STATUS, SUCCESS_MESSAGES, PAGINATION } from '../constants';
 import { ValidationSchemas, validateOrThrow } from '../utils/validation';
 import { sendPaginated } from '../utils/response';
 
