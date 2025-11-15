@@ -1,0 +1,169 @@
+{
+  "ingredients": [
+    {
+      "id": "milk",
+      "name": "Sữa tươi",
+      "unit": "ml",
+      "currentStock": 5000,
+      "minStock": 500,
+      "maxStock": 10000,
+      "usedIn": ["1", "3", "4", "15", "16", "17", "18", "32", "33"],
+      "lastUpdated": 1703000000000,
+      "isActive": true
+    },
+    {
+      "id": "sugar",
+      "name": "Đường",
+      "unit": "g",
+      "currentStock": 2000,
+      "minStock": 200,
+      "maxStock": 5000,
+      "usedIn": ["1", "2", "3", "4", "15", "16", "17", "18", "21", "25", "26", "27", "28", "29", "30", "32", "33", "35", "36", "37"],
+      "lastUpdated": 1703000000000,
+      "isActive": true
+    },
+    {
+      "id": "coffee_beans",
+      "name": "Hạt cà phê",
+      "unit": "g",
+      "currentStock": 1000,
+      "minStock": 100,
+      "maxStock": 2000,
+      "usedIn": ["1", "2", "3", "4", "15", "16", "17", "18", "21", "25", "35", "36", "37"],
+      "lastUpdated": 1703000000000,
+      "isActive": true
+    },
+    {
+      "id": "condensed_milk",
+      "name": "Sữa đặc",
+      "unit": "ml",
+      "currentStock": 1500,
+      "minStock": 150,
+      "maxStock": 3000,
+      "usedIn": ["3", "4", "37"],
+      "lastUpdated": 1703000000000,
+      "isActive": true
+    },
+    {
+      "id": "caramel_syrup",
+      "name": "Siro caramel",
+      "unit": "ml",
+      "currentStock": 800,
+      "minStock": 80,
+      "maxStock": 1500,
+      "usedIn": ["17", "18", "26"],
+      "lastUpdated": 1703000000000,
+      "isActive": true
+    },
+    {
+      "id": "vanilla_syrup",
+      "name": "Siro vanilla",
+      "unit": "ml",
+      "currentStock": 600,
+      "minStock": 60,
+      "maxStock": 1200,
+      "usedIn": ["15", "16", "32", "33"],
+      "lastUpdated": 1703000000000,
+      "isActive": true
+    },
+    {
+      "id": "ice_cubes",
+      "name": "Đá viên",
+      "unit": "cái",
+      "currentStock": 2000,
+      "minStock": 200,
+      "maxStock": 5000,
+      "usedIn": ["2", "4", "18", "26", "27", "28", "29", "30", "33", "35", "37", "40", "43", "46", "48", "50"],
+      "lastUpdated": 1703000000000,
+      "isActive": true
+    },
+    {
+      "id": "whipped_cream",
+      "name": "Kem tươi",
+      "unit": "ml",
+      "currentStock": 1000,
+      "minStock": 100,
+      "maxStock": 2000,
+      "usedIn": ["15", "16", "17", "18", "26", "27", "28", "29", "30"],
+      "lastUpdated": 1703000000000,
+      "isActive": true
+    },
+    {
+      "id": "matcha_powder",
+      "name": "Bột trà xanh",
+      "unit": "g",
+      "currentStock": 500,
+      "minStock": 50,
+      "maxStock": 1000,
+      "usedIn": ["30", "40", "41", "42", "43", "49", "50"],
+      "lastUpdated": 1703000000000,
+      "isActive": true
+    },
+    {
+      "id": "peach_syrup",
+      "name": "Siro đào",
+      "unit": "ml",
+      "currentStock": 700,
+      "minStock": 70,
+      "maxStock": 1400,
+      "usedIn": ["40", "44", "47", "48", "49", "50"],
+      "lastUpdated": 1703000000000,
+      "isActive": true
+    },
+    {
+      "id": "lychee_syrup",
+      "name": "Siro vải",
+      "unit": "ml",
+      "currentStock": 600,
+      "minStock": 60,
+      "maxStock": 1200,
+      "usedIn": ["45", "46"],
+      "lastUpdated": 1703000000000,
+      "isActive": true
+    },
+    {
+      "id": "lotus_seed",
+      "name": "Hạt sen",
+      "unit": "g",
+      "currentStock": 300,
+      "minStock": 30,
+      "maxStock": 600,
+      "usedIn": ["41", "42", "43"],
+      "lastUpdated": 1703000000000,
+      "isActive": true
+    },
+    {
+      "id": "jelly",
+      "name": "Thạch",
+      "unit": "g",
+      "currentStock": 400,
+      "minStock": 40,
+      "maxStock": 800,
+      "usedIn": ["44", "45", "46"],
+      "lastUpdated": 1703000000000,
+      "isActive": true
+    },
+    {
+      "id": "strawberry_syrup",
+      "name": "Siro dâu",
+      "unit": "ml",
+      "currentStock": 500,
+      "minStock": 50,
+      "maxStock": 1000,
+      "usedIn": ["29", "49", "50"],
+      "lastUpdated": 1703000000000,
+      "isActive": true
+    },
+    {
+      "id": "cocoa_powder",
+      "name": "Bột cacao",
+      "unit": "g",
+      "currentStock": 300,
+      "minStock": 30,
+      "maxStock": 600,
+      "usedIn": ["27"],
+      "lastUpdated": 1703000000000,
+      "isActive": true
+    }
+  ]
+}

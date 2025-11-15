@@ -5,11 +5,20 @@ import { hashPassword } from '../src/utils/bcrypt';
 
 const prisma = new PrismaClient();
 
-// Đọc file JSON từ frontend
-const productsJsonPath = path.join(__dirname, '../../frontend/src/assets/products.json');
-const productsData = JSON.parse(fs.readFileSync(productsJsonPath, 'utf-8'));
+// Đọc file JSON từ backend/prisma/data (works in Railway)
+// Fallback to frontend path for local development
+let productsJsonPath = path.join(__dirname, 'data/products.json');
+let ingredientsJsonPath = path.join(__dirname, 'data/ingredients.json');
 
-const ingredientsJsonPath = path.join(__dirname, '../../frontend/src/data/ingredients.json');
+// Fallback to frontend path if data folder doesn't exist (local dev)
+if (!fs.existsSync(productsJsonPath)) {
+  productsJsonPath = path.join(__dirname, '../../frontend/src/assets/products.json');
+}
+if (!fs.existsSync(ingredientsJsonPath)) {
+  ingredientsJsonPath = path.join(__dirname, '../../frontend/src/data/ingredients.json');
+}
+
+const productsData = JSON.parse(fs.readFileSync(productsJsonPath, 'utf-8'));
 const ingredientsData = JSON.parse(fs.readFileSync(ingredientsJsonPath, 'utf-8'));
 
 async function main() {
