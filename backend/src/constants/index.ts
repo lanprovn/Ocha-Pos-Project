@@ -60,6 +60,11 @@ export const ERROR_MESSAGES = {
   // Stock
   INSUFFICIENT_STOCK: 'Không đủ hàng trong kho.',
   STOCK_NOT_FOUND: 'Không tìm thấy thông tin kho.',
+  PRODUCT_STOCK_NOT_FOUND: 'Không tìm thấy tồn kho sản phẩm.',
+  INGREDIENT_STOCK_NOT_FOUND: 'Không tìm thấy tồn kho nguyên liệu.',
+  STOCK_ALREADY_EXISTS: 'Tồn kho đã tồn tại cho sản phẩm này.',
+  STOCK_TRANSACTION_NOT_FOUND: 'Không tìm thấy giao dịch tồn kho.',
+  STOCK_ALERT_NOT_FOUND: 'Không tìm thấy cảnh báo tồn kho.',
   
   // Generic
   INTERNAL_SERVER_ERROR: 'Lỗi hệ thống. Vui lòng thử lại sau.',
