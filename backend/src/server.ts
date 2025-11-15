@@ -6,8 +6,9 @@ import { initializeSocketIO } from './socket/socket.io';
 import logger from './utils/logger';
 import { startDraftOrderCleanupJob } from './jobs/draftOrderCleanup.job';
 
-// Log immediately to console (before logger might be used)
-console.log('🚀 Starting server...');
+// Log immediately to console (after all imports)
+process.stdout.write('🚀 Starting server...\n');
+process.stdout.write('✅ All imports successful\n');
 
 // Railway automatically sets PORT environment variable
 const PORT = parseInt(process.env.PORT || env.PORT, 10);
