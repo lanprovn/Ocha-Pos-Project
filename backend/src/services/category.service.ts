@@ -1,5 +1,7 @@
 import prisma from '../config/database';
 import { CreateCategoryInput, UpdateCategoryInput } from '../types/product.types';
+import { AppError } from '../utils/errorHandler';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
 
 export class CategoryService {
   async getAll() {
@@ -41,7 +43,7 @@ export class CategoryService {
     });
 
     if (!category) {
-      throw new Error('Category not found');
+      throw new AppError(ERROR_MESSAGES.CATEGORY_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     return {
@@ -62,7 +64,7 @@ export class CategoryService {
     });
 
     if (!category) {
-      throw new Error('Category not found');
+      throw new AppError(ERROR_MESSAGES.CATEGORY_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     return prisma.category.update({
@@ -77,7 +79,7 @@ export class CategoryService {
     });
 
     if (!category) {
-      throw new Error('Category not found');
+      throw new AppError(ERROR_MESSAGES.CATEGORY_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     await prisma.category.delete({

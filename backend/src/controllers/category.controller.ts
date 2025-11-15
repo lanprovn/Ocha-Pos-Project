@@ -2,103 +2,86 @@ import { Request, Response } from 'express';
 import categoryService from '../services/category.service';
 import { transformCategory } from '../utils/transform';
 import { z } from 'zod';
+import { BaseController } from './base.controller';
+import { AppError } from '../utils/errorHandler';
+import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants';
+import { ValidationSchemas, validateOrThrow } from '../utils/validation';
 
 const createCategorySchema = z.object({
-  body: z.object({
-    name: z.string().min(1),
-    image: z.string().url().optional(),
-    description: z.string().optional(),
-    icon: z.string().optional(),
-  }),
+  name: z.string().min(1, 'Tên danh mục là bắt buộc.'),
+  image: z.string().url('URL hình ảnh không hợp lệ.').optional().or(z.literal('')),
+  description: z.string().optional(),
+  icon: z.string().optional(),
 });
 
 const updateCategorySchema = z.object({
-  body: z.object({
-    name: z.string().min(1).optional(),
-    image: z.string().url().optional(),
-    description: z.string().optional(),
-    icon: z.string().optional(),
-  }),
-  params: z.object({
-    id: z.string().uuid(),
-  }),
+  name: z.string().min(1, 'Tên danh mục là bắt buộc.').optional(),
+  image: z.string().url('URL hình ảnh không hợp lệ.').optional().or(z.literal('')),
+  description: z.string().optional(),
+  icon: z.string().optional(),
 });
 
-export class CategoryController {
-  async getAll(_req: Request, res: Response) {
-    try {
-      const categories = await categoryService.getAll();
-      const transformed = categories.map(transformCategory);
-      res.json(transformed);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  }
+const idParamSchema = z.object({
+  id: ValidationSchemas.uuid,
+});
 
-  async getById(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const category = await categoryService.getById(id);
-      const transformed = transformCategory(category);
-      res.json(transformed);
-    } catch (error: any) {
-      if (error.message === 'Category not found') {
-        res.status(404).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
-    }
-  }
+export class CategoryController extends BaseController {
+  /**
+   * Get all categories
+   */
+  getAll = this.asyncHandler(async (_req: Request, res: Response) => {
+    const categories = await categoryService.getAll();
+    const transformed = categories.map(transformCategory);
+    this.success(res, transformed);
+  });
 
-  async create(req: Request, res: Response) {
-    try {
-      const validated = createCategorySchema.parse({ body: req.body });
-      const category = await categoryService.create(validated.body);
-      const transformed = transformCategory(category);
-      res.status(201).json(transformed);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
+  /**
+   * Get category by ID
+   */
+  getById = this.asyncHandler(async (req: Request, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+    const category = await categoryService.getById(id);
+    
+    if (!category) {
+      throw new AppError(ERROR_MESSAGES.CATEGORY_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
-  }
+    
+    const transformed = transformCategory(category);
+    this.success(res, transformed);
+  });
 
-  async update(req: Request, res: Response) {
-    try {
-      const validated = updateCategorySchema.parse({
-        body: req.body,
-        params: req.params,
-      });
-      const category = await categoryService.update(validated.params.id, validated.body);
-      const transformed = transformCategory(category);
-      res.json(transformed);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else if (error.message === 'Category not found') {
-        res.status(404).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
-    }
-  }
+  /**
+   * Create new category
+   */
+  create = this.asyncHandler(async (req: Request, res: Response) => {
+    const validated = validateOrThrow(createCategorySchema, req.body);
+    const category = await categoryService.create(validated);
+    const transformed = transformCategory(category);
+    this.created(res, transformed, SUCCESS_MESSAGES.CREATED);
+  });
 
-  async delete(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      await categoryService.delete(id);
-      res.json({ message: 'Category deleted successfully' });
-    } catch (error: any) {
-      if (error.message === 'Category not found') {
-        res.status(404).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
-    }
-  }
+  /**
+   * Update category
+   */
+  update = this.asyncHandler(async (req: Request, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+    const validated = validateOrThrow(updateCategorySchema, req.body);
+    const category = await categoryService.update(id, validated);
+    const transformed = transformCategory(category);
+    this.success(res, transformed, SUCCESS_MESSAGES.UPDATED);
+  });
+
+  /**
+   * Delete category
+   */
+  delete = this.asyncHandler(async (req: Request, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+    await categoryService.delete(id);
+    this.success(res, { message: 'Xóa danh mục thành công.' });
+  });
 }
 
-export default new CategoryController();
+// Export instance
+const categoryController = new CategoryController();
+export default categoryController;
 
