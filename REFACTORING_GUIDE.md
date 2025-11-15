@@ -31,15 +31,21 @@
 ## 📋 Các Cải Tiến Tiếp Theo
 
 ### 1. Refactor Controllers
-- [ ] Update tất cả controllers để extend `BaseController`
-- [ ] Sử dụng `sendSuccess()`, `sendError()` thay vì `res.json()`
-- [ ] Sử dụng `asyncHandler()` wrapper
-- [ ] Remove duplicate error handling code
+- [x] Update tất cả controllers để extend `BaseController`
+- [x] Sử dụng `sendSuccess()`, `sendError()` thay vì `res.json()`
+- [x] Sử dụng `asyncHandler()` wrapper
+- [x] Remove duplicate error handling code
+- [x] **AuthController** - ✅ Completed
+- [x] **CategoryController** - ✅ Completed
+- [ ] ProductController - In progress
+- [ ] OrderController - Pending
+- [ ] Other controllers - Pending
 
 ### 2. Service Layer Improvements
+- [x] Better error handling trong services (sử dụng AppError)
+- [x] **CategoryService** - ✅ Updated to use AppError
 - [ ] Tạo base service class (nếu cần)
 - [ ] Standardize service return types
-- [ ] Better error handling trong services
 - [ ] Extract common business logic
 
 ### 3. Type Safety
