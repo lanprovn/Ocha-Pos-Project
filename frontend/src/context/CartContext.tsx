@@ -75,7 +75,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     const syncDraftOrder = async () => {
       try {
         const orderItems = items.map((item) => ({
-          productId: item.productId,
+          productId: String(item.productId), // Convert number to string
           quantity: item.quantity,
           price: item.basePrice + (item.selectedSize?.extraPrice || 0) + 
             item.selectedToppings.reduce((sum, t) => sum + t.extraPrice, 0),

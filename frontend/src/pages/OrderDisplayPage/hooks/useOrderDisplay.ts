@@ -10,7 +10,7 @@ export const useOrderDisplay = () => {
   const [orders, setOrders] = useState<OrderTracking[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
-  const completedSectionRef = useRef<HTMLDivElement | null>(null);
+  const completedSectionRef = useRef<HTMLDivElement>(null);
   const previousCompletedCountRef = useRef<number>(0);
 
   // Map backend status to frontend display status
@@ -51,7 +51,10 @@ export const useOrderDisplay = () => {
       createdByName: order.orderCreatorName || undefined,
       items: order.items?.map((item) => ({
         id: item.productId,
+        productId: parseInt(item.productId) || 0,
         name: item.product?.name || 'Sản phẩm',
+        image: item.product?.image || '',
+        basePrice: parseFloat(item.price || 0),
         quantity: item.quantity,
         price: parseFloat(item.price || 0),
         totalPrice: parseFloat(item.subtotal || 0),

@@ -282,7 +282,7 @@ export const dashboardService = {
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
 
-    const response = await apiClient.get(API_ENDPOINTS.REPORTS_REVENUE, { params });
+    const response = await apiClient.get(API_ENDPOINTS.REPORTS_REVENUE, { params }) as any;
 
     return {
       period: response.period,

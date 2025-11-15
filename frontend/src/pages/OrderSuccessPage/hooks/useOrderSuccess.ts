@@ -6,7 +6,6 @@ import { useOrderTracking } from '@hooks/useOrderTracking';
 import { orderService } from '@services/order.service';
 import toast from 'react-hot-toast';
 import type { OrderDetails, LocationState, PaymentMethod } from '../types';
-import type { OrderTracking } from '../../../types/display';
 import type { Order } from '@services/order.service';
 
 export const useOrderSuccess = () => {

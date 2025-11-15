@@ -22,7 +22,7 @@ export const OrderCard: React.FC<OrderCardProps> = memo(({ order, currentTime, o
   const statusConfig = getStatusConfig(order.status);
   const isPaidOrAfter = ['paid', 'preparing', 'completed'].includes(order.status);
   const canCancel = ['PENDING', 'CONFIRMED', 'PREPARING'].includes(order.backendStatus || '');
-  const canRefund = order.paymentStatus === 'SUCCESS' && ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED'].includes(order.backendStatus || '');
+  const canRefund = order.paymentStatus === 'success' && ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED'].includes(order.backendStatus || '');
   const canPrint = ['CONFIRMED', 'PREPARING', 'READY', 'COMPLETED'].includes(order.backendStatus || '');
   
   const handleStatusUpdate = async (newStatus: string) => {

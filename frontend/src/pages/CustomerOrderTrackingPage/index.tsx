@@ -140,7 +140,7 @@ const CustomerOrderTrackingPage: React.FC = () => {
     const statusOrder = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED'];
     const currentIndex = statusOrder.indexOf(order.status);
     
-    return steps.map((step, index) => {
+    return steps.map((step) => {
       const stepIndex = statusOrder.indexOf(step.status);
       const isActive = currentIndex >= stepIndex;
       const isCurrent = order.status === step.status || 
@@ -343,7 +343,7 @@ const CustomerOrderTrackingPage: React.FC = () => {
             </div>
             
             <div className="space-y-6">
-              {statusSteps.map((step, index) => {
+              {statusSteps.map((step) => {
                 const colorClasses = {
                   blue: 'bg-blue-500',
                   yellow: 'bg-yellow-500',

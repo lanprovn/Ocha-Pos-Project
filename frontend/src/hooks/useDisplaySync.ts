@@ -62,8 +62,8 @@ export function useDisplaySync(): UseDisplaySyncReturn {
         data: displayData
       };
       
-      // Check if channel is available and open before posting message
-      if (channel && channel.readyState === 'open') {
+      // Check if channel is available before posting message
+      if (channel) {
         try {
           channel.postMessage(message);
         } catch (error) {

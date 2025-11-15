@@ -5,9 +5,7 @@ import toast from 'react-hot-toast';
 import { useCart } from '@hooks/useCart';
 import { validatePhone } from '../utils/checkoutUtils';
 import { orderService } from '@services/order.service';
-import paymentService from '@services/payment.service';
 import qrService from '@services/qr.service';
-import { STORAGE_KEYS } from '@constants';
 import type { CustomerInfo, PaymentMethod } from '../types';
 import type { QRPaymentData } from '../../../components/features/payment/QRPaymentModal';
 

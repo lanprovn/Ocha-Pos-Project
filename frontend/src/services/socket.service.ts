@@ -40,7 +40,9 @@ export function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> 
       socket.on('connect', () => {
         console.log('✅ Socket.io connected:', socket?.id);
         // Auto join orders room khi connect
-        socket.emit('subscribe_orders');
+        if (socket) {
+          socket.emit('subscribe_orders');
+        }
       });
 
       socket.on('disconnect', () => {
@@ -51,10 +53,12 @@ export function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> 
         console.error('❌ Socket.io connection error:', error);
       });
 
-      socket.on('reconnect', (attemptNumber) => {
+      socket.on('reconnect', (attemptNumber: number) => {
         console.log('🔄 Socket.io reconnected after', attemptNumber, 'attempts');
         // Auto join orders room khi reconnect
-        socket.emit('subscribe_orders');
+        if (socket) {
+          socket.emit('subscribe_orders');
+        }
       });
     } catch (error) {
       console.error('❌ Failed to initialize Socket.io:', error);

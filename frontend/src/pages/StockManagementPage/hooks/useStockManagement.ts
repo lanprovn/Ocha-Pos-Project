@@ -99,7 +99,7 @@ export const useStockManagement = () => {
           loadIngredientsRef.current();
         }
       },
-      (alert) => {
+      () => {
         // Stock alert - reload alerts
         loadData(false); // Không show loading
         loadIngredientsRef.current();

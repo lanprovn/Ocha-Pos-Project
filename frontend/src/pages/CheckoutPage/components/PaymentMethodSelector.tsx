@@ -25,7 +25,6 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
         { key: 'qr', icon: '📱', description: 'QR Code ngân hàng' }
       ];
 
-  const primaryColor = isCustomerDisplay ? 'emerald' : 'orange';
   const primaryColorClass = isCustomerDisplay 
     ? 'border-emerald-500 bg-emerald-50 text-emerald-600'
     : 'border-orange-500 bg-orange-50 text-orange-600';
