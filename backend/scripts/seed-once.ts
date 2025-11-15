@@ -22,10 +22,10 @@ async function checkAndSeed() {
 
     process.stdout.write('🌱 Database is empty. Starting seed...\n');
     
-    // Run the main seed script
-    const seedPath = path.join(__dirname, '../prisma/seed.ts');
+    // Use simplified seed script that only creates users (no frontend files needed)
+    const seedPath = path.join(__dirname, '../prisma/seed-users-only.ts');
     
-    process.stdout.write(`📝 Running seed script: ${seedPath}\n`);
+    process.stdout.write(`📝 Running user seed script: ${seedPath}\n`);
     
     execSync(`npx ts-node ${seedPath}`, {
       stdio: 'inherit',
