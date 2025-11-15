@@ -38,13 +38,22 @@
 - [x] **AuthController** - ✅ Completed
 - [x] **CategoryController** - ✅ Completed
 - [x] **ProductController** - ✅ Completed (with pagination support)
-- [ ] OrderController - Pending
-- [ ] Other controllers - Pending
+- [x] **UserController** - ✅ Completed
+- [x] **DashboardController** - ✅ Completed
+- [x] **StockController** - ✅ Completed
+- [ ] OrderController - Pending (most complex)
+- [ ] PaymentController - Pending
+- [ ] ReportsController - Pending
+- [ ] UploadController - Pending
+- [ ] RecipeController - Pending
+- [ ] QRController - Pending
 
 ### 2. Service Layer Improvements
 - [x] Better error handling trong services (sử dụng AppError)
 - [x] **CategoryService** - ✅ Updated to use AppError
 - [x] **ProductService** - ✅ Updated to use AppError
+- [x] **UserService** - ✅ Updated to use AppError
+- [x] **StockService** - ✅ Updated to use AppError
 - [ ] Tạo base service class (nếu cần)
 - [ ] Standardize service return types
 - [ ] Extract common business logic
