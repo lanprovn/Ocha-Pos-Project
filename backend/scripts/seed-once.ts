@@ -12,26 +12,38 @@ async function checkAndSeed() {
     
     // Check if users already exist
     const userCount = await prisma.user.count();
+    const productCount = await prisma.product.count();
     
-    process.stdout.write(`📊 Found ${userCount} user(s) in database\n`);
+    process.stdout.write(`📊 Found ${userCount} user(s) and ${productCount} product(s) in database\n`);
     
-    if (userCount > 0) {
-      process.stdout.write(`✅ Database already has ${userCount} user(s). Skipping seed.\n`);
+    if (userCount > 0 && productCount > 0) {
+      process.stdout.write(`✅ Database already seeded. Skipping seed.\n`);
       return;
     }
 
-    process.stdout.write('🌱 Database is empty. Starting seed...\n');
-    
-    // Use full seed script (now reads from backend/prisma/data/)
-    const seedPath = path.join(__dirname, '../prisma/seed.ts');
-    
-    process.stdout.write(`📝 Running full seed script: ${seedPath}\n`);
-    
-    execSync(`npx ts-node ${seedPath}`, {
-      stdio: 'inherit',
-      cwd: path.join(__dirname, '..'),
-      env: process.env,
-    });
+    if (userCount === 0) {
+      // No users - run full seed (includes users)
+      process.stdout.write('🌱 Database is empty. Starting full seed...\n');
+      const seedPath = path.join(__dirname, '../prisma/seed.ts');
+      process.stdout.write(`📝 Running full seed script: ${seedPath}\n`);
+      
+      execSync(`npx ts-node ${seedPath}`, {
+        stdio: 'inherit',
+        cwd: path.join(__dirname, '..'),
+        env: process.env,
+      });
+    } else if (productCount === 0) {
+      // Has users but no products - seed products only
+      process.stdout.write('🌱 Database has users but no products. Seeding products...\n');
+      const seedProductsPath = path.join(__dirname, '../prisma/seed-products.ts');
+      process.stdout.write(`📝 Running products seed script: ${seedProductsPath}\n`);
+      
+      execSync(`npx ts-node ${seedProductsPath}`, {
+        stdio: 'inherit',
+        cwd: path.join(__dirname, '..'),
+        env: process.env,
+      });
+    }
     
     process.stdout.write('✅ Seed completed successfully\n');
   } catch (error: any) {

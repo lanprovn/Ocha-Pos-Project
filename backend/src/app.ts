@@ -26,6 +26,9 @@ import reportsRoutes from './routes/reports.routes';
 
 const app: Express = express();
 
+// Trust proxy - Required for Railway/cloud platforms to get correct client IP
+app.set('trust proxy', true);
+
 // Security middleware
 app.use(helmet());
 
