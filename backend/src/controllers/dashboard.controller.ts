@@ -1,26 +1,33 @@
 import { Request, Response } from 'express';
 import dashboardService from '../services/dashboard.service';
+import { BaseController } from './base.controller';
+import { ValidationSchemas, validateOrThrow } from '../utils/validation';
+import { z } from 'zod';
 
-export class DashboardController {
-  async getStats(_req: Request, res: Response) {
-    try {
-      const stats = await dashboardService.getStats();
-      res.json(stats);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  }
+const dateQuerySchema = z.object({
+  date: ValidationSchemas.dateString.optional(),
+});
 
-  async getDailySales(req: Request, res: Response) {
-    try {
-      const date = req.query.date as string | undefined;
-      const dailySales = await dashboardService.getDailySales(date);
-      res.json(dailySales);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  }
+export class DashboardController extends BaseController {
+  /**
+   * Get dashboard statistics
+   */
+  getStats = this.asyncHandler(async (_req: Request, res: Response) => {
+    const stats = await dashboardService.getStats();
+    this.success(res, stats);
+  });
+
+  /**
+   * Get daily sales
+   */
+  getDailySales = this.asyncHandler(async (req: Request, res: Response) => {
+    const query = validateOrThrow(dateQuerySchema, req.query);
+    const dailySales = await dashboardService.getDailySales(query.date);
+    this.success(res, dailySales);
+  });
 }
 
-export default new DashboardController();
+// Export instance
+const dashboardController = new DashboardController();
+export default dashboardController;
 

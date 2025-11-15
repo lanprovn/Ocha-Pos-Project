@@ -11,6 +11,8 @@ import {
   UpdateIngredientInput,
 } from '../types/stock.types';
 import { emitDashboardUpdate, emitStockAlert } from '../socket/socket.io';
+import { AppError } from '../utils/errorHandler';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
 
 export class StockService {
   // ========== Product Stock ==========
@@ -45,7 +47,7 @@ export class StockService {
     });
 
     if (!stock) {
-      throw new Error('Product stock not found');
+      throw new AppError(ERROR_MESSAGES.PRODUCT_STOCK_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     return this.transformProductStock(stock);
@@ -57,7 +59,7 @@ export class StockService {
     });
 
     if (!stock) {
-      throw new Error('Product stock not found');
+      throw new AppError(ERROR_MESSAGES.PRODUCT_STOCK_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     const updateData: any = {};
@@ -119,7 +121,7 @@ export class StockService {
     });
 
     if (!product) {
-      throw new Error('Product not found');
+      throw new AppError(ERROR_MESSAGES.PRODUCT_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     const existing = await prisma.stock.findUnique({
@@ -127,7 +129,7 @@ export class StockService {
     });
 
     if (existing) {
-      throw new Error('Stock already exists for this product');
+      throw new AppError(ERROR_MESSAGES.STOCK_ALREADY_EXISTS, HTTP_STATUS.CONFLICT);
     }
 
     const stock = await prisma.stock.create({
@@ -158,7 +160,7 @@ export class StockService {
     });
 
     if (!stock) {
-      throw new Error('Product stock not found');
+      throw new AppError(ERROR_MESSAGES.PRODUCT_STOCK_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     await prisma.stock.delete({
@@ -192,7 +194,7 @@ export class StockService {
     });
 
     if (!stock) {
-      throw new Error('Ingredient stock not found');
+      throw new AppError(ERROR_MESSAGES.INGREDIENT_STOCK_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     return this.transformIngredientStock(stock);
@@ -207,7 +209,7 @@ export class StockService {
     });
 
     if (!stock) {
-      throw new Error('Ingredient stock not found');
+      throw new AppError(ERROR_MESSAGES.INGREDIENT_STOCK_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     const updateData: any = {};
@@ -308,7 +310,7 @@ export class StockService {
     });
 
     if (!ingredient) {
-      throw new Error('Ingredient not found');
+      throw new AppError(ERROR_MESSAGES.STOCK_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     await prisma.ingredient.update({
@@ -343,7 +345,7 @@ export class StockService {
     });
 
     if (!updated) {
-      throw new Error('Ingredient stock not found');
+      throw new AppError(ERROR_MESSAGES.INGREDIENT_STOCK_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     return this.transformIngredientStock(updated);
@@ -355,7 +357,7 @@ export class StockService {
     });
 
     if (!ingredient) {
-      throw new Error('Ingredient not found');
+      throw new AppError(ERROR_MESSAGES.STOCK_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     await prisma.ingredient.delete({
@@ -454,7 +456,7 @@ export class StockService {
     });
 
     if (!transaction) {
-      throw new Error('Stock transaction not found');
+      throw new AppError(ERROR_MESSAGES.STOCK_TRANSACTION_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     return this.transformTransaction(transaction);
@@ -519,7 +521,7 @@ export class StockService {
     });
 
     if (!alert) {
-      throw new Error('Stock alert not found');
+      throw new AppError(ERROR_MESSAGES.STOCK_ALERT_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     return this.transformAlert(alert);
@@ -531,7 +533,7 @@ export class StockService {
     });
 
     if (!alert) {
-      throw new Error('Stock alert not found');
+      throw new AppError(ERROR_MESSAGES.STOCK_ALERT_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     const updated = await prisma.stockAlert.update({
@@ -555,7 +557,7 @@ export class StockService {
     });
 
     if (!alert) {
-      throw new Error('Stock alert not found');
+      throw new AppError(ERROR_MESSAGES.STOCK_ALERT_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     const updated = await prisma.stockAlert.update({
@@ -578,7 +580,7 @@ export class StockService {
     });
 
     if (!alert) {
-      throw new Error('Stock alert not found');
+      throw new AppError(ERROR_MESSAGES.STOCK_ALERT_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     await prisma.stockAlert.delete({
