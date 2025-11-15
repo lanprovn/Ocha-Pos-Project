@@ -7,22 +7,25 @@ const prisma = new PrismaClient();
 
 async function checkAndSeed() {
   try {
-    console.log('🔍 Checking if database needs seeding...');
+    // Use process.stdout.write to ensure output is flushed immediately
+    process.stdout.write('🔍 Checking if database needs seeding...\n');
     
     // Check if users already exist
     const userCount = await prisma.user.count();
     
+    process.stdout.write(`📊 Found ${userCount} user(s) in database\n`);
+    
     if (userCount > 0) {
-      console.log(`✅ Database already has ${userCount} user(s). Skipping seed.`);
+      process.stdout.write(`✅ Database already has ${userCount} user(s). Skipping seed.\n`);
       return;
     }
 
-    console.log('🌱 Database is empty. Starting seed...');
+    process.stdout.write('🌱 Database is empty. Starting seed...\n');
     
     // Run the main seed script
     const seedPath = path.join(__dirname, '../prisma/seed.ts');
     
-    console.log(`📝 Running seed script: ${seedPath}`);
+    process.stdout.write(`📝 Running seed script: ${seedPath}\n`);
     
     execSync(`npx ts-node ${seedPath}`, {
       stdio: 'inherit',
@@ -30,14 +33,14 @@ async function checkAndSeed() {
       env: process.env,
     });
     
-    console.log('✅ Seed completed successfully');
+    process.stdout.write('✅ Seed completed successfully\n');
   } catch (error: any) {
-    console.error('❌ Seed failed:', error.message);
+    process.stderr.write(`❌ Seed failed: ${error.message}\n`);
     if (error.stack) {
-      console.error('Stack:', error.stack);
+      process.stderr.write(`Stack: ${error.stack}\n`);
     }
     // Don't exit with error - allow server to start anyway
-    console.log('⚠️  Continuing server startup despite seed failure...');
+    process.stdout.write('⚠️  Continuing server startup despite seed failure...\n');
   } finally {
     await prisma.$disconnect();
   }
