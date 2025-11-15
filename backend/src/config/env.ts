@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
 
+// Log immediately to ensure output is visible
+process.stdout.write('Loading environment variables...\n');
+if (process.stdout.flush) process.stdout.flush();
+
 dotenv.config();
 
 const envSchema = z.object({
@@ -23,10 +27,16 @@ const envSchema = z.object({
 let env: z.infer<typeof envSchema>;
 
 try {
+  process.stdout.write('Validating environment variables...\n');
+  if (process.stdout.flush) process.stdout.flush();
   env = envSchema.parse(process.env);
+  process.stdout.write('✅ Environment variables validated successfully\n');
+  if (process.stdout.flush) process.stdout.flush();
 } catch (error: any) {
   // Log to console directly (logger might not be initialized yet)
-  console.error('❌ Environment validation failed:');
+  // Use process.stderr to ensure error output is visible
+  process.stderr.write('❌ Environment validation failed:\n');
+  if (process.stderr.flush) process.stderr.flush();
   if (error.errors) {
     error.errors.forEach((err: any) => {
       console.error(`  - ${err.path.join('.')}: ${err.message}`);
