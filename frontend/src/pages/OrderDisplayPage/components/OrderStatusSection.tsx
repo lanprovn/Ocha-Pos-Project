@@ -5,7 +5,7 @@ import { OrderCard } from './OrderCard';
 interface OrderStatusSectionProps {
   section: StatusSection;
   currentTime: Date;
-  sectionRef?: React.RefObject<HTMLDivElement>;
+  sectionRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export const OrderStatusSection: React.FC<OrderStatusSectionProps> = ({

@@ -10,7 +10,7 @@ export const useOrderDisplay = () => {
   const [orders, setOrders] = useState<OrderTracking[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
-  const completedSectionRef = useRef<HTMLDivElement>(null);
+  const completedSectionRef = useRef<HTMLDivElement | null>(null);
   const previousCompletedCountRef = useRef<number>(0);
 
   // Map backend status to frontend display status
@@ -51,13 +51,13 @@ export const useOrderDisplay = () => {
       createdByName: order.orderCreatorName || undefined,
       items: order.items?.map((item) => ({
         id: item.productId,
-        productId: parseInt(item.productId) || 0,
+        productId: parseInt(item.productId, 10) || 0,
         name: item.product?.name || 'Sản phẩm',
         image: item.product?.image || '',
-        basePrice: parseFloat(item.price || 0),
+        basePrice: parseFloat(String(item.price || 0)),
         quantity: item.quantity,
-        price: parseFloat(item.price || 0),
-        totalPrice: parseFloat(item.subtotal || 0),
+        price: parseFloat(String(item.price || 0)),
+        totalPrice: parseFloat(String(item.subtotal || 0)),
         selectedSize: item.selectedSize ? { id: '', name: item.selectedSize, extraPrice: 0 } : undefined,
         selectedToppings:
           item.selectedToppings?.map((name: string, idx: number) => ({
@@ -67,7 +67,7 @@ export const useOrderDisplay = () => {
           })) || [],
         note: item.note || undefined,
       })) || [],
-      totalPrice: parseFloat(order.totalAmount || 0),
+      totalPrice: parseFloat(String(order.totalAmount || 0)),
       totalItems: order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0,
       status: mapStatus(order.status),
       backendStatus: order.status, // Lưu backend status gốc để check trong OrderCard

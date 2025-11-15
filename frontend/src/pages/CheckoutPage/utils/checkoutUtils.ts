@@ -1,7 +1,4 @@
 // Checkout utilities
-import type { CustomerInfo, PaymentMethod } from '../types';
-import type { CartItem } from '../../../types/cart';
-
 export const validatePhone = (phone: string): boolean => {
   // Vietnamese phone number format: 10-11 digits, may start with 0 or +84
   const phoneRegex = /^(0|\+84)[1-9]\d{8,9}$/;

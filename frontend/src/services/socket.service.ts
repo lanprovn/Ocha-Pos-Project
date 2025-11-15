@@ -53,8 +53,10 @@ export function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> 
         console.error('❌ Socket.io connection error:', error);
       });
 
-      socket.on('reconnect', (attemptNumber: number) => {
-        console.log('🔄 Socket.io reconnected after', attemptNumber, 'attempts');
+      // Handle reconnection - socket.io automatically reconnects, 
+      // so we just need to resubscribe on connect
+      socket.io.on('reconnect', () => {
+        console.log('🔄 Socket.io reconnected');
         // Auto join orders room khi reconnect
         if (socket) {
           socket.emit('subscribe_orders');
