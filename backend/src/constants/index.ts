@@ -41,6 +41,8 @@ export const ERROR_MESSAGES = {
   // Database
   DATABASE_ERROR: 'Lỗi kết nối cơ sở dữ liệu. Vui lòng thử lại sau.',
   UNIQUE_CONSTRAINT: 'Dữ liệu đã tồn tại trong hệ thống.',
+  EMAIL_ALREADY_EXISTS: 'Email đã tồn tại trong hệ thống.',
+  CURRENT_PASSWORD_INCORRECT: 'Mật khẩu hiện tại không đúng.',
   
   // File
   FILE_NOT_FOUND: 'Không tìm thấy file.',

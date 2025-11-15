@@ -1,6 +1,8 @@
 import prisma from '../config/database';
 import { comparePassword, hashPassword } from '../utils/bcrypt';
 import logger from '../utils/logger';
+import { AppError } from '../utils/errorHandler';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../constants';
 
 export interface CreateUserInput {
   email: string;
@@ -45,7 +47,7 @@ export class UserService {
     });
 
     if (!user) {
-      throw new Error('User not found');
+      throw new AppError(ERROR_MESSAGES.USER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     return user;
@@ -83,7 +85,7 @@ export class UserService {
     });
 
     if (existingUser) {
-      throw new Error('Email already exists');
+      throw new AppError(ERROR_MESSAGES.EMAIL_ALREADY_EXISTS, HTTP_STATUS.CONFLICT);
     }
 
     // Hash password
@@ -195,13 +197,13 @@ export class UserService {
     });
 
     if (!user) {
-      throw new Error('User not found');
+      throw new AppError(ERROR_MESSAGES.USER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     // Verify current password
     const isPasswordValid = await comparePassword(data.currentPassword, user.password);
     if (!isPasswordValid) {
-      throw new Error('Current password is incorrect');
+      throw new AppError(ERROR_MESSAGES.CURRENT_PASSWORD_INCORRECT, HTTP_STATUS.BAD_REQUEST);
     }
 
     // Hash new password
@@ -229,7 +231,7 @@ export class UserService {
     });
 
     if (!user) {
-      throw new Error('User not found');
+      throw new AppError(ERROR_MESSAGES.USER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     // Hash new password

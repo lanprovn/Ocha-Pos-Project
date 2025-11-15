@@ -2,150 +2,122 @@ import { Request, Response } from 'express';
 import userService from '../services/user.service';
 import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { BaseController } from './base.controller';
 import { AppError } from '../utils/errorHandler';
+import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, USER_ROLES } from '../constants';
+import { ValidationSchemas, validateOrThrow } from '../utils/validation';
 
 const createUserSchema = z.object({
-  body: z.object({
-    email: z.string().email('Invalid email format'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
-    name: z.string().min(1, 'Name is required'),
-    role: z.enum(['ADMIN', 'STAFF']).optional(),
-  }),
+  email: ValidationSchemas.email,
+  password: ValidationSchemas.password,
+  name: z.string().min(1, 'Tên là bắt buộc.'),
+  role: z.enum([USER_ROLES.ADMIN, USER_ROLES.STAFF]).optional(),
 });
 
 const updateUserSchema = z.object({
-  body: z.object({
-    email: z.string().email('Invalid email format').optional(),
-    name: z.string().min(1, 'Name is required').optional(),
-    role: z.enum(['ADMIN', 'STAFF']).optional(),
-    isActive: z.boolean().optional(),
-  }),
+  email: ValidationSchemas.email.optional(),
+  name: z.string().min(1, 'Tên là bắt buộc.').optional(),
+  role: z.enum([USER_ROLES.ADMIN, USER_ROLES.STAFF]).optional(),
+  isActive: z.boolean().optional(),
 });
 
 const changePasswordSchema = z.object({
-  body: z.object({
-    currentPassword: z.string().min(1, 'Current password is required'),
-    newPassword: z.string().min(6, 'New password must be at least 6 characters'),
-  }),
+  currentPassword: z.string().min(1, 'Mật khẩu hiện tại là bắt buộc.'),
+  newPassword: ValidationSchemas.password,
 });
 
 const resetPasswordSchema = z.object({
-  body: z.object({
-    email: z.string().email('Invalid email format'),
-    newPassword: z.string().min(6, 'New password must be at least 6 characters'),
-  }),
+  email: ValidationSchemas.email,
+  newPassword: ValidationSchemas.password,
 });
 
-export class UserController {
-  async getAll(_req: AuthRequest, res: Response) {
-    try {
-      const users = await userService.getAll();
-      res.json(users);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message || 'Failed to fetch users' });
+const idParamSchema = z.object({
+  id: ValidationSchemas.uuid,
+});
+
+export class UserController extends BaseController {
+  /**
+   * Get all users
+   */
+  getAll = this.asyncHandler(async (_req: AuthRequest, res: Response) => {
+    const users = await userService.getAll();
+    this.success(res, users);
+  });
+
+  /**
+   * Get user by ID
+   */
+  getById = this.asyncHandler(async (req: Request, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+    const user = await userService.findById(id);
+    this.success(res, user);
+  });
+
+  /**
+   * Create new user
+   */
+  create = this.asyncHandler(async (req: AuthRequest, res: Response) => {
+    const validated = validateOrThrow(createUserSchema, req.body);
+    const user = await userService.create(validated);
+    this.created(res, user, SUCCESS_MESSAGES.CREATED);
+  });
+
+  /**
+   * Update user
+   */
+  update = this.asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+    const validated = validateOrThrow(updateUserSchema, req.body);
+    const user = await userService.update(id, validated);
+    this.success(res, user, SUCCESS_MESSAGES.UPDATED);
+  });
+
+  /**
+   * Delete user
+   */
+  delete = this.asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { id } = validateOrThrow(idParamSchema, req.params);
+
+    // Prevent deleting yourself
+    if (req.user && req.user.userId === id) {
+      throw new AppError('Không thể xóa tài khoản của chính bạn.', HTTP_STATUS.BAD_REQUEST);
     }
-  }
 
-  async getById(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const user = await userService.findById(id);
-      res.json(user);
-    } catch (error: any) {
-      res.status(404).json({ error: error.message });
+    await userService.delete(id);
+    this.success(res, { message: 'Xóa người dùng thành công.' });
+  });
+
+  /**
+   * Change password
+   */
+  changePassword = this.asyncHandler(async (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+      throw new AppError(ERROR_MESSAGES.UNAUTHORIZED, HTTP_STATUS.UNAUTHORIZED);
     }
-  }
 
-  async create(req: AuthRequest, res: Response) {
-    try {
-      const validated = createUserSchema.parse({ body: req.body });
-      const user = await userService.create(validated.body);
-      res.status(201).json(user);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else {
-        res.status(400).json({ error: error.message || 'Failed to create user' });
-      }
+    const { id } = validateOrThrow(idParamSchema, req.params);
+
+    // Users can only change their own password
+    if (req.user.userId !== id) {
+      throw new AppError('Bạn chỉ có thể đổi mật khẩu của chính mình.', HTTP_STATUS.FORBIDDEN);
     }
-  }
 
-  async update(req: AuthRequest, res: Response) {
-    try {
-      const { id } = req.params;
-      const validated = updateUserSchema.parse({ body: req.body });
-      const user = await userService.update(id, validated.body);
-      res.json(user);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else {
-        res.status(400).json({ error: error.message || 'Failed to update user' });
-      }
-    }
-  }
+    const validated = validateOrThrow(changePasswordSchema, req.body);
+    await userService.changePassword(id, validated);
+    this.success(res, { message: 'Đổi mật khẩu thành công.' });
+  });
 
-  async delete(req: AuthRequest, res: Response) {
-    try {
-      const { id } = req.params;
-
-      // Prevent deleting yourself
-      if (req.user && req.user.userId === id) {
-        throw new AppError('Cannot delete your own account', 400);
-      }
-
-      const result = await userService.delete(id);
-      res.json(result);
-    } catch (error: any) {
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(400).json({ error: error.message || 'Failed to delete user' });
-      }
-    }
-  }
-
-  async changePassword(req: AuthRequest, res: Response) {
-    try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
-      const { id } = req.params;
-
-      // Users can only change their own password
-      if (req.user.userId !== id) {
-        res.status(403).json({ error: 'Forbidden: You can only change your own password' });
-        return;
-      }
-
-      const validated = changePasswordSchema.parse({ body: req.body });
-      const result = await userService.changePassword(id, validated.body);
-      res.json(result);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else {
-        res.status(400).json({ error: error.message || 'Failed to change password' });
-      }
-    }
-  }
-
-  async resetPassword(req: AuthRequest, res: Response) {
-    try {
-      const validated = resetPasswordSchema.parse({ body: req.body });
-      const result = await userService.resetPassword(validated.body);
-      res.json(result);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else {
-        res.status(400).json({ error: error.message || 'Failed to reset password' });
-      }
-    }
-  }
+  /**
+   * Reset password (admin only)
+   */
+  resetPassword = this.asyncHandler(async (req: AuthRequest, res: Response) => {
+    const validated = validateOrThrow(resetPasswordSchema, req.body);
+    await userService.resetPassword(validated);
+    this.success(res, { message: 'Đặt lại mật khẩu thành công.' });
+  });
 }
 
-export default new UserController();
+// Export instance
+const userController = new UserController();
+export default userController;
 
