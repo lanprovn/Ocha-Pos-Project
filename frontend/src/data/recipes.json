@@ -1,0 +1,258 @@
+{
+  "recipes": [
+    {
+      "productId": "1",
+      "ingredients": [
+        { "ingredientId": "coffee_beans", "quantity": 20 },
+        { "ingredientId": "sugar", "quantity": 5 },
+        { "ingredientId": "milk", "quantity": 50 }
+      ]
+    },
+    {
+      "productId": "2",
+      "ingredients": [
+        { "ingredientId": "coffee_beans", "quantity": 20 },
+        { "ingredientId": "sugar", "quantity": 5 },
+        { "ingredientId": "ice_cubes", "quantity": 8 }
+      ]
+    },
+    {
+      "productId": "3",
+      "ingredients": [
+        { "ingredientId": "coffee_beans", "quantity": 15 },
+        { "ingredientId": "condensed_milk", "quantity": 30 },
+        { "ingredientId": "sugar", "quantity": 3 }
+      ]
+    },
+    {
+      "productId": "4",
+      "ingredients": [
+        { "ingredientId": "coffee_beans", "quantity": 15 },
+        { "ingredientId": "condensed_milk", "quantity": 30 },
+        { "ingredientId": "ice_cubes", "quantity": 8 }
+      ]
+    },
+    {
+      "productId": "15",
+      "ingredients": [
+        { "ingredientId": "coffee_beans", "quantity": 18 },
+        { "ingredientId": "milk", "quantity": 100 },
+        { "ingredientId": "whipped_cream", "quantity": 20 },
+        { "ingredientId": "vanilla_syrup", "quantity": 10 }
+      ]
+    },
+    {
+      "productId": "16",
+      "ingredients": [
+        { "ingredientId": "coffee_beans", "quantity": 18 },
+        { "ingredientId": "milk", "quantity": 100 },
+        { "ingredientId": "whipped_cream", "quantity": 20 },
+        { "ingredientId": "vanilla_syrup", "quantity": 10 }
+      ]
+    },
+    {
+      "productId": "17",
+      "ingredients": [
+        { "ingredientId": "coffee_beans", "quantity": 20 },
+        { "ingredientId": "milk", "quantity": 80 },
+        { "ingredientId": "caramel_syrup", "quantity": 15 },
+        { "ingredientId": "whipped_cream", "quantity": 25 }
+      ]
+    },
+    {
+      "productId": "18",
+      "ingredients": [
+        { "ingredientId": "coffee_beans", "quantity": 20 },
+        { "ingredientId": "milk", "quantity": 80 },
+        { "ingredientId": "caramel_syrup", "quantity": 15 },
+        { "ingredientId": "ice_cubes", "quantity": 8 }
+      ]
+    },
+    {
+      "productId": "21",
+      "ingredients": [
+        { "ingredientId": "coffee_beans", "quantity": 25 },
+        { "ingredientId": "sugar", "quantity": 8 },
+        { "ingredientId": "ice_cubes", "quantity": 10 }
+      ]
+    },
+    {
+      "productId": "25",
+      "ingredients": [
+        { "ingredientId": "coffee_beans", "quantity": 30 },
+        { "ingredientId": "sugar", "quantity": 2 }
+      ]
+    },
+    {
+      "productId": "26",
+      "ingredients": [
+        { "ingredientId": "caramel_syrup", "quantity": 20 },
+        { "ingredientId": "milk", "quantity": 150 },
+        { "ingredientId": "ice_cubes", "quantity": 12 },
+        { "ingredientId": "whipped_cream", "quantity": 30 }
+      ]
+    },
+    {
+      "productId": "27",
+      "ingredients": [
+        { "ingredientId": "cocoa_powder", "quantity": 15 },
+        { "ingredientId": "milk", "quantity": 150 },
+        { "ingredientId": "ice_cubes", "quantity": 12 },
+        { "ingredientId": "whipped_cream", "quantity": 30 }
+      ]
+    },
+    {
+      "productId": "28",
+      "ingredients": [
+        { "ingredientId": "sugar", "quantity": 10 },
+        { "ingredientId": "milk", "quantity": 150 },
+        { "ingredientId": "ice_cubes", "quantity": 12 },
+        { "ingredientId": "whipped_cream", "quantity": 30 }
+      ]
+    },
+    {
+      "productId": "29",
+      "ingredients": [
+        { "ingredientId": "strawberry_syrup", "quantity": 20 },
+        { "ingredientId": "milk", "quantity": 150 },
+        { "ingredientId": "ice_cubes", "quantity": 12 },
+        { "ingredientId": "whipped_cream", "quantity": 30 }
+      ]
+    },
+    {
+      "productId": "30",
+      "ingredients": [
+        { "ingredientId": "matcha_powder", "quantity": 12 },
+        { "ingredientId": "milk", "quantity": 150 },
+        { "ingredientId": "ice_cubes", "quantity": 12 },
+        { "ingredientId": "whipped_cream", "quantity": 30 }
+      ]
+    },
+    {
+      "productId": "32",
+      "ingredients": [
+        { "ingredientId": "coffee_beans", "quantity": 18 },
+        { "ingredientId": "milk", "quantity": 120 },
+        { "ingredientId": "vanilla_syrup", "quantity": 8 }
+      ]
+    },
+    {
+      "productId": "33",
+      "ingredients": [
+        { "ingredientId": "coffee_beans", "quantity": 18 },
+        { "ingredientId": "milk", "quantity": 120 },
+        { "ingredientId": "ice_cubes", "quantity": 8 }
+      ]
+    },
+    {
+      "productId": "35",
+      "ingredients": [
+        { "ingredientId": "coffee_beans", "quantity": 25 },
+        { "ingredientId": "sugar", "quantity": 5 },
+        { "ingredientId": "ice_cubes", "quantity": 8 }
+      ]
+    },
+    {
+      "productId": "36",
+      "ingredients": [
+        { "ingredientId": "coffee_beans", "quantity": 25 },
+        { "ingredientId": "sugar", "quantity": 5 }
+      ]
+    },
+    {
+      "productId": "37",
+      "ingredients": [
+        { "ingredientId": "coffee_beans", "quantity": 25 },
+        { "ingredientId": "condensed_milk", "quantity": 40 },
+        { "ingredientId": "sugar", "quantity": 3 },
+        { "ingredientId": "ice_cubes", "quantity": 8 }
+      ]
+    },
+    {
+      "productId": "40",
+      "ingredients": [
+        { "ingredientId": "peach_syrup", "quantity": 20 },
+        { "ingredientId": "matcha_powder", "quantity": 8 },
+        { "ingredientId": "ice_cubes", "quantity": 8 }
+      ]
+    },
+    {
+      "productId": "41",
+      "ingredients": [
+        { "ingredientId": "lotus_seed", "quantity": 10 },
+        { "ingredientId": "matcha_powder", "quantity": 8 },
+        { "ingredientId": "sugar", "quantity": 5 }
+      ]
+    },
+    {
+      "productId": "42",
+      "ingredients": [
+        { "ingredientId": "lotus_seed", "quantity": 15 },
+        { "ingredientId": "matcha_powder", "quantity": 8 },
+        { "ingredientId": "sugar", "quantity": 8 }
+      ]
+    },
+    {
+      "productId": "43",
+      "ingredients": [
+        { "ingredientId": "lotus_seed", "quantity": 10 },
+        { "ingredientId": "matcha_powder", "quantity": 8 },
+        { "ingredientId": "ice_cubes", "quantity": 8 }
+      ]
+    },
+    {
+      "productId": "44",
+      "ingredients": [
+        { "ingredientId": "peach_syrup", "quantity": 20 },
+        { "ingredientId": "jelly", "quantity": 15 },
+        { "ingredientId": "ice_cubes", "quantity": 8 }
+      ]
+    },
+    {
+      "productId": "45",
+      "ingredients": [
+        { "ingredientId": "lychee_syrup", "quantity": 20 },
+        { "ingredientId": "jelly", "quantity": 15 },
+        { "ingredientId": "sugar", "quantity": 5 }
+      ]
+    },
+    {
+      "productId": "46",
+      "ingredients": [
+        { "ingredientId": "lychee_syrup", "quantity": 20 },
+        { "ingredientId": "jelly", "quantity": 15 },
+        { "ingredientId": "ice_cubes", "quantity": 8 }
+      ]
+    },
+    {
+      "productId": "47",
+      "ingredients": [
+        { "ingredientId": "peach_syrup", "quantity": 20 },
+        { "ingredientId": "sugar", "quantity": 5 }
+      ]
+    },
+    {
+      "productId": "48",
+      "ingredients": [
+        { "ingredientId": "peach_syrup", "quantity": 20 },
+        { "ingredientId": "ice_cubes", "quantity": 8 }
+      ]
+    },
+    {
+      "productId": "49",
+      "ingredients": [
+        { "ingredientId": "strawberry_syrup", "quantity": 20 },
+        { "ingredientId": "matcha_powder", "quantity": 8 },
+        { "ingredientId": "sugar", "quantity": 5 }
+      ]
+    },
+    {
+      "productId": "50",
+      "ingredients": [
+        { "ingredientId": "strawberry_syrup", "quantity": 20 },
+        { "ingredientId": "matcha_powder", "quantity": 8 },
+        { "ingredientId": "ice_cubes", "quantity": 8 }
+      ]
+    }
+  ]
+}

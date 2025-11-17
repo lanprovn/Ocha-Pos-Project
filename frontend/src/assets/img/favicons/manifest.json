@@ -1,0 +1,19 @@
+{
+  "name": "Ocha Việt POS",
+  "short_name": "OCHA POS",
+  "description": "Hệ thống POS order web hoàn chỉnh cho nhà hàng",
+  "icons": [
+    {
+      "src": "/src/assets/img/favicons/favicon-simple.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#ea580c",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/",
+  "orientation": "portrait-primary"
+}
+

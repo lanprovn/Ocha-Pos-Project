@@ -1,0 +1,76 @@
+import axios from 'axios';
+import type { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
+import API_BASE_URL from '../config/api';
+
+// Create axios instance
+const axiosInstance: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor
+axiosInstance.interceptors.request.use(
+  (config) => {
+    // Add auth token if available
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Không set Content-Type cho FormData, để browser tự set với boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor
+axiosInstance.interceptors.response.use(
+  (response) => {
+    return response.data;
+  },
+  (error: AxiosError) => {
+    // Handle errors
+    if (error.response) {
+      // Server responded with error
+      const message = (error.response.data as any)?.error || error.message;
+      console.error('API Error:', message);
+      return Promise.reject(new Error(message));
+    } else if (error.request) {
+      // Request made but no response
+      console.error('Network Error:', error.message);
+      return Promise.reject(new Error('Network error. Please check your connection.'));
+    } else {
+      // Something else happened
+      console.error('Error:', error.message);
+      return Promise.reject(error);
+    }
+  }
+);
+
+const apiClient = {
+  get: async <T>(url: string, config?: AxiosRequestConfig) => {
+    return (axiosInstance.get<T>(url, config) as unknown) as Promise<T>;
+  },
+  post: async <T>(url: string, data?: unknown, config?: AxiosRequestConfig) => {
+    return (axiosInstance.post<T>(url, data, config) as unknown) as Promise<T>;
+  },
+  put: async <T>(url: string, data?: unknown, config?: AxiosRequestConfig) => {
+    return (axiosInstance.put<T>(url, data, config) as unknown) as Promise<T>;
+  },
+  patch: async <T>(url: string, data?: unknown, config?: AxiosRequestConfig) => {
+    return (axiosInstance.patch<T>(url, data, config) as unknown) as Promise<T>;
+  },
+  delete: async <T>(url: string, config?: AxiosRequestConfig) => {
+    return (axiosInstance.delete<T>(url, config) as unknown) as Promise<T>;
+  },
+};
+
+export default apiClient;
+

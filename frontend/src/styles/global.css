@@ -1,0 +1,65 @@
+/* ========== GLOBAL FULL LAYOUT RESET ========== */
+html, body, #root {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #ffffff !important;
+  text-align: left !important;
+  box-sizing: border-box !important;
+}
+
+/* Allow overflow for login page */
+body[data-page="login"] {
+  overflow: auto !important;
+}
+
+/* Default overflow hidden for other pages */
+body:not([data-page="login"]) {
+  overflow: hidden !important;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit !important;
+}
+
+/* Xóa toàn bộ container bị giới hạn width */
+[class*="container"],
+.pos-container {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Reset mọi text-align trung tâm */
+#root > div {
+  text-align: unset !important;
+}
+
+/* Custom scrollbar styles */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
