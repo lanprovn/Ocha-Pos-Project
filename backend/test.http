@@ -1,0 +1,202 @@
+### Health Check
+GET http://localhost:8080/health
+
+### ============================================
+### PRODUCTS APIs
+### ============================================
+
+### Get All Products
+GET http://localhost:8080/api/products
+
+### Get Product by ID
+GET http://localhost:8080/api/products/{{productId}}
+
+### Create Product
+POST http://localhost:8080/api/products
+Content-Type: application/json
+
+{
+  "name": "Cà phê đen",
+  "description": "Cà phê đen đậm đà",
+  "price": 25000,
+  "stock": 100,
+  "isAvailable": true,
+  "isPopular": true,
+  "tags": ["coffee", "hot"],
+  "sizes": [
+    {
+      "name": "Nhỏ",
+      "extraPrice": 0
+    },
+    {
+      "name": "Lớn",
+      "extraPrice": 10000
+    }
+  ],
+  "toppings": [
+    {
+      "name": "Sữa",
+      "extraPrice": 5000
+    }
+  ]
+}
+
+### Update Product
+PATCH http://localhost:8080/api/products/{{productId}}
+Content-Type: application/json
+
+{
+  "price": 30000,
+  "stock": 150
+}
+
+### Delete Product
+DELETE http://localhost:8080/api/products/{{productId}}
+
+### ============================================
+### CATEGORIES APIs
+### ============================================
+
+### Get All Categories
+GET http://localhost:8080/api/categories
+
+### Get Category by ID
+GET http://localhost:8080/api/categories/{{categoryId}}
+
+### Create Category
+POST http://localhost:8080/api/categories
+Content-Type: application/json
+
+{
+  "name": "Đồ uống",
+  "description": "Các loại đồ uống",
+  "icon": "fas fa-coffee"
+}
+
+### Update Category
+PATCH http://localhost:8080/api/categories/{{categoryId}}
+Content-Type: application/json
+
+{
+  "name": "Đồ uống mới"
+}
+
+### ============================================
+### ORDERS APIs
+### ============================================
+
+### Get All Orders
+GET http://localhost:8080/api/orders
+
+### Get Orders with Filters
+GET http://localhost:8080/api/orders?status=COMPLETED&paymentMethod=CASH
+
+### Get Today's Orders
+GET http://localhost:8080/api/orders/today
+
+### Get Orders by Date
+GET http://localhost:8080/api/orders/date/2025-01-11
+
+### Get Order by ID
+GET http://localhost:8080/api/orders/{{orderId}}
+
+### Create Order
+POST http://localhost:8080/api/orders
+Content-Type: application/json
+
+{
+  "customerName": "Nguyễn Văn A",
+  "customerPhone": "0123456789",
+  "customerTable": "Bàn 1",
+  "notes": "Không cay",
+  "paymentMethod": "CASH",
+  "paymentStatus": "SUCCESS",
+  "orderCreator": "STAFF",
+  "orderCreatorName": "Nhân viên",
+  "items": [
+    {
+      "productId": "{{productId}}",
+      "quantity": 2,
+      "price": 25000,
+      "subtotal": 50000,
+      "selectedSize": "Lớn",
+      "selectedToppings": ["Sữa"],
+      "note": "Ít đá"
+    }
+  ]
+}
+
+### Update Order Status
+PUT http://localhost:8080/api/orders/{{orderId}}/status
+Content-Type: application/json
+
+{
+  "status": "COMPLETED"
+}
+
+### ============================================
+### STOCK APIs
+### ============================================
+
+### Get All Product Stocks
+GET http://localhost:8080/api/stock/products
+
+### Get Product Stock by ID
+GET http://localhost:8080/api/stock/products/{{stockId}}
+
+### Update Product Stock
+PUT http://localhost:8080/api/stock/products/{{stockId}}
+Content-Type: application/json
+
+{
+  "quantity": 150,
+  "minStock": 10,
+  "maxStock": 200
+}
+
+### Get All Ingredient Stocks
+GET http://localhost:8080/api/stock/ingredients
+
+### Get Ingredient Stock by ID
+GET http://localhost:8080/api/stock/ingredients/{{stockId}}
+
+### Create Stock Transaction
+POST http://localhost:8080/api/stock/transactions
+Content-Type: application/json
+
+{
+  "productId": "{{productId}}",
+  "type": "PURCHASE",
+  "quantity": 50,
+  "reason": "Nhập hàng mới"
+}
+
+### Get All Stock Transactions
+GET http://localhost:8080/api/stock/transactions
+
+### Get Stock Alerts
+GET http://localhost:8080/api/stock/alerts
+
+### Create Stock Alert
+POST http://localhost:8080/api/stock/alerts
+Content-Type: application/json
+
+{
+  "productId": "{{productId}}",
+  "type": "LOW_STOCK",
+  "message": "Sản phẩm sắp hết hàng"
+}
+
+### ============================================
+### DASHBOARD APIs
+### ============================================
+
+### Get Dashboard Stats
+GET http://localhost:8080/api/dashboard/stats
+
+### Get Daily Sales
+GET http://localhost:8080/api/dashboard/daily-sales
+
+### Get Daily Sales by Date
+GET http://localhost:8080/api/dashboard/daily-sales?date=2025-01-11
+
