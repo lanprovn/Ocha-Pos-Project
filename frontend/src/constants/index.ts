@@ -30,8 +30,9 @@ export const ROUTES = {
   REPORTING: '/reporting',
   PRODUCT_MANAGEMENT: '/product-management', // Deprecated - use MENU_MANAGEMENT
   CATEGORY_MANAGEMENT: '/category-management', // Deprecated - use MENU_MANAGEMENT
-  MENU_MANAGEMENT: '/menu-management',
+  MENU_MANAGEMENT: '/menu-management', // Deprecated - use ADMIN_DASHBOARD
   ANALYTICS: '/analytics',
+  ADMIN_DASHBOARD: '/admin',
   PRODUCT: (id: string | number) => `/product/${id}`,
 } as const;
 

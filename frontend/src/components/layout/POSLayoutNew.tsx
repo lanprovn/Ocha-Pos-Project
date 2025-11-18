@@ -138,14 +138,19 @@ export default function POSLayoutNew() {
               <ChartBarIcon className="w-4 h-4" />
               <span className="text-sm font-medium">Phân Tích</span>
             </button>
-            <button
-              onClick={() => navigate('/menu-management')}
-              className="flex items-center space-x-2 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-md transition-colors"
-              title="Quản lý menu"
-            >
-              <CubeIcon className="w-4 h-4" />
-              <span className="text-sm font-medium">Menu</span>
-            </button>
+            {/* Admin Dashboard - Chỉ hiển thị cho Admin */}
+            {user?.role === 'ADMIN' && (
+              <button
+                onClick={() => navigate('/admin')}
+                className="flex items-center space-x-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md transition-colors font-semibold"
+                title="Admin Dashboard"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span className="text-sm font-medium">Admin</span>
+              </button>
+            )}
             
             {/* Search Bar - Moved next to Doanh Thu button */}
             <div className="w-64 ml-3">
@@ -161,16 +166,6 @@ export default function POSLayoutNew() {
               </div>
             </div>
 
-            {/* Only show Stock Management button for Admin */}
-            {user?.role === 'ADMIN' && (
-              <button
-                onClick={() => navigate('/stock-management')}
-                className="flex items-center space-x-2 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-md transition-colors"
-              >
-                <CubeIcon className="w-4 h-4" />
-                <span className="text-sm font-medium">Tồn Kho</span>
-              </button>
-            )}
           </div>
         </div>
       </header>

@@ -34,11 +34,32 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
   }
 
+  // Check if route requires specific role
   if (requiredRole && user?.role !== requiredRole) {
     // Redirect based on user role
     if (user?.role === 'ADMIN') {
-      return <Navigate to={ROUTES.STOCK_MANAGEMENT} replace />;
+      return <Navigate to={`${ROUTES.ADMIN_DASHBOARD}?tab=overview`} replace />;
     }
+    return <Navigate to={ROUTES.HOME} replace />;
+  }
+
+  // Block admin from accessing staff-only routes (POS, Checkout, Orders, Analytics)
+  if (!requiredRole && user?.role === 'ADMIN') {
+    // These are staff-only routes, admin should not access them
+    const staffOnlyRoutes = [
+      ROUTES.HOME,
+      ROUTES.CHECKOUT,
+      ROUTES.ORDERS,
+      ROUTES.ANALYTICS,
+    ];
+    
+    if (staffOnlyRoutes.includes(location.pathname)) {
+      return <Navigate to={`${ROUTES.ADMIN_DASHBOARD}?tab=overview`} replace />;
+    }
+  }
+
+  // Block staff from accessing admin-only routes
+  if (user?.role === 'STAFF' && location.pathname === ROUTES.ADMIN_DASHBOARD) {
     return <Navigate to={ROUTES.HOME} replace />;
   }
 

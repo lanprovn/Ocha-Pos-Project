@@ -35,6 +35,7 @@ const ProductManagementPage = lazy(() => import('../pages/ProductManagementPage/
 const CategoryManagementPage = lazy(() => import('../pages/CategoryManagementPage/index'));
 const MenuManagementPage = lazy(() => import('../pages/MenuManagementPage/index'));
 const AnalyticsPage = lazy(() => import('../pages/AnalyticsPage/index'));
+const AdminDashboardPage = lazy(() => import('../pages/AdminDashboardPage/index'));
 
 // ===== Loader Component =====
 const PageLoader = () => (
@@ -141,60 +142,71 @@ function AppRoutes() {
           {/* Login Page - Public */}
           <Route path={ROUTES.LOGIN} element={<LoginPage />} />
 
-          {/* Protected Routes */}
+          {/* Protected Routes - Staff Only (POS) */}
           <Route path={ROUTES.HOME} element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="STAFF">
               <POSLayoutNew />
             </ProtectedRoute>
           }>
             {/* Layout tự render ProductGrid khi pathname === '/' */}
           </Route>
 
-          {/* Product Detail - Redirect to home (use modal instead) */}
+          {/* Product Detail - Redirect to home (use modal instead) - Staff Only */}
           <Route path={ROUTES.PRODUCT(':id')} element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="STAFF">
               <POSLayoutNew />
             </ProtectedRoute>
           }>
             <Route index element={<Navigate to={ROUTES.HOME} replace />} />
           </Route>
 
-          {/* Order success - Redirect to checkout (now integrated) */}
+          {/* Order success - Redirect to checkout (now integrated) - Staff Only */}
           <Route path={ROUTES.ORDER_SUCCESS} element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="STAFF">
               <MainLayout />
             </ProtectedRoute>
           }>
             <Route index element={<Navigate to={ROUTES.CHECKOUT} replace />} />
           </Route>
 
-          {/* Checkout - Tự động chọn layout dựa trên authentication */}
-          <Route path={ROUTES.CHECKOUT} element={<CheckoutRoute />}>
+          {/* Checkout - Staff Only */}
+          <Route path={ROUTES.CHECKOUT} element={
+            <ProtectedRoute requiredRole="STAFF">
+              <CheckoutRoute />
+            </ProtectedRoute>
+          }>
             <Route index element={<CheckoutPage />} />
           </Route>
 
-          {/* Analytics - Gộp Dashboard + Reporting */}
+          {/* Admin Dashboard - Tất cả chức năng admin */}
+          <Route path={ROUTES.ADMIN_DASHBOARD} element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          } />
+
+          {/* Analytics - Gộp Dashboard + Reporting (Staff Only) */}
           <Route path={ROUTES.ANALYTICS} element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="STAFF">
               <MainLayout />
             </ProtectedRoute>
           }>
             <Route index element={<AnalyticsPage />} />
           </Route>
 
-          {/* Menu Management - Gộp Product + Category */}
+          {/* Menu Management - Redirect to Admin Dashboard */}
           <Route path={ROUTES.MENU_MANAGEMENT} element={
             <ProtectedRoute requiredRole="ADMIN">
               <MainLayout />
             </ProtectedRoute>
           }>
-            <Route index element={<MenuManagementPage />} />
+            <Route index element={<Navigate to={{ pathname: ROUTES.ADMIN_DASHBOARD, search: '?tab=menu' }} replace />} />
           </Route>
 
-          {/* Backward compatibility - Redirect old routes */}
+          {/* Backward compatibility - Redirect old routes - Staff Only */}
           {/* Doanh Thu - Redirect to Analytics */}
           <Route path={ROUTES.DASHBOARD} element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="STAFF">
               <MainLayout />
             </ProtectedRoute>
           }>
@@ -203,7 +215,7 @@ function AppRoutes() {
 
           {/* Reporting - Redirect to Analytics */}
           <Route path={ROUTES.REPORTING} element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="STAFF">
               <MainLayout />
             </ProtectedRoute>
           }>
@@ -228,18 +240,16 @@ function AppRoutes() {
             <Route index element={<Navigate to={{ pathname: ROUTES.MENU_MANAGEMENT, search: '?tab=categories' }} replace />} />
           </Route>
 
-          {/* Stock Management - Admin only */}
+          {/* Stock Management - Show Admin Dashboard with stock tab */}
           <Route path={ROUTES.STOCK_MANAGEMENT} element={
             <ProtectedRoute requiredRole="ADMIN">
-              <MainLayout />
+              <AdminDashboardPage />
             </ProtectedRoute>
-          }>
-            <Route index element={<StockManagementPage />} />
-          </Route>
+          } />
 
-          {/* Order Display */}
+          {/* Order Display - Staff Only */}
           <Route path={ROUTES.ORDERS} element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="STAFF">
               <OrderDisplayPage />
             </ProtectedRoute>
           } />

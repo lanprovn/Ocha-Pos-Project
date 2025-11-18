@@ -300,7 +300,7 @@ const StockManagementPage: React.FC = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-slate-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Đang tải dữ liệu tồn kho...</p>
@@ -310,11 +310,12 @@ const StockManagementPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       <StockManagementHeader />
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Content - Scrollable */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <StatsCards
           totalProducts={stocks.length}
           inStock={stocks.length - lowStockCount - outOfStockCount}
@@ -386,6 +387,7 @@ const StockManagementPage: React.FC = () => {
               />
             )}
           </div>
+        </div>
         </div>
       </div>
 

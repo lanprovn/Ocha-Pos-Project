@@ -46,7 +46,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
 }) => {
   const defaultCategoryId = useMemo(() => {
     if (initialValues?.categoryId) return initialValues.categoryId;
-    if (categories.length > 0) return String(categories[0].id);
+    if (Array.isArray(categories) && categories.length > 0) return String(categories[0].id);
     return '';
   }, [categories, initialValues]);
 

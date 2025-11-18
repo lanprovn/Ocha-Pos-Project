@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { HomeIcon } from '@heroicons/react/24/outline';
 import { ROUTES } from '@constants';
+import { useAuth } from '@hooks/useAuth';
 
 interface HomeButtonProps {
   className?: string;
@@ -14,10 +15,17 @@ const HomeButton: React.FC<HomeButtonProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   
-  // Determine home route based on current location
+  // Determine home route based on user role and current location
   const isCustomerPage = location.pathname.startsWith(ROUTES.CUSTOMER);
-  const homeRoute = isCustomerPage ? ROUTES.CUSTOMER : ROUTES.HOME;
+  const isAdmin = user?.role === 'ADMIN';
+  
+  const homeRoute = isCustomerPage 
+    ? ROUTES.CUSTOMER 
+    : isAdmin 
+      ? `${ROUTES.ADMIN_DASHBOARD}?tab=overview`
+      : ROUTES.HOME;
 
   const sizeClasses = {
     sm: 'w-8 h-8',

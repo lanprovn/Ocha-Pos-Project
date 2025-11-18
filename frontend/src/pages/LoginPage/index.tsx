@@ -18,7 +18,7 @@ const LoginPage: React.FC = () => {
   useEffect(() => {
     if (!authLoading && isAuthenticated && user) {
       if (user.role === 'ADMIN') {
-        navigate(ROUTES.STOCK_MANAGEMENT, { replace: true });
+        navigate(`${ROUTES.ADMIN_DASHBOARD}?tab=overview`, { replace: true });
       } else {
         navigate(ROUTES.HOME, { replace: true });
       }

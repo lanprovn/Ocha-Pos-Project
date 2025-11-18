@@ -52,12 +52,17 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose}></div>
-
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <form onSubmit={handleSubmit}>
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity"
+        onClick={onClose}
+      />
+      
+      {/* Modal */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl max-h-[90vh] my-auto transform transition-all flex flex-col overflow-hidden">
+          <form onSubmit={handleSubmit} className="flex flex-col h-full">
             {/* Header */}
             <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-b">
               <h3 className="text-lg font-medium text-gray-900">
@@ -73,7 +78,7 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
             </div>
 
             {/* Body */}
-            <div className="bg-white px-6 py-4">
+            <div className="bg-white px-6 py-4 flex-1 overflow-y-auto">
               <div className="space-y-4">
                 {/* Name */}
                 <div>
@@ -144,7 +149,7 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
           </form>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

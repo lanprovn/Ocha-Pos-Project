@@ -142,15 +142,13 @@ const ProductManagementTab: React.FC = () => {
       />
 
       {/* Form Modal */}
-      {isFormOpen && (
-        <ProductFormModal
-          product={editingProduct}
-          isOpen={isFormOpen}
-          onClose={handleFormClose}
-          onSubmit={handleFormSubmit}
-          isLoading={isLoading}
-        />
-      )}
+      <ProductFormModal
+        product={editingProduct}
+        isOpen={isFormOpen}
+        onClose={handleFormClose}
+        onSubmit={handleFormSubmit}
+        isLoading={isLoading}
+      />
     </div>
   );
 };

@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Redirect based on role
       if (response.user.role === 'ADMIN') {
-        navigate(ROUTES.STOCK_MANAGEMENT);
+        navigate(`${ROUTES.ADMIN_DASHBOARD}?tab=overview`);
       } else {
         navigate(ROUTES.HOME);
       }

@@ -18,7 +18,8 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   onSubmit,
   isLoading,
 }) => {
-  const { categories } = useProducts();
+  const productsHook = useProducts();
+  const categories = (productsHook && Array.isArray(productsHook.categories)) ? productsHook.categories : [];
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -39,7 +40,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [toppingInput, setToppingInput] = useState({ name: '', extraPrice: '' });
 
   useEffect(() => {
-    if (product) {
+    if (product && Array.isArray(categories) && categories.length > 0) {
       // Find category ID from name
       const category = categories.find((c) => c.name === product.category);
       setFormData({
@@ -52,11 +53,11 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
         stock: String(product.stock || ''),
         isAvailable: product.isAvailable !== false,
         isPopular: product.isPopular || false,
-        tags: product.tags || [],
-        sizes: product.sizes || [],
-        toppings: product.toppings || [],
+        tags: Array.isArray(product.tags) ? product.tags : [],
+        sizes: Array.isArray(product.sizes) ? product.sizes : [],
+        toppings: Array.isArray(product.toppings) ? product.toppings : [],
       });
-    } else {
+    } else if (!product) {
       setFormData({
         name: '',
         description: '',
@@ -237,7 +238,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500"
                     >
                       <option value="">Chọn danh mục</option>
-                      {categories.map((cat) => (
+                      {Array.isArray(categories) && categories.map((cat) => (
                         <option key={cat.id} value={String(cat.id)}>
                           {cat.name}
                         </option>
