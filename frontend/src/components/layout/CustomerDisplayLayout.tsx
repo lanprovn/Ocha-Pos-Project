@@ -7,6 +7,8 @@ import { useProducts } from '../../hooks/useProducts';
 import { useFavorites } from '../../hooks/useFavorites';
 import ProductGrid from '../features/pos/product/ProductGrid';
 import ProductModal from '../features/pos/product/ProductModal';
+import OrderTrackingModal from './components/OrderTrackingModal';
+import HomeButton from '../common/HomeButton';
 import { formatPrice } from '../../utils/formatPrice';
 import toast from 'react-hot-toast';
 import type { Product } from '../../types/product';
@@ -25,6 +27,7 @@ export default function CustomerDisplayLayout() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOrderTrackingModalOpen, setIsOrderTrackingModalOpen] = useState(false);
   const [tableNumber, setTableNumber] = useState<string>('');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(false);
 
@@ -57,6 +60,15 @@ export default function CustomerDisplayLayout() {
   useEffect(() => {
     setSelectedCategory('all');
   }, [setSelectedCategory]);
+
+  // Auto-open order tracking modal if orderId in URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const orderId = params.get('orderId');
+    if (orderId) {
+      setIsOrderTrackingModalOpen(true);
+    }
+  }, [location.search]);
 
   const handleCheckout = () => {
     if (totalItems > 0) {
@@ -159,7 +171,9 @@ export default function CustomerDisplayLayout() {
         {/* Right: Quick Links */}
         <div className="flex items-center space-x-3">
           <button
-            onClick={() => navigate('/customer/order-tracking')}
+            onClick={() => {
+              setIsOrderTrackingModalOpen(true);
+            }}
             className="flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-slate-700 hover:bg-gray-50 rounded-md transition-colors text-sm"
             title="Theo dõi đơn hàng"
           >
@@ -169,6 +183,7 @@ export default function CustomerDisplayLayout() {
             </svg>
             <span className="hidden sm:inline">Theo dõi</span>
           </button>
+          <HomeButton size="sm" />
         </div>
 
         {/* Center: Table Number Input */}
@@ -475,6 +490,19 @@ export default function CustomerDisplayLayout() {
           onClose={handleCloseModal}
         />
       )}
+
+      {/* Order Tracking Modal */}
+      <OrderTrackingModal
+        isOpen={isOrderTrackingModalOpen}
+        onClose={() => {
+          setIsOrderTrackingModalOpen(false);
+          // Remove orderId from URL when closing
+          const params = new URLSearchParams(location.search);
+          params.delete('orderId');
+          navigate({ search: params.toString() }, { replace: true });
+        }}
+        initialOrderId={new URLSearchParams(location.search).get('orderId') || undefined}
+      />
 
       {/* Scrollbar Hide CSS */}
       <style>{`

@@ -37,6 +37,13 @@ export const useCheckout = () => {
   const [showQRModal, setShowQRModal] = useState<boolean>(false);
   const [qrPaymentData, setQrPaymentData] = useState<QRPaymentData | null>(null);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState<boolean>(false);
+  const [orderSuccessData, setOrderSuccessData] = useState<{
+    orderId: string;
+    orderNumber: string;
+    paymentMethod: PaymentMethod;
+    customerName?: string;
+    table?: string;
+  } | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
     const { name, value } = e.target;
@@ -167,14 +174,13 @@ export const useCheckout = () => {
         }
       }
 
-      // Nếu là cash, xử lý như bình thường
-      // Update order status to COMPLETED sau khi thanh toán thành công
-      // Chỉ update nếu payment method là cash (đã thanh toán ngay)
+      // Khi thanh toán xong (cash), cập nhật order status thành COMPLETED luôn
+      // Với card/qr thì backend sẽ tự động update khi payment callback thành công
       if (paymentMethod === 'cash') {
         try {
           console.log('💰 Updating order status to COMPLETED for cash payment', orderData.id);
           await orderService.updateStatus(orderData.id, { status: 'COMPLETED' });
-          console.log('✅ Order status updated successfully');
+          console.log('✅ Order status updated to COMPLETED successfully');
         } catch (statusError) {
           console.error('❌ Failed to update order status:', statusError);
           // Không block flow nếu update status thất bại
@@ -196,8 +202,8 @@ export const useCheckout = () => {
         }
       }));
       
-      // Update order status to paid and sync to display
-      updateOrderStatus('paid', {
+      // Update order status to completed (vì đã thanh toán xong)
+      updateOrderStatus('completed', {
         name: customerInfo.name || 'Khách hàng',
         table: customerInfo.table || undefined
       }, paymentMethod, 'success');
@@ -206,15 +212,14 @@ export const useCheckout = () => {
       await new Promise(resolve => setTimeout(resolve, 800));
       
       clearCart();
-      navigate('/order-success', {
-        state: {
-          orderId: orderData.id,
-          orderNumber: orderData.orderNumber,
-          paymentMethod,
-          customerName: customerInfo.name,
-          table: customerInfo.table,
-          fromCustomer: isCustomerDisplay // Đánh dấu đến từ customer page
-        }
+      
+      // Set success data instead of navigating
+      setOrderSuccessData({
+        orderId: orderData.id,
+        orderNumber: orderData.orderNumber,
+        paymentMethod,
+        customerName: customerInfo.name,
+        table: customerInfo.table,
       });
     } catch (error: any) {
       console.error('Error processing order:', error);
@@ -265,16 +270,17 @@ export const useCheckout = () => {
 
       clearCart();
       setShowQRModal(false);
-      setQrPaymentData(null);
-      navigate('/order-success', {
-        state: {
-          orderId: qrPaymentData.orderId,
-          orderNumber: qrPaymentData.orderNumber,
-          paymentMethod: 'qr',
-          customerName: customerInfo.name,
-          table: customerInfo.table,
-        },
+      
+      // Set success data instead of navigating
+      setOrderSuccessData({
+        orderId: qrPaymentData.orderId,
+        orderNumber: qrPaymentData.orderNumber,
+        paymentMethod: 'qr',
+        customerName: customerInfo.name,
+        table: customerInfo.table,
       });
+      
+      setQrPaymentData(null);
     } catch (error: any) {
       console.error('Payment verification error:', error);
       toast.error(error?.message || 'Không thể xác nhận thanh toán. Vui lòng thử lại.');
@@ -288,6 +294,16 @@ export const useCheckout = () => {
     setQrPaymentData(null);
   };
 
+  const handleNewOrder = () => {
+    setOrderSuccessData(null);
+    navigate(isCustomerDisplay ? '/customer' : '/');
+  };
+
+  const handleGoHome = () => {
+    setOrderSuccessData(null);
+    navigate(isCustomerDisplay ? '/customer' : '/');
+  };
+
   return {
     items,
     totalPrice,
@@ -297,11 +313,14 @@ export const useCheckout = () => {
     showQRModal,
     qrPaymentData,
     isVerifyingPayment,
+    orderSuccessData,
     handleInputChange,
     handlePaymentMethodChange,
     handleCompleteOrder,
     handleVerifyPayment,
     handleCloseQRModal,
+    handleNewOrder,
+    handleGoHome,
   };
 };
 

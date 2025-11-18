@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCartIcon, MagnifyingGlassIcon, UserCircleIcon, ChartBarIcon, CubeIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { ShoppingCartIcon, MagnifyingGlassIcon, UserCircleIcon, ChartBarIcon, CubeIcon, ArrowRightOnRectangleIcon, DocumentChartBarIcon } from '@heroicons/react/24/outline';
 import { useCart } from '../../hooks/useCart';
 import { useProducts } from '../../hooks/useProducts';
 import { useAuth } from '../../hooks/useAuth';
@@ -131,11 +131,20 @@ export default function POSLayoutNew() {
               <span className="text-sm font-medium">Đơn Hàng</span>
             </button>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/analytics')}
               className="flex items-center space-x-2 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-md transition-colors"
+              title="Phân tích & Báo cáo"
             >
               <ChartBarIcon className="w-4 h-4" />
-              <span className="text-sm font-medium">Doanh Thu</span>
+              <span className="text-sm font-medium">Phân Tích</span>
+            </button>
+            <button
+              onClick={() => navigate('/menu-management')}
+              className="flex items-center space-x-2 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-md transition-colors"
+              title="Quản lý menu"
+            >
+              <CubeIcon className="w-4 h-4" />
+              <span className="text-sm font-medium">Menu</span>
             </button>
             
             {/* Search Bar - Moved next to Doanh Thu button */}

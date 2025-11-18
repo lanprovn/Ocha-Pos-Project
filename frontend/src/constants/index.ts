@@ -27,6 +27,11 @@ export const ROUTES = {
   ORDERS: '/orders',
   ORDER_SUCCESS: '/order-success',
   PAYMENT_CALLBACK: '/payment/callback',
+  REPORTING: '/reporting',
+  PRODUCT_MANAGEMENT: '/product-management', // Deprecated - use MENU_MANAGEMENT
+  CATEGORY_MANAGEMENT: '/category-management', // Deprecated - use MENU_MANAGEMENT
+  MENU_MANAGEMENT: '/menu-management',
+  ANALYTICS: '/analytics',
   PRODUCT: (id: string | number) => `/product/${id}`,
 } as const;
 

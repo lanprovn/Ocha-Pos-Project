@@ -14,21 +14,24 @@ export const useOrderDisplay = () => {
   const previousCompletedCountRef = useRef<number>(0);
 
   // Map backend status to frontend display status
-  const mapStatus = useCallback((backendStatus: string): OrderTracking['status'] => {
+  const mapStatus = useCallback((backendStatus: string, paymentStatus?: string): OrderTracking['status'] => {
     const statusUpper = backendStatus?.toUpperCase() || '';
     
     // Map backend statuses to frontend display statuses
+    // Logic mới: Khi thanh toán xong thì coi như đã hoàn thành
     switch (statusUpper) {
       case 'CREATING':
         return 'creating';
       case 'PENDING':
       case 'CONFIRMED':
-        // PENDING và CONFIRMED đều hiển thị ở section "Đã thanh toán"
-        return 'paid';
       case 'PREPARING':
       case 'READY':
-        // PREPARING và READY đều hiển thị ở section "Đang chuẩn bị"
-        return 'preparing';
+        // Nếu đã thanh toán thành công, coi như đã hoàn thành
+        if (paymentStatus?.toUpperCase() === 'SUCCESS') {
+          return 'completed';
+        }
+        // Nếu chưa thanh toán, hiển thị ở section "Đã thanh toán" (tạm thời)
+        return 'paid';
       case 'COMPLETED':
         return 'completed';
       default:
@@ -44,6 +47,12 @@ export const useOrderDisplay = () => {
 
   // Transform backend Order to OrderTracking format
   const transformOrder = useCallback((order: Order): OrderTracking => {
+    // Nếu đã thanh toán thành công, tự động chuyển sang completed
+    const isPaid = order.paymentStatus?.toUpperCase() === 'SUCCESS' || order.paidAt;
+    const displayStatus = isPaid && order.status !== 'CREATING' 
+      ? 'completed' 
+      : mapStatus(order.status, order.paymentStatus);
+    
     return {
       id: order.id,
       orderId: order.orderNumber,
@@ -66,7 +75,7 @@ export const useOrderDisplay = () => {
       })) || [],
       totalPrice: parseFloat(order.totalAmount || 0),
       totalItems: order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0,
-      status: mapStatus(order.status),
+      status: displayStatus,
       backendStatus: order.status, // Lưu backend status gốc để check trong OrderCard
       customerInfo: {
         name: order.customerName || undefined,

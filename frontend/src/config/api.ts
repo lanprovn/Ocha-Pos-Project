@@ -29,6 +29,10 @@ export const API_ENDPOINTS = {
   DASHBOARD_STATS: `${API_BASE_URL}/dashboard/stats`,
   DASHBOARD_DAILY_SALES: `${API_BASE_URL}/dashboard/daily-sales`,
   
+  // Reporting
+  REPORTING: `${API_BASE_URL}/reporting`,
+  REPORTING_EXPORT: `${API_BASE_URL}/reporting/export`,
+  
   // Health
   HEALTH: 'http://localhost:8080/health',
 };

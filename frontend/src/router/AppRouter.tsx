@@ -30,6 +30,11 @@ const StockManagementPage = lazy(() => import('../pages/StockManagementPage/inde
 const OrderDisplayPage = lazy(() => import('../pages/OrderDisplayPage/index'));
 const PaymentCallbackPage = lazy(() => import('../pages/PaymentCallbackPage/index'));
 const CustomerOrderTrackingPage = lazy(() => import('../pages/CustomerOrderTrackingPage/index'));
+const ReportingPage = lazy(() => import('../pages/ReportingPage/index'));
+const ProductManagementPage = lazy(() => import('../pages/ProductManagementPage/index'));
+const CategoryManagementPage = lazy(() => import('../pages/CategoryManagementPage/index'));
+const MenuManagementPage = lazy(() => import('../pages/MenuManagementPage/index'));
+const AnalyticsPage = lazy(() => import('../pages/AnalyticsPage/index'));
 
 // ===== Loader Component =====
 const PageLoader = () => (
@@ -102,17 +107,25 @@ function AppRoutes() {
   // === CASE 1: Customer Display (with layout like POS) ===
   // Tất cả routes trong customer section đều PUBLIC, không cần đăng nhập
   if (isDisplayPage || isOrderSuccessFromCustomer) {
-    const isOrderTracking = location.pathname === '/customer/order-tracking';
     return (
-      <div className={`w-full ${isOrderTracking ? 'h-screen overflow-hidden' : 'min-h-screen'} bg-gray-50`}>
+      <div className="w-full min-h-screen bg-gray-50">
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path={ROUTES.CUSTOMER} element={<CustomerDisplayLayout />}>
               {/* Layout tự render ProductGrid khi pathname === '/customer' */}
             </Route>
-            <Route path="/customer/order-tracking" element={<CustomerOrderTrackingPage />} />
-            {/* Customer order success - Public, không cần đăng nhập */}
-            <Route path={ROUTES.ORDER_SUCCESS} element={<OrderSuccessPage />} />
+            {/* Customer order tracking - Redirect to customer with query param */}
+            <Route path="/customer/order-tracking" element={
+              <Navigate to={(location) => {
+                const params = new URLSearchParams(location.search);
+                const orderId = params.get('orderId');
+                return orderId 
+                  ? { pathname: ROUTES.CUSTOMER, search: `?orderId=${orderId}` }
+                  : { pathname: ROUTES.CUSTOMER };
+              }} replace />
+            } />
+            {/* Customer order success - Redirect to checkout (now integrated) */}
+            <Route path={ROUTES.ORDER_SUCCESS} element={<Navigate to={ROUTES.CHECKOUT} replace />} />
             <Route path="*" element={<Navigate to={ROUTES.CUSTOMER} replace />} />
           </Routes>
         </Suspense>
@@ -137,22 +150,22 @@ function AppRoutes() {
             {/* Layout tự render ProductGrid khi pathname === '/' */}
           </Route>
 
-          {/* Product Detail */}
+          {/* Product Detail - Redirect to home (use modal instead) */}
           <Route path={ROUTES.PRODUCT(':id')} element={
             <ProtectedRoute>
               <POSLayoutNew />
             </ProtectedRoute>
           }>
-            <Route index element={<ProductDetailPage />} />
+            <Route index element={<Navigate to={ROUTES.HOME} replace />} />
           </Route>
 
-          {/* Order success */}
+          {/* Order success - Redirect to checkout (now integrated) */}
           <Route path={ROUTES.ORDER_SUCCESS} element={
             <ProtectedRoute>
               <MainLayout />
             </ProtectedRoute>
           }>
-            <Route index element={<OrderSuccessPage />} />
+            <Route index element={<Navigate to={ROUTES.CHECKOUT} replace />} />
           </Route>
 
           {/* Checkout - Tự động chọn layout dựa trên authentication */}
@@ -160,13 +173,59 @@ function AppRoutes() {
             <Route index element={<CheckoutPage />} />
           </Route>
 
-          {/* Doanh Thu */}
+          {/* Analytics - Gộp Dashboard + Reporting */}
+          <Route path={ROUTES.ANALYTICS} element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<AnalyticsPage />} />
+          </Route>
+
+          {/* Menu Management - Gộp Product + Category */}
+          <Route path={ROUTES.MENU_MANAGEMENT} element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <MainLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<MenuManagementPage />} />
+          </Route>
+
+          {/* Backward compatibility - Redirect old routes */}
+          {/* Doanh Thu - Redirect to Analytics */}
           <Route path={ROUTES.DASHBOARD} element={
             <ProtectedRoute>
               <MainLayout />
             </ProtectedRoute>
           }>
-            <Route index element={<DashboardPage />} />
+            <Route index element={<Navigate to={ROUTES.ANALYTICS} replace />} />
+          </Route>
+
+          {/* Reporting - Redirect to Analytics */}
+          <Route path={ROUTES.REPORTING} element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to={{ pathname: ROUTES.ANALYTICS, search: '?tab=reports' }} replace />} />
+          </Route>
+
+          {/* Product Management - Redirect to Menu Management */}
+          <Route path={ROUTES.PRODUCT_MANAGEMENT} element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <MainLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to={{ pathname: ROUTES.MENU_MANAGEMENT, search: '?tab=products' }} replace />} />
+          </Route>
+
+          {/* Category Management - Redirect to Menu Management */}
+          <Route path={ROUTES.CATEGORY_MANAGEMENT} element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <MainLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to={{ pathname: ROUTES.MENU_MANAGEMENT, search: '?tab=categories' }} replace />} />
           </Route>
 
           {/* Stock Management - Admin only */}

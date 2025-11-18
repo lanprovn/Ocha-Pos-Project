@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import stockService from '@services/stock.service.ts';
 import type { StockAlert } from '@services/stock.service.ts';
+import { subscribeToDashboard } from '@services/socket.service';
+import toast from 'react-hot-toast';
 
 const StockAlertsPanel: React.FC = () => {
   const [productAlerts, setProductAlerts] = useState<StockAlert[]>([]);
@@ -27,7 +29,24 @@ const StockAlertsPanel: React.FC = () => {
   useEffect(() => {
     loadAlerts();
 
-    // Listen for stock updates
+    // Subscribe to Socket.io for real-time stock alerts
+    const cleanup = subscribeToDashboard(
+      undefined, // dashboard update
+      (alert) => {
+        // Stock alert received - reload alerts and show notification
+        console.log('⚠️ Stock alert received:', alert);
+        loadAlerts();
+        
+        // Show toast notification
+        toast.error(alert.message || 'Cảnh báo tồn kho', {
+          duration: 5000,
+          icon: '⚠️',
+        });
+      },
+      undefined // stock updated
+    );
+
+    // Fallback: Listen for window events (if socket.io not available)
     const handleStockUpdate = () => {
       loadAlerts();
     };
@@ -36,6 +55,7 @@ const StockAlertsPanel: React.FC = () => {
     window.addEventListener('ingredientAlert', handleStockUpdate);
     
     return () => {
+      cleanup();
       window.removeEventListener('stockAlert', handleStockUpdate);
       window.removeEventListener('ingredientAlert', handleStockUpdate);
     };

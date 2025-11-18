@@ -48,8 +48,8 @@ export const getStatusConfig = (status: OrderTracking['status']): StatusConfig =
     case 'creating':
       return {
         label: 'Đang tạo',
-        bgColor: 'bg-amber-600',
-        badgeColor: 'bg-amber-100 text-amber-800',
+        bgColor: 'bg-sky-500',
+        badgeColor: 'bg-sky-100 text-sky-800',
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -59,8 +59,8 @@ export const getStatusConfig = (status: OrderTracking['status']): StatusConfig =
     case 'paid':
       return {
         label: 'Đã thanh toán',
-        bgColor: 'bg-slate-700',
-        badgeColor: 'bg-slate-100 text-slate-800',
+        bgColor: 'bg-blue-600',
+        badgeColor: 'bg-blue-100 text-blue-800',
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -70,8 +70,8 @@ export const getStatusConfig = (status: OrderTracking['status']): StatusConfig =
     case 'preparing':
       return {
         label: 'Đang chuẩn bị',
-        bgColor: 'bg-slate-600',
-        badgeColor: 'bg-slate-100 text-slate-800',
+        bgColor: 'bg-indigo-600',
+        badgeColor: 'bg-indigo-100 text-indigo-800',
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -81,8 +81,8 @@ export const getStatusConfig = (status: OrderTracking['status']): StatusConfig =
     case 'completed':
       return {
         label: 'Hoàn thành',
-        bgColor: 'bg-green-600',
-        badgeColor: 'bg-green-100 text-green-800',
+        bgColor: 'bg-emerald-600',
+        badgeColor: 'bg-emerald-100 text-emerald-800',
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -113,10 +113,10 @@ export const getPaymentMethodText = (method?: 'cash' | 'card' | 'qr'): string =>
 };
 
 export const getStatusSections = (groupedOrders: GroupedOrders): StatusSection[] => {
+  // Chỉ hiển thị 2 sections: Đang Tạo và Hoàn Thành
+  // Khi thanh toán xong thì đã hoàn thành luôn, không cần các bước trung gian
   return [
     { key: 'creating', title: 'Đang Tạo', orders: groupedOrders.creating },
-    { key: 'paid', title: 'Đã Thanh Toán', orders: groupedOrders.paid },
-    { key: 'preparing', title: 'Đang Chuẩn Bị', orders: groupedOrders.preparing },
     { key: 'completed', title: 'Hoàn Thành', orders: groupedOrders.completed }
   ];
 };

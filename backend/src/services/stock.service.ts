@@ -10,6 +10,7 @@ import {
   CreateIngredientInput,
   UpdateIngredientInput,
 } from '../types/stock.types';
+import { emitStockUpdated, emitStockAlert } from '../socket/socket.io';
 
 export class StockService {
   // ========== Product Stock ==========
@@ -512,11 +513,15 @@ export class StockService {
   ) {
     const stock = await prisma.stock.findUnique({
       where: { productId },
+      include: {
+        product: true,
+      },
     });
 
     if (!stock) return;
 
-    let newQuantity = stock.quantity;
+    const oldQuantity = stock.quantity;
+    let newQuantity = oldQuantity;
     if (type === 'SALE') {
       newQuantity -= quantity;
     } else if (type === 'PURCHASE' || type === 'ADJUSTMENT') {
@@ -525,12 +530,34 @@ export class StockService {
       newQuantity += quantity;
     }
 
-    await prisma.stock.update({
+    const updatedStock = await prisma.stock.update({
       where: { id: stock.id },
       data: {
         quantity: Math.max(0, newQuantity),
         lastUpdated: new Date(),
       },
+      include: {
+        product: true,
+      },
+    });
+
+    // Emit socket.io event for real-time updates
+    emitStockUpdated({
+      type: 'product',
+      productId: productId,
+      stockId: updatedStock.id,
+      oldQuantity: oldQuantity,
+      newQuantity: updatedStock.quantity,
+    });
+
+    // Check and create alert if stock is low
+    await this.checkAndCreateStockAlert({
+      type: 'product',
+      stockId: updatedStock.id,
+      productId: productId,
+      currentQuantity: updatedStock.quantity,
+      minStock: updatedStock.minStock,
+      productName: updatedStock.product?.name,
     });
   }
 
@@ -541,11 +568,15 @@ export class StockService {
   ) {
     const stock = await prisma.ingredientStock.findUnique({
       where: { ingredientId },
+      include: {
+        ingredient: true,
+      },
     });
 
     if (!stock) return;
 
-    let newQuantity = stock.quantity;
+    const oldQuantity = stock.quantity;
+    let newQuantity = oldQuantity;
     if (type === 'SALE') {
       newQuantity -= quantity;
     } else if (type === 'PURCHASE' || type === 'ADJUSTMENT') {
@@ -554,12 +585,34 @@ export class StockService {
       newQuantity += quantity;
     }
 
-    await prisma.ingredientStock.update({
+    const updatedStock = await prisma.ingredientStock.update({
       where: { id: stock.id },
       data: {
         quantity: Math.max(0, newQuantity),
         lastUpdated: new Date(),
       },
+      include: {
+        ingredient: true,
+      },
+    });
+
+    // Emit socket.io event for real-time updates
+    emitStockUpdated({
+      type: 'ingredient',
+      ingredientId: ingredientId,
+      stockId: updatedStock.id,
+      oldQuantity: oldQuantity,
+      newQuantity: updatedStock.quantity,
+    });
+
+    // Check and create alert if stock is low
+    await this.checkAndCreateStockAlert({
+      type: 'ingredient',
+      stockId: updatedStock.id,
+      ingredientId: ingredientId,
+      currentQuantity: updatedStock.quantity,
+      minStock: updatedStock.minStock,
+      ingredientName: updatedStock.ingredient?.name,
     });
   }
 
@@ -634,6 +687,62 @@ export class StockService {
           }
         : undefined,
     };
+  }
+
+  /**
+   * Check stock level and create alert if needed
+   */
+  private async checkAndCreateStockAlert(data: {
+    type: 'product' | 'ingredient';
+    stockId: string;
+    productId?: string;
+    ingredientId?: string;
+    currentQuantity: number;
+    minStock: number;
+    productName?: string;
+    ingredientName?: string;
+  }): Promise<void> {
+    try {
+      // Only create alert if stock is at or below minStock
+      if (data.currentQuantity <= data.minStock) {
+        const alertType = data.currentQuantity === 0 
+          ? 'OUT_OF_STOCK' 
+          : 'LOW_STOCK';
+        
+        const itemName = data.productName || data.ingredientName || 'Sản phẩm';
+        const itemType = data.type === 'product' ? 'sản phẩm' : 'nguyên liệu';
+        
+        const message = data.currentQuantity === 0
+          ? `${itemName} đã hết hàng! Vui lòng nhập hàng ngay.`
+          : `${itemName} còn ${data.currentQuantity} ${itemType}, dưới mức tối thiểu ${data.minStock}. Vui lòng kiểm tra và nhập hàng.`;
+        
+        // Check if alert already exists (to avoid duplicates)
+        const existingAlert = await prisma.stockAlert.findFirst({
+          where: {
+            productId: data.productId || null,
+            ingredientId: data.ingredientId || null,
+            type: alertType,
+            isRead: false,
+          },
+        });
+
+        // Only create new alert if one doesn't exist
+        if (!existingAlert) {
+          const alert = await this.createAlert({
+            productId: data.productId || null,
+            ingredientId: data.ingredientId || null,
+            type: alertType,
+            message: message,
+          });
+
+          // Emit socket.io event for real-time alert notification
+          emitStockAlert(alert);
+        }
+      }
+    } catch (error) {
+      // Don't throw error to avoid blocking stock update
+      console.error('Error creating stock alert:', error);
+    }
   }
 
   private transformAlert(alert: any) {

@@ -4,6 +4,7 @@ import type { OrderTracking } from '../../../types/display';
 import { formatPrice } from '../../../utils/formatPrice';
 import { formatOrderTime, getStatusConfig, getPaymentMethodText } from '../utils/orderDisplayUtils';
 import { orderService } from '@services/order.service';
+import PrintReceiptButton from './PrintReceiptButton';
 import toast from 'react-hot-toast';
 
 interface OrderCardProps {
@@ -193,94 +194,30 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, currentTime, onStat
 
         {/* Quick Actions */}
         <div className="mt-3 pt-3 border-t border-gray-200">
-          {/* Sử dụng backendStatus để check chính xác */}
-          {order.backendStatus === 'CREATING' && (
-            <button
-              onClick={handleContinueCheckout}
-              className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-md font-semibold transition-colors text-sm"
-            >
-              Tiếp tục thanh toán
-            </button>
-          )}
-          {order.backendStatus === 'PENDING' && (
-            <button
-              onClick={() => handleStatusUpdate('CONFIRMED')}
-              disabled={isUpdating}
-              className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-md font-semibold transition-colors text-sm disabled:opacity-50"
-            >
-              {isUpdating ? 'Đang xử lý...' : 'Xác nhận đơn hàng'}
-            </button>
-          )}
-          {order.backendStatus === 'CONFIRMED' && (
-            <button
-              onClick={() => handleStatusUpdate('PREPARING')}
-              disabled={isUpdating}
-              className="w-full px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-md font-semibold transition-colors text-sm disabled:opacity-50"
-            >
-              {isUpdating ? 'Đang xử lý...' : 'Bắt đầu chuẩn bị'}
-            </button>
-          )}
-          {order.backendStatus === 'PREPARING' && (
-            <button
-              onClick={() => handleStatusUpdate('READY')}
-              disabled={isUpdating}
-              className="w-full px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-md font-semibold transition-colors text-sm disabled:opacity-50"
-            >
-              {isUpdating ? 'Đang xử lý...' : 'Sẵn sàng'}
-            </button>
-          )}
-          {order.backendStatus === 'READY' && (
-            <button
-              onClick={() => handleStatusUpdate('COMPLETED')}
-              disabled={isUpdating}
-              className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-semibold transition-colors text-sm disabled:opacity-50"
-            >
-              {isUpdating ? 'Đang xử lý...' : 'Hoàn thành'}
-            </button>
-          )}
-          {order.backendStatus === 'COMPLETED' && (
-            <div className="text-center text-sm text-gray-600 flex items-center justify-center space-x-2">
-              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span>Đơn hàng đã hoàn thành</span>
-            </div>
-          )}
-          {/* Fallback nếu không có backendStatus (cho tương thích ngược) */}
-          {!order.backendStatus && order.status === 'creating' && (
-            <button
-              onClick={handleContinueCheckout}
-              className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-md font-semibold transition-colors text-sm"
-            >
-              Tiếp tục thanh toán
-            </button>
-          )}
-          {!order.backendStatus && order.status === 'paid' && (
-            <button
-              onClick={() => handleStatusUpdate('PREPARING')}
-              disabled={isUpdating}
-              className="w-full px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-md font-semibold transition-colors text-sm disabled:opacity-50"
-            >
-              {isUpdating ? 'Đang xử lý...' : 'Bắt đầu chuẩn bị'}
-            </button>
-          )}
-          {!order.backendStatus && order.status === 'preparing' && (
-            <button
-              onClick={() => handleStatusUpdate('COMPLETED')}
-              disabled={isUpdating}
-              className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-semibold transition-colors text-sm disabled:opacity-50"
-            >
-              {isUpdating ? 'Đang xử lý...' : 'Hoàn thành'}
-            </button>
-          )}
-          {!order.backendStatus && order.status === 'completed' && (
-            <div className="text-center text-sm text-gray-600 flex items-center justify-center space-x-2">
-              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span>Đơn hàng đã hoàn thành</span>
-            </div>
-          )}
+          <div className="flex items-center justify-between gap-2">
+            {/* Chỉ hiển thị button cho CREATING (chưa thanh toán), các trường hợp khác đã hoàn thành */}
+            {(order.backendStatus === 'CREATING' || (!order.backendStatus && order.status === 'creating')) ? (
+              <button
+                onClick={handleContinueCheckout}
+                className="flex-1 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-md font-semibold transition-colors text-sm"
+              >
+                Tiếp tục thanh toán
+              </button>
+            ) : (
+              <>
+                <div className="flex-1 text-center text-sm text-gray-600 flex items-center justify-center space-x-2">
+                  <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Đã hoàn thành</span>
+                </div>
+                {/* Print button for completed orders */}
+                {order.backendStatus !== 'CREATING' && order.status !== 'creating' && (
+                  <PrintReceiptButton order={order} />
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

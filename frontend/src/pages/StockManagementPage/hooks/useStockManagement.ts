@@ -103,6 +103,12 @@ export const useStockManagement = () => {
         // Stock alert - reload alerts
         loadData(false); // Không show loading
         loadIngredientsRef.current();
+      },
+      (stockData) => {
+        // Stock updated event - reload stock data immediately
+        console.log('📦 Stock updated:', stockData);
+        loadData(false); // Không show loading
+        loadIngredientsRef.current();
       }
     );
 

@@ -8,6 +8,7 @@ export interface ServerToClientEvents {
   order_status_changed: (data: { orderId: string; status: string }) => void;
   display_update: (data: any) => void;
   stock_alert: (alert: any) => void;
+  stock_updated: (data: { type: 'product' | 'ingredient'; productId?: string; ingredientId?: string; stockId: string; oldQuantity: number; newQuantity: number }) => void;
   dashboard_update: (data: any) => void;
 }
 
@@ -133,7 +134,8 @@ export function subscribeToDisplay(onDisplayUpdate?: (data: any) => void): () =>
  */
 export function subscribeToDashboard(
   onDashboardUpdate?: (data: any) => void,
-  onStockAlert?: (alert: any) => void
+  onStockAlert?: (alert: any) => void,
+  onStockUpdated?: (data: { type: 'product' | 'ingredient'; productId?: string; ingredientId?: string; stockId: string; oldQuantity: number; newQuantity: number }) => void
 ): () => void {
   const socketInstance = getSocket();
   if (!socketInstance) {
@@ -149,6 +151,9 @@ export function subscribeToDashboard(
   if (onStockAlert) {
     socketInstance.on('stock_alert', onStockAlert);
   }
+  if (onStockUpdated) {
+    socketInstance.on('stock_updated', onStockUpdated);
+  }
 
   // Return cleanup function
   return () => {
@@ -157,6 +162,9 @@ export function subscribeToDashboard(
     }
     if (onStockAlert) {
       socketInstance.off('stock_alert', onStockAlert);
+    }
+    if (onStockUpdated) {
+      socketInstance.off('stock_updated', onStockUpdated);
     }
   };
 }
