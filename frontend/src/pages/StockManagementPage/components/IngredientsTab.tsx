@@ -8,14 +8,15 @@ import type { StockProduct } from '@services/stock.service.ts';
 import type { StockFilter } from '../types';
 
 interface IngredientsTabProps {
-  filteredIngredients: IngredientStock[];
+  filteredIngredients?: IngredientStock[];
   searchQuery: string;
   setSearchQuery: (value: string) => void;
   filter: StockFilter;
   setFilter: (filter: StockFilter) => void;
-  ingredientStats: {
+  ingredientStats?: {
     lowStock: number;
     outOfStock: number;
+    total?: number;
   };
   onOpenAdjustModal: (product?: StockProduct, ingredient?: IngredientStock, adjustMode?: boolean) => void;
   onCreateIngredient: () => void;
@@ -33,6 +34,28 @@ export const IngredientsTab: React.FC<IngredientsTabProps> = ({
   onCreateIngredient,
   onEditIngredient,
 }) => {
+  // Provide default values to prevent undefined errors
+  const stats = ingredientStats || { lowStock: 0, outOfStock: 0 };
+  const safeFilteredIngredients = filteredIngredients || [];
+
+  // Debug: Log ingredients data
+  React.useEffect(() => {
+    console.log('🔍 IngredientsTab Debug:', {
+      filteredIngredientsCount: safeFilteredIngredients.length,
+      filter: filter,
+      searchQuery: searchQuery,
+      ingredientStats: stats,
+      sampleIngredients: safeFilteredIngredients.slice(0, 3).map(ing => ({
+        id: ing.id,
+        name: ing.name,
+        currentStock: ing.currentStock,
+        minStock: ing.minStock,
+      })),
+      hasSetSearchQuery: typeof setSearchQuery === 'function',
+      hasSetFilter: typeof setFilter === 'function',
+    });
+  }, [safeFilteredIngredients, stats, filter, searchQuery, setSearchQuery, setFilter]);
+
   return (
     <div>
       <div className="mb-6 space-y-4">
@@ -46,8 +69,8 @@ export const IngredientsTab: React.FC<IngredientsTabProps> = ({
           <FilterButtons
             filter={filter}
             setFilter={setFilter}
-            lowStockCount={ingredientStats.lowStock}
-            outOfStockCount={ingredientStats.outOfStock}
+            lowStockCount={stats.lowStock}
+            outOfStockCount={stats.outOfStock}
             showCategoryFilter={false}
           />
           <button
@@ -60,7 +83,7 @@ export const IngredientsTab: React.FC<IngredientsTabProps> = ({
         </div>
       </div>
 
-      {filteredIngredients.length === 0 && (
+      {safeFilteredIngredients.length === 0 && (
         <EmptyState
           icon="🥛"
           title={
@@ -81,9 +104,9 @@ export const IngredientsTab: React.FC<IngredientsTabProps> = ({
         />
       )}
 
-      {filteredIngredients.length > 0 && (
+      {safeFilteredIngredients.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredIngredients.map((ingredient) => (
+          {safeFilteredIngredients.map((ingredient) => (
             <IngredientCard
               key={ingredient.id}
               ingredient={ingredient}

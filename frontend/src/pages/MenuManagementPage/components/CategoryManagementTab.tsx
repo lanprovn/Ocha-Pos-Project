@@ -15,10 +15,14 @@ const CategoryManagementTab: React.FC = () => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Load categories on mount
+  // Load categories on mount only - loadProducts is stable (useCallback with empty deps)
   useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+    // Only load if categories array is empty (initial load)
+    if (categories.length === 0) {
+      loadProducts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   // Filtered categories
   const filteredCategories = useMemo(() => {

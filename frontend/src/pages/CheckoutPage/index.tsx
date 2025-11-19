@@ -64,7 +64,7 @@ const CheckoutPage: React.FC = () => {
         <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <button
-              onClick={() => navigate(isCustomerDisplay ? '/customer' : '/')}
+              onClick={() => navigate(-1)}
               className="hover:text-gray-800 transition-colors flex items-center space-x-1"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

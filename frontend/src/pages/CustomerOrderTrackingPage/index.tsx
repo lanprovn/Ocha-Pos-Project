@@ -175,13 +175,13 @@ const CustomerOrderTrackingPage: React.FC = () => {
               </div>
             </div>
             <button
-              onClick={() => navigate('/customer')}
+              onClick={() => navigate(-1)}
               className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-200 font-medium flex items-center gap-2 shadow-sm hover:shadow-md"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Về trang chủ
+              Quay lại
             </button>
           </div>
           <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between text-sm">

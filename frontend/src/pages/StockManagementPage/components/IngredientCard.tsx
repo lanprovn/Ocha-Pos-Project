@@ -80,14 +80,14 @@ export const IngredientCard: React.FC<IngredientCardProps> = memo(({
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-gray-600">Dùng trong:</span>
-            <span className="text-sm">{ingredient.usedIn.length} sản phẩm</span>
+            <span className="text-sm">{ingredient.usedIn?.length ?? 0} sản phẩm</span>
           </div>
         </div>
 
         <div className="flex space-x-2">
           <button
             onClick={onAddStock}
-            className="flex-1 px-3 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm rounded-md transition-colors flex items-center justify-center space-x-1"
+            className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors flex items-center justify-center space-x-1 shadow-sm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

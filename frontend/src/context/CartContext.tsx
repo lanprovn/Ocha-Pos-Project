@@ -192,6 +192,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     setItems(prevItems =>
       prevItems.map(item => {
         if (item.id === id) {
+          // If preservePrice is true, maintain the price per item ratio
+          if (item.preservePrice) {
+            const pricePerItem = item.totalPrice / item.quantity;
+            return { ...item, quantity, totalPrice: pricePerItem * quantity };
+          }
+          
+          // Otherwise, recalculate from basePrice + size + toppings
           const basePrice = item.basePrice + (item.selectedSize?.extraPrice || 0) + 
             item.selectedToppings.reduce((sum, t) => sum + t.extraPrice, 0);
           return { ...item, quantity, totalPrice: basePrice * quantity };
@@ -205,6 +212,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     setItems([]);
     // Move toast outside of setState callback
     setTimeout(() => toast.success('Đã xóa tất cả giỏ hàng!'), 0);
+  };
+
+  // Set cart items directly (for restoring orders, no merge, no toast)
+  const setCartItems = (newItems: Omit<CartItem, 'id'>[]) => {
+    const itemsWithIds = newItems.map(item => ({ ...item, id: uuidv4() }));
+    setItems(itemsWithIds);
+    // Clear localStorage cart to prevent reload
+    localStorage.removeItem(STORAGE_KEYS.CART);
+    // Set new items to localStorage
+    localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(itemsWithIds));
   };
 
   // Function to update order status and sync to display
@@ -226,6 +243,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     removeFromCart,
     updateQuantity,
     clearCart,
+    setCartItems,
     isCartOpen,
     setIsCartOpen,
     updateOrderStatus,

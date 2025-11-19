@@ -1,8 +1,9 @@
 // Checkout hook
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useCart } from '@hooks/useCart';
+import { useProducts } from '@hooks/useProducts';
 import { validatePhone } from '../utils/checkoutUtils';
 import { orderService } from '@services/order.service';
 import paymentService from '@services/payment.service';
@@ -10,15 +11,21 @@ import qrService from '@services/qr.service';
 import { STORAGE_KEYS } from '@constants';
 import type { CustomerInfo, PaymentMethod } from '../types';
 import type { QRPaymentData } from '../../../components/features/payment/QRPaymentModal';
+import type { CartItem } from '../../../types/cart';
 
 export const useCheckout = () => {
-  const { items, totalPrice, clearCart, updateOrderStatus } = useCart();
+  const { items, totalPrice, clearCart, updateOrderStatus, removeFromCart, addToCart, setCartItems } = useCart();
+  const { products } = useProducts();
   const navigate = useNavigate();
   const location = useLocation();
   
   // Load table number from localStorage or location state
   const savedTableNumber = localStorage.getItem('customer_table_number');
-  const locationState = location.state as { tableNumber?: string } | null;
+  const locationState = location.state as { 
+    tableNumber?: string; 
+    orderId?: string;
+    continueOrder?: boolean;
+  } | null;
   const initialTableNumber = locationState?.tableNumber || savedTableNumber || '';
   
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
@@ -27,6 +34,192 @@ export const useCheckout = () => {
     table: initialTableNumber,
     notes: ''
   });
+  
+  // Flag to track if order has been restored
+  const [orderRestored, setOrderRestored] = useState(false);
+  
+  // Load order and restore cart when continueOrder is true
+  useEffect(() => {
+    const loadOrderAndRestoreCart = async () => {
+      // Only proceed if continueOrder flag is set and orderId exists
+      if (!locationState?.continueOrder || !locationState?.orderId) return;
+      
+      // Prevent duplicate loads
+      if (orderRestored) return;
+      
+      // Wait for products to load
+      if (!products || products.length === 0) {
+        return;
+      }
+      
+      // Mark as restoring to prevent duplicate loads
+      setOrderRestored(true);
+      
+      try {
+        // Show loading toast
+        toast.loading('Đang tải đơn hàng...', { id: 'restore-order' });
+        
+        // Load order from API
+        const order = await orderService.getById(locationState.orderId);
+        
+        // Check if order subtotals include VAT
+        // If order.totalAmount equals sum of subtotals, then subtotals already include VAT
+        const sumOfSubtotals = order.items.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
+        const orderTotalAmount = parseFloat(order.totalAmount);
+        const subtotalsIncludeVAT = Math.abs(sumOfSubtotals - orderTotalAmount) < 1; // Allow small rounding difference
+        
+        // Restore customer info first (before clearing cart)
+        setCustomerInfo({
+          name: order.customerName || '',
+          phone: order.customerPhone || '',
+          table: order.customerTable || '',
+          notes: order.notes || ''
+        });
+        
+        // Restore payment method
+        if (order.paymentMethod) {
+          const method = order.paymentMethod.toLowerCase() as PaymentMethod;
+          if (['cash', 'card', 'qr'].includes(method)) {
+            setPaymentMethod(method);
+          }
+        }
+        
+        // Transform order items to cart items BEFORE clearing cart
+        const cartItems: Omit<CartItem, 'id'>[] = [];
+        
+        for (const orderItem of order.items) {
+          // Find product to get full details
+          const product = products.find(p => p.id.toString() === orderItem.productId);
+          
+          if (!product) {
+            console.warn(`Product not found: ${orderItem.productId}`);
+            continue;
+          }
+          
+          // Find matching size
+          let selectedSize: CartItem['selectedSize'] = undefined;
+          if (orderItem.selectedSize && product.sizes) {
+            const size = product.sizes.find(s => s.name === orderItem.selectedSize);
+            if (size) {
+              selectedSize = size;
+            } else {
+              // Create size object from name if not found
+              selectedSize = {
+                id: `size-${orderItem.selectedSize}`,
+                name: orderItem.selectedSize,
+                extraPrice: 0
+              };
+            }
+          }
+          
+          // Find matching toppings
+          const selectedToppings: CartItem['selectedToppings'] = [];
+          if (orderItem.selectedToppings && orderItem.selectedToppings.length > 0 && product.toppings) {
+            for (const toppingName of orderItem.selectedToppings) {
+              const topping = product.toppings.find(t => t.name === toppingName);
+              if (topping) {
+                selectedToppings.push(topping);
+              } else {
+                // Create topping object from name if not found
+                selectedToppings.push({
+                  id: `topping-${toppingName}`,
+                  name: toppingName,
+                  extraPrice: 0
+                });
+              }
+            }
+          }
+          
+          // Use exact price from order item to preserve original pricing
+          // orderItem.price = price per item (including size and toppings)
+          // orderItem.subtotal = total price for this item (price * quantity)
+          const orderItemPrice = parseFloat(orderItem.price);
+          let orderItemSubtotal = parseFloat(orderItem.subtotal);
+          
+          // If subtotals include VAT, we need to extract the original subtotal (without VAT)
+          // VAT is 10%, so: subtotal_with_VAT = subtotal_without_VAT * 1.1
+          // Therefore: subtotal_without_VAT = subtotal_with_VAT / 1.1
+          if (subtotalsIncludeVAT) {
+            // Extract VAT from subtotal: divide by 1.1 to get original subtotal
+            orderItemSubtotal = orderItemSubtotal / 1.1;
+            // Also adjust price per item
+            const adjustedPricePerItem = orderItemPrice / 1.1;
+            // Recalculate basePrice from adjusted price
+            const sizeExtra = selectedSize?.extraPrice || 0;
+            const toppingsExtra = selectedToppings.reduce((sum, t) => sum + (t.extraPrice || 0), 0);
+            const calculatedBasePrice = adjustedPricePerItem - sizeExtra - toppingsExtra;
+            
+            const basePrice = calculatedBasePrice > 0 
+              ? calculatedBasePrice 
+              : product.price;
+            
+            cartItems.push({
+              productId: product.id,
+              name: product.name,
+              image: product.image,
+              basePrice: basePrice,
+              selectedSize,
+              selectedToppings,
+              note: orderItem.note || undefined,
+              quantity: orderItem.quantity,
+              totalPrice: orderItemSubtotal, // Use subtotal without VAT
+              preservePrice: true
+            });
+          } else {
+            // Subtotals don't include VAT, use as-is
+            const sizeExtra = selectedSize?.extraPrice || 0;
+            const toppingsExtra = selectedToppings.reduce((sum, t) => sum + (t.extraPrice || 0), 0);
+            const calculatedBasePrice = orderItemPrice - sizeExtra - toppingsExtra;
+            
+            const basePrice = calculatedBasePrice > 0 
+              ? calculatedBasePrice 
+              : product.price;
+            
+            cartItems.push({
+              productId: product.id,
+              name: product.name,
+              image: product.image,
+              basePrice: basePrice,
+              selectedSize,
+              selectedToppings,
+              note: orderItem.note || undefined,
+              quantity: orderItem.quantity,
+              totalPrice: orderItemSubtotal, // Use exact subtotal from order
+              preservePrice: true
+            });
+          }
+        }
+        
+        // Set cart items directly (replace all, no merge)
+        // This avoids the double issue when restoring orders
+        setCartItems(cartItems);
+        
+        // Show success toast
+        toast.success(`Đã khôi phục ${cartItems.length} món từ đơn hàng ${order.orderNumber}`, {
+          id: 'restore-order',
+          duration: 3000,
+          icon: '✅'
+        });
+      } catch (error: any) {
+        console.error('Error loading order:', error);
+        toast.error('Không thể tải đơn hàng. Vui lòng thử lại.', {
+          id: 'restore-order'
+        });
+        // Reset flag on error so user can retry
+        setOrderRestored(false);
+      }
+    };
+    
+    loadOrderAndRestoreCart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locationState?.continueOrder, locationState?.orderId, products.length]);
+  
+  // Reset orderRestored flag when orderId changes (to allow restoring different orders)
+  useEffect(() => {
+    if (locationState?.orderId) {
+      setOrderRestored(false);
+    }
+  }, [locationState?.orderId]);
   // For customer display: default to QR code (preferred)
   // For staff: default to cash
   // Check if checkout is from customer page (via state or referrer)

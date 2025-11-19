@@ -39,13 +39,22 @@ axiosInstance.interceptors.response.use(
     // Handle errors
     if (error.response) {
       // Server responded with error
+      const status = error.response.status;
       const message = (error.response.data as any)?.error || error.message;
-      console.error('API Error:', message);
+      
+      // Don't log 404 errors as they're often expected
+      if (status !== 404) {
+        console.error(`API Error [${status}]:`, message);
+      }
+      
       return Promise.reject(new Error(message));
     } else if (error.request) {
-      // Request made but no response
-      console.error('Network Error:', error.message);
-      return Promise.reject(new Error('Network error. Please check your connection.'));
+      // Request made but no response (network error, timeout, etc.)
+      // Only log if it's not a timeout (timeouts are expected)
+      if (error.code !== 'ECONNABORTED') {
+        console.error('Network Error:', error.message);
+      }
+      return Promise.reject(new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.'));
     } else {
       // Something else happened
       console.error('Error:', error.message);

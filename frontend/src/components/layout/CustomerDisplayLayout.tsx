@@ -139,11 +139,11 @@ export default function CustomerDisplayLayout() {
         {/* Left: User Info & Navigation */}
         <div className="flex items-center space-x-4 flex-1">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 bg-slate-700 rounded-md flex items-center justify-center">
+            <div className="w-9 h-9 bg-emerald-600 rounded-md flex items-center justify-center">
               <UserCircleIcon className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">Khách Hàng</p>
+              <p className="text-sm font-semibold text-gray-800">Khách Hàng</p>
               <div className="flex items-center space-x-1.5">
                 <div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div>
                 <span className="text-xs text-gray-600">Trực tuyến</span>

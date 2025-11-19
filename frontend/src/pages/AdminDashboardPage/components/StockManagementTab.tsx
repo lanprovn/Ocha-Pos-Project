@@ -306,5 +306,5 @@ const StockManagementTab: React.FC = () => {
   );
 };
 
-export default StockManagementTab;
+export default React.memo(StockManagementTab);
 

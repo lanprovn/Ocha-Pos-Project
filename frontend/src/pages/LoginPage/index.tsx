@@ -86,7 +86,7 @@ const LoginPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <button
                   onClick={() => handleRoleSelect('STAFF')}
-                  className="w-full bg-slate-700 hover:bg-slate-800 text-white py-4 px-4 rounded-md font-semibold text-base transition-colors flex flex-col items-center justify-center gap-2"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 px-4 rounded-md font-semibold text-base transition-colors flex flex-col items-center justify-center gap-2 shadow-md"
                 >
                   <div className="w-12 h-12 rounded-md bg-white/10 flex items-center justify-center">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,7 +99,7 @@ const LoginPage: React.FC = () => {
 
                 <button
                   onClick={() => handleRoleSelect('ADMIN')}
-                  className="w-full bg-slate-700 hover:bg-slate-800 text-white py-4 px-4 rounded-md font-semibold text-base transition-colors flex flex-col items-center justify-center gap-2"
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white py-4 px-4 rounded-md font-semibold text-base transition-colors flex flex-col items-center justify-center gap-2 shadow-md"
                 >
                   <div className="w-12 h-12 rounded-md bg-white/10 flex items-center justify-center">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,18 +125,20 @@ const LoginPage: React.FC = () => {
               </button>
 
               <div className="text-center mb-6">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-md bg-slate-100 mb-3">
+                <div className={`inline-flex items-center justify-center w-16 h-16 rounded-md mb-3 ${
+                  selectedRole === 'STAFF' ? 'bg-blue-100' : 'bg-orange-100'
+                }`}>
                   {selectedRole === 'STAFF' ? (
-                    <svg className="w-8 h-8 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={`w-8 h-8 ${selectedRole === 'STAFF' ? 'text-blue-600' : 'text-orange-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   ) : (
-                    <svg className="w-8 h-8 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                   )}
                 </div>
-                <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">
+                <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-1">
                   Đăng nhập {selectedRole === 'STAFF' ? 'Nhân Viên' : 'Quản Trị Viên'}
                 </h2>
                 <p className="text-sm text-gray-600">Vui lòng nhập thông tin đăng nhập của bạn</p>
@@ -158,7 +160,9 @@ const LoginPage: React.FC = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all bg-white"
+                      className={`w-full pl-10 pr-4 py-3 text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white ${
+                        selectedRole === 'ADMIN' ? 'focus:ring-orange-500 focus:border-orange-500' : ''
+                      }`}
                       placeholder="Nhập email của bạn"
                       required
                       autoComplete="email"
@@ -181,7 +185,9 @@ const LoginPage: React.FC = () => {
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-all bg-white"
+                      className={`w-full pl-10 pr-4 py-3 text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white ${
+                        selectedRole === 'ADMIN' ? 'focus:ring-orange-500 focus:border-orange-500' : ''
+                      }`}
                       placeholder="Nhập mật khẩu"
                       required
                       autoComplete="current-password"
@@ -192,7 +198,11 @@ const LoginPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 px-6 rounded-md font-semibold text-base text-white bg-slate-700 hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className={`w-full py-3 px-6 rounded-md font-semibold text-base text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md ${
+                    selectedRole === 'STAFF' 
+                      ? 'bg-blue-600 hover:bg-blue-700' 
+                      : 'bg-orange-600 hover:bg-orange-700'
+                  }`}
                 >
                   {isLoading ? (
                     <>
@@ -216,7 +226,9 @@ const LoginPage: React.FC = () => {
               {/* Demo credentials hint */}
               <div className="mt-6 p-4 bg-gray-50 border border-gray-300 rounded-md">
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-md bg-slate-700 flex items-center justify-center">
+                  <div className={`flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center ${
+                    selectedRole === 'STAFF' ? 'bg-blue-600' : 'bg-orange-600'
+                  }`}>
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>

@@ -222,10 +222,14 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     }
   }, []);
 
-  // Load products on mount
+  // Load products on mount only if not already loaded
   useEffect(() => {
-    loadProducts();
-  }, []);
+    // Only load if products and categories are empty (initial load)
+    if (products.length === 0 && categories.length === 0) {
+      loadProducts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   // Memoize context value để tránh re-render không cần thiết
   const value: ProductContextType = useMemo(() => ({

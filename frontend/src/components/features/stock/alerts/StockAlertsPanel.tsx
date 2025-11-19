@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import stockService from '@services/stock.service.ts';
 import type { StockAlert } from '@services/stock.service.ts';
 import { subscribeToDashboard } from '@services/socket.service';
+import { ROUTES } from '@constants';
 import toast from 'react-hot-toast';
 
 const StockAlertsPanel: React.FC = () => {
+  const navigate = useNavigate();
   const [productAlerts, setProductAlerts] = useState<StockAlert[]>([]);
   const [ingredientAlerts, setIngredientAlerts] = useState<StockAlert[]>([]);
   const [isVisible, setIsVisible] = useState(false);
@@ -178,7 +181,7 @@ const StockAlertsPanel: React.FC = () => {
         {totalAlerts > 6 && (
           <div className="mt-3 text-center">
             <button
-              onClick={() => window.location.href = '/stock-management'}
+              onClick={() => navigate(`${ROUTES.ADMIN_DASHBOARD}?tab=stock`)}
               className="text-sm text-red-600 hover:text-red-800 underline"
             >
               Xem tất cả ({totalAlerts} cảnh báo)

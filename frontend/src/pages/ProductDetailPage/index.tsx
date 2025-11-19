@@ -27,7 +27,7 @@ const ProductDetailPage: React.FC = () => {
     return (
       <ProductNotFound
         isCustomerDisplay={isCustomerDisplay}
-        onBack={() => navigate(isCustomerDisplay ? '/customer' : '/')}
+        onBack={() => navigate(-1)}
       />
     );
   }

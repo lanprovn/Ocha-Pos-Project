@@ -53,32 +53,40 @@ export const useStockManagement = () => {
     }
   }, []);
 
-  // Load data on mount only - tách riêng để tránh re-run
+  // Store loadData in ref to use in intervals/events
+  const loadDataRef = useRef(loadData);
+  useEffect(() => {
+    loadDataRef.current = loadData;
+  }, [loadData]);
+
+  // Load data on mount only
   useEffect(() => {
     loadData(true); // Show loading chỉ khi mount
-  }, [loadData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   useEffect(() => {
     loadIngredients();
-  }, [loadIngredients]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   // Auto refresh mỗi 60 giây (tăng lên để giảm tải và tránh cảm giác reload)
   // Không show loading khi auto refresh để tránh cảm giác page reload
   useEffect(() => {
     const autoRefreshInterval = setInterval(() => {
-      loadData(false); // Không show loading
+      loadDataRef.current(false); // Không show loading
       loadIngredientsRef.current(); // Dùng ref để luôn gọi phiên bản mới nhất
     }, 60000); // 60 giây để giảm tải
 
     return () => {
       clearInterval(autoRefreshInterval);
     };
-  }, [loadData]); // Chỉ phụ thuộc vào loadData
+  }, []); // Empty deps - only set up interval once
 
   // Listen to order completed events (localStorage events)
   useEffect(() => {
     const handleStockUpdate = () => {
-      loadData(false); // Không show loading khi update từ event
+      loadDataRef.current(false); // Không show loading khi update từ event
       loadIngredientsRef.current(); // Dùng ref để luôn gọi phiên bản mới nhất
     };
 
@@ -87,7 +95,7 @@ export const useStockManagement = () => {
     return () => {
       window.removeEventListener('orderCompleted', handleStockUpdate);
     };
-  }, [loadData]); // Chỉ phụ thuộc vào loadData
+  }, []); // Empty deps - only set up listener once
 
   // Subscribe to Socket.io for real-time stock updates
   useEffect(() => {
@@ -95,31 +103,40 @@ export const useStockManagement = () => {
       (data) => {
         // Dashboard update - reload stock data
         if (data.type === 'stock_update' || data.type === 'order_created' || data.type === 'order_completed') {
-          loadData(false); // Không show loading
+          loadDataRef.current(false); // Không show loading
           loadIngredientsRef.current();
         }
       },
       (alert) => {
         // Stock alert - reload alerts
-        loadData(false); // Không show loading
+        loadDataRef.current(false); // Không show loading
         loadIngredientsRef.current();
       },
       (stockData) => {
         // Stock updated event - reload stock data immediately
         console.log('📦 Stock updated:', stockData);
-        loadData(false); // Không show loading
+        loadDataRef.current(false); // Không show loading
         loadIngredientsRef.current();
       }
     );
 
     return cleanup;
-  }, [loadData]); // Chỉ phụ thuộc vào loadData
+  }, []); // Empty deps - only subscribe once
 
   const lowStockCount = stocks.filter((s) => s.currentStock <= s.minStock && s.currentStock > 0).length;
   const outOfStockCount = stocks.filter((s) => s.currentStock === 0).length;
   const unreadAlertsCount = alerts.filter((alert) => !alert.isRead).length;
   const ingredientStats = getIngredientStats();
   const unreadIngredientAlertsCount = ingredientAlerts.filter((alert) => !alert.isRead).length;
+
+  // Debug: Log ingredients data
+  useEffect(() => {
+    console.log('📊 useStockManagement Debug:', {
+      ingredientsCount: ingredients?.length || 0,
+      ingredients: ingredients?.slice(0, 3), // Log first 3
+      ingredientStats: ingredientStats,
+    });
+  }, [ingredients, ingredientStats]);
 
   return {
     stocks,

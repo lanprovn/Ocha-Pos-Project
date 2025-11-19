@@ -17,10 +17,14 @@ const ProductManagementTab: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'available' | 'unavailable'>('all');
 
-  // Load products on mount
+  // Load products on mount only - loadProducts is stable (useCallback with empty deps)
   useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+    // Only load if products array is empty (initial load)
+    if (products.length === 0) {
+      loadProducts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   // Filtered products
   const filteredProducts = useMemo(() => {

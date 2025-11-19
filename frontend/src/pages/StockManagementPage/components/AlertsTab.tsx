@@ -22,8 +22,13 @@ export const AlertsTab: React.FC<AlertsTabProps> = ({
   handleMarkAlertAsRead,
   handleMarkIngredientAlertAsRead,
 }) => {
-  const productAlerts = alerts.filter((alert) => alert && alert.productId);
-  const ingredientAlertsFiltered = ingredientAlerts.filter((alert) => alert && alert.ingredientId);
+  // Provide default values to prevent undefined errors
+  const safeAlerts = alerts || [];
+  const safeIngredientAlerts = ingredientAlerts || [];
+  const safeIngredients = ingredients || [];
+  
+  const productAlerts = safeAlerts.filter((alert) => alert && alert.productId);
+  const ingredientAlertsFiltered = safeIngredientAlerts.filter((alert) => alert && alert.ingredientId);
 
   if (productAlerts.length === 0 && ingredientAlertsFiltered.length === 0) {
     return (
@@ -60,7 +65,7 @@ export const AlertsTab: React.FC<AlertsTabProps> = ({
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">🥛 Cảnh báo nguyên liệu</h3>
           {ingredientAlertsFiltered.map((alert) => {
-            const ingredient = ingredients.find((ing) => ing.id === alert.ingredientId);
+            const ingredient = safeIngredients.find((ing) => ing.id === alert.ingredientId);
             return (
               <AlertCard
                 key={alert.id}

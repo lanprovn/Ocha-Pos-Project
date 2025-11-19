@@ -29,7 +29,6 @@ const DashboardPage = lazy(() => import('../pages/DashboardPage/index'));
 const StockManagementPage = lazy(() => import('../pages/StockManagementPage/index'));
 const OrderDisplayPage = lazy(() => import('../pages/OrderDisplayPage/index'));
 const PaymentCallbackPage = lazy(() => import('../pages/PaymentCallbackPage/index'));
-const CustomerOrderTrackingPage = lazy(() => import('../pages/CustomerOrderTrackingPage/index'));
 const ReportingPage = lazy(() => import('../pages/ReportingPage/index'));
 const ProductManagementPage = lazy(() => import('../pages/ProductManagementPage/index'));
 const CategoryManagementPage = lazy(() => import('../pages/CategoryManagementPage/index'));
@@ -115,16 +114,6 @@ function AppRoutes() {
             <Route path={ROUTES.CUSTOMER} element={<CustomerDisplayLayout />}>
               {/* Layout tự render ProductGrid khi pathname === '/customer' */}
             </Route>
-            {/* Customer order tracking - Redirect to customer with query param */}
-            <Route path="/customer/order-tracking" element={
-              <Navigate to={(location) => {
-                const params = new URLSearchParams(location.search);
-                const orderId = params.get('orderId');
-                return orderId 
-                  ? { pathname: ROUTES.CUSTOMER, search: `?orderId=${orderId}` }
-                  : { pathname: ROUTES.CUSTOMER };
-              }} replace />
-            } />
             {/* Customer order success - Redirect to checkout (now integrated) */}
             <Route path={ROUTES.ORDER_SUCCESS} element={<Navigate to={ROUTES.CHECKOUT} replace />} />
             <Route path="*" element={<Navigate to={ROUTES.CUSTOMER} replace />} />
@@ -240,10 +229,10 @@ function AppRoutes() {
             <Route index element={<Navigate to={{ pathname: ROUTES.MENU_MANAGEMENT, search: '?tab=categories' }} replace />} />
           </Route>
 
-          {/* Stock Management - Show Admin Dashboard with stock tab */}
+          {/* Stock Management - Redirect to Admin Dashboard with stock tab */}
           <Route path={ROUTES.STOCK_MANAGEMENT} element={
             <ProtectedRoute requiredRole="ADMIN">
-              <AdminDashboardPage />
+              <Navigate to={{ pathname: ROUTES.ADMIN_DASHBOARD, search: '?tab=stock' }} replace />
             </ProtectedRoute>
           } />
 

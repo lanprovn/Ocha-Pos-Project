@@ -82,11 +82,11 @@ export default function POSLayoutNew() {
         {/* Left: User Info, Navigation & Management Buttons */}
         <div className="flex items-center space-x-4 flex-1 min-w-0">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 bg-slate-700 rounded-md flex items-center justify-center">
+            <div className="w-9 h-9 bg-blue-600 rounded-md flex items-center justify-center">
               <UserCircleIcon className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">{user?.name || 'Nhân Viên POS'}</p>
+              <p className="text-sm font-semibold text-gray-800">{user?.name || 'Nhân Viên POS'}</p>
               <div className="flex items-center space-x-1.5">
                 <div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div>
                 <span className="text-xs text-gray-600">{user?.role === 'ADMIN' ? 'Quản Trị Viên' : 'Nhân Viên'}</span>
@@ -122,7 +122,7 @@ export default function POSLayoutNew() {
           <div className="flex items-center space-x-2 ml-6">
             <button
               onClick={() => navigate('/orders')}
-              className="flex items-center space-x-2 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-md transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors shadow-sm"
               title="Xem đơn hàng"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,7 +132,7 @@ export default function POSLayoutNew() {
             </button>
             <button
               onClick={() => navigate('/analytics')}
-              className="flex items-center space-x-2 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-md transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors shadow-sm"
               title="Phân tích & Báo cáo"
             >
               <ChartBarIcon className="w-4 h-4" />
@@ -175,9 +175,9 @@ export default function POSLayoutNew() {
         {/* Left Panel - Cart & Controls */}
         <aside className="w-96 bg-white border-r border-gray-300 flex flex-col flex-shrink-0">
           {/* Order List Header */}
-          <div className="p-4 border-b border-gray-300 bg-slate-50">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-              <ShoppingCartIcon className="w-5 h-5 mr-2 text-slate-700" />
+          <div className="p-4 border-b border-gray-300 bg-blue-50">
+            <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+              <ShoppingCartIcon className="w-5 h-5 mr-2 text-blue-600" />
               Đơn hàng hiện tại
             </h2>
             <p className="text-xs text-gray-600 mt-1">{totalItems} món</p>
@@ -198,8 +198,8 @@ export default function POSLayoutNew() {
                   onClick={() => setSelectedItemId(item.id)}
                   className={`p-3 rounded-md border cursor-pointer transition-colors ${
                     selectedItemId === item.id
-                      ? 'bg-slate-50 border-slate-400 shadow-sm'
-                      : 'bg-white border-gray-300 hover:border-slate-400 hover:bg-gray-50'
+                      ? 'bg-blue-50 border-blue-400 shadow-sm'
+                      : 'bg-white border-gray-300 hover:border-blue-400 hover:bg-gray-50'
                   }`}
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -240,7 +240,7 @@ export default function POSLayoutNew() {
                       >
                         −
                       </button>
-                      <span className="text-sm font-semibold text-gray-900 min-w-[2rem] text-center">
+                      <span className="text-sm font-semibold text-gray-800 min-w-[2rem] text-center">
                         {item.quantity}
                       </span>
                       <button
@@ -253,7 +253,7 @@ export default function POSLayoutNew() {
                         +
                       </button>
                     </div>
-                    <span className="text-sm font-bold text-slate-700">
+                    <span className="text-sm font-bold text-blue-700">
                       {formatPrice(item.totalPrice)}
                     </span>
                   </div>
@@ -263,18 +263,18 @@ export default function POSLayoutNew() {
           </div>
 
           {/* Order Totals */}
-          <div className="p-4 border-t border-gray-300 bg-slate-50 space-y-2">
+          <div className="p-4 border-t border-gray-300 bg-blue-50 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Tạm tính:</span>
-              <span className="font-semibold text-gray-900">{formatPrice(totalPrice)}</span>
+              <span className="font-semibold text-gray-800">{formatPrice(totalPrice)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">VAT (10%):</span>
-              <span className="font-semibold text-gray-900">{formatPrice(calculateTax())}</span>
+              <span className="font-semibold text-gray-800">{formatPrice(calculateTax())}</span>
             </div>
             <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-400">
-              <span className="text-gray-900">Tổng cộng:</span>
-              <span className="text-slate-800">{formatPrice(finalTotal)}</span>
+              <span className="text-gray-800">Tổng cộng:</span>
+              <span className="text-blue-700">{formatPrice(finalTotal)}</span>
             </div>
           </div>
 

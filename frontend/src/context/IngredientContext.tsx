@@ -91,11 +91,15 @@ export const IngredientProvider: React.FC<IngredientProviderProps> = ({ children
   const loadIngredients = useCallback(async () => {
     setIsLoading(true);
     try {
+      console.log('🔄 Loading ingredients from API...');
       const [stocks, transactionsResponse, alertsResponse] = await Promise.all([
         stockService.getIngredientStocks(),
         stockService.getTransactions(),
         stockService.getAlerts(),
       ]);
+
+      console.log('📦 Raw ingredient stocks from API:', stocks);
+      console.log('📊 Ingredient stocks count:', stocks?.length || 0);
 
       const ingredientStocks = stocks.map(mapIngredientStock);
       const ingredientTransactions = transactionsResponse
@@ -103,11 +107,14 @@ export const IngredientProvider: React.FC<IngredientProviderProps> = ({ children
         .map(mapIngredientTransaction);
       const ingredientAlerts = alertsResponse.filter((alert) => alert.ingredientId).map(mapIngredientAlert);
 
+      console.log('✅ Mapped ingredient stocks:', ingredientStocks);
+      console.log('✅ Total ingredients loaded:', ingredientStocks.length);
+
       setIngredients(ingredientStocks);
       setTransactions(ingredientTransactions);
       setAlerts(ingredientAlerts);
     } catch (error) {
-      console.error('Error loading ingredient data:', error);
+      console.error('❌ Error loading ingredient data:', error);
       setIngredients([]);
       setTransactions([]);
       setAlerts([]);

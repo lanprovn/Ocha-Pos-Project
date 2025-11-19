@@ -280,67 +280,91 @@ async function main() {
   console.log('📋 Tạo product recipes...');
   let recipeCount = 0;
 
-  // Hàm tính số lượng nguyên liệu dựa trên tên sản phẩm
-  const calculateIngredientQuantity = (productName: string, ingredientName: string): number => {
+  // Hàm tính số lượng nguyên liệu dựa trên tên sản phẩm và nguyên liệu
+  const calculateIngredientQuantity = (productName: string, ingredientName: string, _productId: number): number => {
     const name = productName.toLowerCase();
     const ingName = ingredientName.toLowerCase();
 
-    // Cà phê
-    if (ingName.includes('cà phê') || ingName.includes('hạt cà phê')) {
-      if (name.includes('americano') || name.includes('espresso')) return 20; // 20g
-      if (name.includes('cappuccino') || name.includes('latte')) return 15; // 15g
-      return 18; // Mặc định 18g
+    // Cà phê - Hạt cà phê
+    if (ingName.includes('hạt cà phê') || ingName.includes('coffee_beans')) {
+      if (name.includes('americano')) return 20; // 20g cho 1 ly Americano
+      if (name.includes('espresso')) return 18; // 18g cho 1 ly Espresso
+      if (name.includes('cappuccino')) return 15; // 15g cho Cappuccino
+      if (name.includes('latte')) return 15; // 15g cho Latte
+      if (name.includes('cà phê phin') || name.includes('phin')) return 12; // 12g cho phin
+      if (name.includes('bạc xỉu')) return 10; // 10g cho bạc xỉu
+      return 15; // Mặc định 15g
     }
 
-    // Sữa
-    if (ingName.includes('sữa tươi')) {
-      if (name.includes('latte') || name.includes('cappuccino')) return 150; // 150ml
-      if (name.includes('sữa')) return 100; // 100ml
-      return 50; // 50ml
-    }
-
-    // Sữa đặc
-    if (ingName.includes('sữa đặc')) {
-      if (name.includes('cà phê sữa') || name.includes('bạc xỉu')) return 30; // 30ml
-      return 20; // 20ml
-    }
-
-    // Đường
-    if (ingName.includes('đường')) {
-      if (name.includes('ngọt') || name.includes('sữa')) return 15; // 15g
-      return 10; // 10g
-    }
-
-    // Đá viên
-    if (ingName.includes('đá')) {
-      if (name.includes('đá') || name.includes('lạnh')) return 10; // 10 viên
+    // Sữa tươi
+    if (ingName.includes('sữa tươi') || ingName.includes('fresh_milk')) {
+      if (name.includes('latte')) return 200; // 200ml cho Latte
+      if (name.includes('cappuccino')) return 150; // 150ml cho Cappuccino
+      if (name.includes('americano')) return 50; // 50ml nếu thêm sữa
       return 0;
     }
 
-    // Siro
-    if (ingName.includes('siro') || ingName.includes('syrup')) {
-      if (name.includes('caramel')) return 20; // 20ml
-      if (name.includes('vanilla')) return 15; // 15ml
-      if (name.includes('đào') || name.includes('peach')) return 25; // 25ml
-      if (name.includes('vải') || name.includes('lychee')) return 25; // 25ml
-      if (name.includes('dâu') || name.includes('strawberry')) return 20; // 20ml
-      return 15; // 15ml
+    // Sữa đặc
+    if (ingName.includes('sữa đặc') || ingName.includes('condensed_milk')) {
+      if (name.includes('bạc xỉu')) return 30; // 30ml cho bạc xỉu
+      if (name.includes('cà phê sữa') || name.includes('phin sữa')) return 25; // 25ml
+      return 0;
+    }
+
+    // Đường
+    if (ingName.includes('đường') || ingName.includes('sugar')) {
+      if (name.includes('ngọt') || name.includes('sữa') || name.includes('đá')) return 15; // 15g cho đồ ngọt
+      if (name.includes('trà')) return 10; // 10g cho trà
+      if (name.includes('bánh')) return 20; // 20g cho bánh
+      return 10; // 10g mặc định
+    }
+
+    // Đá viên
+    if (ingName.includes('đá viên') || ingName.includes('ice_cubes')) {
+      if (name.includes('đá') || name.includes('lạnh') || name.includes('freeze')) return 10; // 10 viên
+      return 0;
+    }
+
+    // Siro caramel
+    if (ingName.includes('caramel') || ingName.includes('caramel_syrup')) {
+      if (name.includes('caramel')) return 25; // 25ml
+      return 0;
+    }
+
+    // Siro vanilla
+    if (ingName.includes('vanilla') || ingName.includes('vanilla_syrup')) {
+      if (name.includes('vanilla') || name.includes('latte') || name.includes('cappuccino')) return 15; // 15ml
+      return 0;
     }
 
     // Kem tươi
-    if (ingName.includes('kem')) {
-      if (name.includes('kem') || name.includes('whipped')) return 30; // 30ml
+    if (ingName.includes('kem tươi') || ingName.includes('whipped_cream')) {
+      if (name.includes('kem') || name.includes('whipped') || name.includes('freeze')) return 30; // 30ml
+      if (name.includes('bánh choux')) return 20; // 20ml cho bánh choux
       return 0;
     }
 
     // Bột trà xanh
-    if (ingName.includes('trà xanh') || ingName.includes('matcha')) {
-      if (name.includes('trà xanh') || name.includes('matcha')) return 10; // 10g
+    if (ingName.includes('trà xanh') || ingName.includes('matcha') || ingName.includes('matcha_powder')) {
+      if (name.includes('trà xanh') || name.includes('matcha') || name.includes('freeze trà xanh')) return 10; // 10g
+      if (name.includes('phô mai trà xanh')) return 8; // 8g cho bánh
+      return 0;
+    }
+
+    // Siro đào
+    if (ingName.includes('đào') || ingName.includes('peach') || ingName.includes('peach_syrup')) {
+      if (name.includes('đào')) return 25; // 25ml
+      return 0;
+    }
+
+    // Siro vải
+    if (ingName.includes('vải') || ingName.includes('lychee') || ingName.includes('lychee_syrup')) {
+      if (name.includes('vải')) return 25; // 25ml
       return 0;
     }
 
     // Hạt sen
-    if (ingName.includes('sen') || ingName.includes('lotus')) {
+    if (ingName.includes('sen') || ingName.includes('lotus') || ingName.includes('lotus_seed')) {
       if (name.includes('sen')) return 20; // 20g
       return 0;
     }
@@ -352,13 +376,159 @@ async function main() {
     }
 
     // Bột cacao
-    if (ingName.includes('cacao') || ingName.includes('cocoa')) {
-      if (name.includes('cacao') || name.includes('chocolate')) return 8; // 8g
+    if (ingName.includes('cacao') || ingName.includes('cocoa') || ingName.includes('cocoa_powder')) {
+      if (name.includes('cacao') || name.includes('chocolate') || name.includes('mousse cacao')) return 15; // 15g
+      if (name.includes('freeze chocolate')) return 10; // 10g
+      return 0;
+    }
+
+    // Siro dâu
+    if (ingName.includes('dâu') || ingName.includes('strawberry') || ingName.includes('strawberry_syrup')) {
+      if (name.includes('dâu')) return 20; // 20ml
+      return 0;
+    }
+
+    // Bột mì
+    if (ingName.includes('bột mì') || ingName.includes('flour')) {
+      if (name.includes('bánh')) return 100; // 100g cho các loại bánh
+      return 0;
+    }
+
+    // Trứng
+    if (ingName.includes('trứng') || ingName.includes('eggs')) {
+      if (name.includes('bánh')) return 2; // 2 quả trứng cho bánh
+      if (name.includes('pizza')) return 0; // Pizza không dùng trứng
+      return 0;
+    }
+
+    // Bơ
+    if (ingName.includes('bơ') || ingName.includes('butter')) {
+      if (name.includes('bánh')) return 30; // 30g cho bánh
+      return 0;
+    }
+
+    // Phô mai
+    if (ingName.includes('phô mai') || ingName.includes('cheese')) {
+      if (name.includes('phô mai')) return 50; // 50g cho bánh phô mai
+      if (name.includes('cheese burger') || name.includes('burger')) return 30; // 30g cho burger
+      if (name.includes('pizza')) return 80; // 80g cho pizza
+      return 0;
+    }
+
+    // Thịt bò
+    if (ingName.includes('thịt bò') || ingName.includes('beef')) {
+      if (name.includes('burger thịt bò')) return 150; // 150g
+      if (name.includes('bít tết')) return 200; // 200g
+      if (name.includes('mì') || name.includes('noodles')) return 100; // 100g
+      return 0;
+    }
+
+    // Thịt gà
+    if (ingName.includes('thịt gà') || ingName.includes('chicken')) {
+      if (name.includes('gà rán')) return 200; // 200g
+      return 0;
+    }
+
+    // Bánh mì
+    if (ingName.includes('bánh mì') || ingName.includes('bread')) {
+      if (name.includes('burger') || name.includes('sandwich')) return 1; // 1 cái
+      return 0;
+    }
+
+    // Rau xà lách
+    if (ingName.includes('xà lách') || ingName.includes('lettuce')) {
+      if (name.includes('burger') || name.includes('sandwich')) return 20; // 20g
+      return 0;
+    }
+
+    // Cà chua
+    if (ingName.includes('cà chua') || ingName.includes('tomato')) {
+      if (name.includes('burger') || name.includes('sandwich')) return 30; // 30g
+      if (name.includes('pizza')) return 50; // 50g
+      return 0;
+    }
+
+    // Hành tây
+    if (ingName.includes('hành') || ingName.includes('onion')) {
+      if (name.includes('burger') || name.includes('sandwich') || name.includes('mì')) return 15; // 15g
+      if (name.includes('pizza')) return 20; // 20g
+      return 0;
+    }
+
+    // Mì
+    if (ingName.includes('mì') || ingName.includes('noodles')) {
+      if (name.includes('mì') || name.includes('noodles')) return 150; // 150g
+      return 0;
+    }
+
+    // Bột bánh pizza
+    if (ingName.includes('bột bánh pizza') || ingName.includes('pizza_dough')) {
+      if (name.includes('pizza')) return 200; // 200g
+      return 0;
+    }
+
+    // Nấm
+    if (ingName.includes('nấm') || ingName.includes('mushroom')) {
+      if (name.includes('pizza')) return 30; // 30g
+      return 0;
+    }
+
+    // Ô liu
+    if (ingName.includes('ô liu') || ingName.includes('olive')) {
+      if (name.includes('pizza')) return 15; // 15g
+      return 0;
+    }
+
+    // Pepperoni
+    if (ingName.includes('pepperoni')) {
+      if (name.includes('pizza')) return 40; // 40g
+      return 0;
+    }
+
+    // Bột chiên gà
+    if (ingName.includes('bột chiên') || ingName.includes('chicken_breading')) {
+      if (name.includes('gà rán')) return 50; // 50g
+      return 0;
+    }
+
+    // Nước cốt dừa
+    if (ingName.includes('nước cốt dừa') || ingName.includes('coconut_milk')) {
+      if (name.includes('súp thái')) return 100; // 100ml
+      return 0;
+    }
+
+    // Sả
+    if (ingName.includes('sả') || ingName.includes('lemongrass')) {
+      if (name.includes('súp thái')) return 10; // 10g
+      return 0;
+    }
+
+    // Ớt
+    if (ingName.includes('ớt') || ingName.includes('chili')) {
+      if (name.includes('súp thái')) return 5; // 5g
+      return 0;
+    }
+
+    // Mascarpone (cho Tiramisu)
+    if (ingName.includes('mascarpone')) {
+      if (name.includes('tiramisu')) return 100; // 100g
+      return 0;
+    }
+
+    // Bánh quy ladyfinger (cho Tiramisu)
+    if (ingName.includes('ladyfinger')) {
+      if (name.includes('tiramisu')) return 6; // 6 cái
+      return 0;
+    }
+
+    // Rượu cà phê (cho Tiramisu)
+    if (ingName.includes('rượu cà phê') || ingName.includes('coffee_liqueur')) {
+      if (name.includes('tiramisu')) return 20; // 20ml
       return 0;
     }
 
     // Mặc định
-    return 10;
+    return 0;
   };
 
   // Tạo recipes cho mỗi ingredient dựa trên usedIn
@@ -379,7 +549,7 @@ async function main() {
       if (!product) continue;
 
       // Tính số lượng nguyên liệu
-      const quantity = calculateIngredientQuantity(product.name, ing.name);
+      const quantity = calculateIngredientQuantity(product.name, ing.name, product.id);
 
       // Tạo recipe
       try {

@@ -41,11 +41,11 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, currentTime, onStat
   };
 
   const handleContinueCheckout = () => {
-    // Navigate to checkout with order ID
-    // Backend sẽ load draft order và restore cart
+    // Navigate to checkout with order ID (UUID)
+    // useCheckout sẽ load order và restore cart
     navigate('/checkout', {
       state: { 
-        orderId: order.orderId,
+        orderId: order.id, // Sử dụng UUID thay vì orderNumber
         continueOrder: true 
       }
     });

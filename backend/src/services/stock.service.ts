@@ -651,7 +651,7 @@ export class StockService {
       currentStock: stock.quantity,
       minStock: stock.minStock,
       maxStock: stock.maxStock,
-      unit: stock.ingredient?.unit || 'pcs',
+      unit: stock.unit || stock.ingredient?.unit || 'pcs',
       lastUpdated: stock.lastUpdated.getTime(),
       isActive: stock.isActive,
       ingredient: stock.ingredient

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useIngredients } from '../../context/IngredientContext';
 import StockAdjustModal from '../../components/features/stock/StockAdjustModal';
@@ -116,6 +116,7 @@ const StockManagementPage: React.FC = () => {
     setCategoryFilter,
     searchQuery,
     setSearchQuery,
+    ingredients: ingredientsFromHook,
     ingredientStats,
     lowStockCount,
     outOfStockCount,
@@ -125,13 +126,28 @@ const StockManagementPage: React.FC = () => {
     reloadIngredients,
   } = useStockManagement();
 
+  // Use ingredients from hook if available, otherwise from context
+  const finalIngredients = ingredientsFromHook || ingredients || [];
+
+  // Debug: Log ingredients before filtering
+  React.useEffect(() => {
+    console.log('📋 StockManagementPage - Ingredients before filter:', {
+      ingredientsFromContext: ingredients?.length || 0,
+      ingredientsFromHook: ingredientsFromHook?.length || 0,
+      finalIngredientsCount: finalIngredients.length,
+      sampleIngredients: finalIngredients.slice(0, 3),
+      filter: filter,
+      searchQuery: searchQuery,
+    });
+  }, [ingredients, ingredientsFromHook, finalIngredients, filter, searchQuery]);
+
   const {
     filteredStocks,
     filteredIngredients,
     filteredTransactions,
     getCategories,
     getProductInfo,
-  } = useStockFilters(stocks, transactions, ingredients, filter, categoryFilter, searchQuery);
+  } = useStockFilters(stocks || [], transactions || [], finalIngredients, filter, categoryFilter, searchQuery);
 
   const {
     showModal,
@@ -329,7 +345,7 @@ const StockManagementPage: React.FC = () => {
           stocksCount={stocks.length}
           transactionsCount={transactions.length}
           alertsCount={unreadAlertsCount + unreadIngredientAlertsCount}
-          ingredientsCount={ingredientStats.total}
+          ingredientsCount={ingredientStats?.total ?? 0}
         />
 
         <div className="bg-white rounded-md shadow-sm border border-gray-300 mb-8">
@@ -364,9 +380,9 @@ const StockManagementPage: React.FC = () => {
 
             {activeTab === 'alerts' && (
               <AlertsTab
-                alerts={alerts}
-                ingredientAlerts={ingredientAlerts}
-                ingredients={ingredients}
+                alerts={alerts || []}
+                ingredientAlerts={ingredientAlerts || []}
+                ingredients={ingredients || []}
                 getProductInfo={getProductInfo}
                 handleMarkAlertAsRead={handleMarkAlertAsRead}
                 handleMarkIngredientAlertAsRead={handleMarkIngredientAlertAsRead}
@@ -375,7 +391,7 @@ const StockManagementPage: React.FC = () => {
 
             {activeTab === 'ingredients' && (
               <IngredientsTab
-                filteredIngredients={filteredIngredients}
+                filteredIngredients={filteredIngredients || []}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
                 filter={filter}
