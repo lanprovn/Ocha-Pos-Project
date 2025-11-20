@@ -23,22 +23,22 @@ class ErrorBoundary extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-md p-6 max-w-md w-full">
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-md w-full">
             <div className="text-center">
               <div className="text-red-500 text-5xl mb-4">⚠️</div>
-              <h2 className="text-xl font-bold text-gray-800 mb-2">
+              <h2 className="text-xl font-bold text-slate-900 mb-2 tracking-tight">
                 Đã xảy ra lỗi
               </h2>
-              <p className="text-gray-600 mb-4">
+              <p className="text-slate-600 mb-4 font-medium">
                 Không thể tải trang Phân tích & Báo cáo. Vui lòng thử lại sau.
               </p>
               {this.state.error && (
                 <details className="text-left mt-4">
-                  <summary className="cursor-pointer text-sm text-gray-500 mb-2">
+                  <summary className="cursor-pointer text-sm text-slate-500 mb-2 font-medium">
                     Chi tiết lỗi
                   </summary>
-                  <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-40">
+                  <pre className="text-xs bg-slate-100 p-2 rounded-lg overflow-auto max-h-40 font-mono">
                     {this.state.error.toString()}
                   </pre>
                 </details>
@@ -48,7 +48,7 @@ class ErrorBoundary extends Component<
                   this.setState({ hasError: false, error: null });
                   window.location.reload();
                 }}
-                className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                className="mt-4 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-sm hover:shadow"
               >
                 Tải lại trang
               </button>
@@ -70,35 +70,37 @@ const AnalyticsTab: React.FC = () => {
       <div>
         {/* Sub Tabs */}
         <div className="mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8" aria-label="Sub Tabs">
-              <button
-                onClick={() => setActiveSubTab('dashboard')}
-                className={`
-                  whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors
-                  ${
-                    activeSubTab === 'dashboard'
-                      ? 'border-orange-500 text-orange-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }
-                `}
-              >
-                Tổng Quan
-              </button>
-              <button
-                onClick={() => setActiveSubTab('reports')}
-                className={`
-                  whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors
-                  ${
-                    activeSubTab === 'reports'
-                      ? 'border-orange-500 text-orange-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }
-                `}
-              >
-                Báo Cáo Chi Tiết
-              </button>
-            </nav>
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+            <div className="border-b border-slate-200">
+              <nav className="-mb-px flex space-x-8 px-6" aria-label="Sub Tabs">
+                <button
+                  onClick={() => setActiveSubTab('dashboard')}
+                  className={`
+                    whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-sm transition-colors
+                    ${
+                      activeSubTab === 'dashboard'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                    }
+                  `}
+                >
+                  Tổng Quan
+                </button>
+                <button
+                  onClick={() => setActiveSubTab('reports')}
+                  className={`
+                    whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-sm transition-colors
+                    ${
+                      activeSubTab === 'reports'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                    }
+                  `}
+                >
+                  Báo Cáo Chi Tiết
+                </button>
+              </nav>
+            </div>
           </div>
         </div>
 

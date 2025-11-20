@@ -132,75 +132,75 @@ const OrderManagementTab: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Tổng Đơn Hàng</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
+            <div className="flex-1">
+              <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Tổng Đơn Hàng</p>
+              <p className="text-3xl font-bold text-slate-900 mb-1">{stats.totalOrders}</p>
             </div>
-            <div className="bg-blue-100 rounded-full p-3">
-              <DocumentChartBarIcon className="w-6 h-6 text-blue-600" />
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-3 shadow-sm group-hover:shadow-md transition-shadow">
+              <DocumentChartBarIcon className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Chờ Xử Lý</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.pendingOrders}</p>
+            <div className="flex-1">
+              <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Chờ Xử Lý</p>
+              <p className="text-3xl font-bold text-slate-900 mb-1">{stats.pendingOrders}</p>
             </div>
-            <div className="bg-yellow-100 rounded-full p-3">
-              <ClockIcon className="w-6 h-6 text-yellow-600" />
+            <div className="bg-gradient-to-br from-amber-500 to-yellow-500 rounded-xl p-3 shadow-sm group-hover:shadow-md transition-shadow">
+              <ClockIcon className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Đang Chuẩn Bị</p>
-              <p className="text-2xl font-bold text-orange-600">{stats.preparingOrders}</p>
+            <div className="flex-1">
+              <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Đang Chuẩn Bị</p>
+              <p className="text-3xl font-bold text-slate-900 mb-1">{stats.preparingOrders}</p>
             </div>
-            <div className="bg-orange-100 rounded-full p-3">
-              <CheckCircleIcon className="w-6 h-6 text-orange-600" />
+            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-3 shadow-sm group-hover:shadow-md transition-shadow">
+              <CheckCircleIcon className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Doanh Thu</p>
-              <p className="text-2xl font-bold text-green-600">
+            <div className="flex-1">
+              <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Doanh Thu</p>
+              <p className="text-3xl font-bold text-slate-900 mb-1">
                 {new Intl.NumberFormat('vi-VN', {
                   style: 'currency',
                   currency: 'VND',
                 }).format(stats.totalRevenue)}
               </p>
             </div>
-            <div className="bg-green-100 rounded-full p-3">
-              <CurrencyDollarIcon className="w-6 h-6 text-green-600" />
+            <div className="bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl p-3 shadow-sm group-hover:shadow-md transition-shadow">
+              <CurrencyDollarIcon className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg shadow-sm border border-orange-200 p-6">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm border border-blue-200 p-6">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-bold text-slate-900 mb-2 tracking-tight">
               Trang Quản Lý Đơn Hàng Đầy Đủ
             </h3>
-            <p className="text-sm text-gray-700 mb-4">
+            <p className="text-sm text-slate-600 mb-4 font-medium">
               Mở trang quản lý đơn hàng với đầy đủ tính năng: xem tất cả đơn hàng, 
               cập nhật trạng thái, tìm kiếm và lọc đơn hàng theo nhiều tiêu chí.
             </p>
             <button
               onClick={handleOpenOrdersPage}
-              className="inline-flex items-center space-x-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors font-medium shadow-sm hover:shadow-md text-sm"
+              className="inline-flex items-center space-x-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 font-semibold shadow-sm hover:shadow-md text-sm"
             >
               <span>Mở Trang Đơn Hàng</span>
               <ArrowRightIcon className="w-4 h-4" />
@@ -210,11 +210,11 @@ const OrderManagementTab: React.FC = () => {
       </div>
 
       {/* Orders Display */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+        <div className="p-6 border-b border-slate-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Đơn Hàng Hôm Nay</h3>
-            <div className="text-sm text-gray-500">
+            <h3 className="text-lg font-bold text-slate-900 tracking-tight">Đơn Hàng Hôm Nay</h3>
+            <div className="text-sm text-slate-500 font-medium">
               {currentTime.toLocaleString('vi-VN', {
                 weekday: 'long',
                 year: 'numeric',

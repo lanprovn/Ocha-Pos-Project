@@ -19,45 +19,45 @@ export const StockTabs: React.FC<StockTabsProps> = ({
   ingredientsCount
 }) => {
   return (
-    <div className="bg-white rounded-md shadow-sm border border-gray-300 mb-8">
-      <div className="border-b border-gray-300">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-8">
+      <div className="border-b border-slate-200">
         <nav className="flex space-x-8 px-6 overflow-x-auto">
           <button
             onClick={() => onTabChange('stocks')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
+            className={`py-4 px-1 border-b-2 font-semibold text-sm whitespace-nowrap transition-colors ${
               activeTab === 'stocks'
-                ? 'border-slate-700 text-slate-700'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
             Tồn Kho ({stocksCount})
           </button>
           <button
             onClick={() => onTabChange('transactions')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
+            className={`py-4 px-1 border-b-2 font-semibold text-sm whitespace-nowrap transition-colors ${
               activeTab === 'transactions'
-                ? 'border-slate-700 text-slate-700'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
             Giao Dịch ({transactionsCount})
           </button>
           <button
             onClick={() => onTabChange('alerts')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
+            className={`py-4 px-1 border-b-2 font-semibold text-sm whitespace-nowrap transition-colors ${
               activeTab === 'alerts'
-                ? 'border-slate-700 text-slate-700'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
             Cảnh Báo ({alertsCount})
           </button>
           <button
             onClick={() => onTabChange('ingredients')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
+            className={`py-4 px-1 border-b-2 font-semibold text-sm whitespace-nowrap transition-colors ${
               activeTab === 'ingredients'
-                ? 'border-slate-700 text-slate-700'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
             Nguyên Liệu ({ingredientsCount})

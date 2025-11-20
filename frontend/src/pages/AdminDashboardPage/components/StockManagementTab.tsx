@@ -153,7 +153,8 @@ const StockManagementTab: React.FC = () => {
         toast.success('Đã cập nhật tồn kho sản phẩm thành công');
       }
       setProductFormOpen(false);
-      loadData();
+      reloadData();
+      loadProducts();
     } catch (error: any) {
       toast.error(error.message || 'Không thể lưu tồn kho sản phẩm');
     } finally {
@@ -172,7 +173,8 @@ const StockManagementTab: React.FC = () => {
         toast.success('Đã cập nhật tồn kho nguyên liệu thành công');
       }
       setIngredientFormOpen(false);
-      loadData();
+      reloadData();
+      reloadIngredients();
     } catch (error: any) {
       toast.error(error.message || 'Không thể lưu tồn kho nguyên liệu');
     } finally {
@@ -208,7 +210,7 @@ const StockManagementTab: React.FC = () => {
       />
 
       {/* Tab Content */}
-      <div className="bg-white rounded-md shadow-sm border border-gray-300 mb-8">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-8">
         <div className="p-6">
           {stockActiveTab === 'stocks' && (
             <StocksTab
@@ -251,22 +253,19 @@ const StockManagementTab: React.FC = () => {
 
           {stockActiveTab === 'ingredients' && (
             <IngredientsTab
-              ingredients={filteredIngredients}
-              alerts={ingredientAlerts}
-              isLoading={isLoading}
-              onAdjust={(ingredient) => handleOpenModal(undefined, ingredient)}
-              onEdit={openEditIngredientForm}
-              onDelete={async (id) => {
-                try {
-                  await stockService.deleteIngredientStock(id);
-                  toast.success('Đã xóa tồn kho nguyên liệu');
-                  reloadIngredients();
-                } catch (error: any) {
-                  toast.error(error.message || 'Không thể xóa tồn kho');
-                }
+              filteredIngredients={filteredIngredients}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              filter={filter}
+              setFilter={setFilter}
+              ingredientStats={{
+                lowStock: lowStockCount,
+                outOfStock: outOfStockCount,
+                total: Array.isArray(ingredients) ? ingredients.length : 0,
               }}
-              onCreate={openCreateIngredientForm}
-              onMarkAlertAsRead={markIngredientAlertAsRead}
+              onOpenAdjustModal={(product, ingredient) => handleOpenModal(product, ingredient)}
+              onCreateIngredient={openCreateIngredientForm}
+              onEditIngredient={openEditIngredientForm}
             />
           )}
         </div>

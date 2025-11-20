@@ -23,10 +23,10 @@ const DashboardTab: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-[400px] bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[400px] bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Đang tải dữ liệu...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-4 border-slate-200 border-t-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600 font-medium">Đang tải dữ liệu...</p>
         </div>
       </div>
     );
@@ -35,18 +35,18 @@ const DashboardTab: React.FC = () => {
   // Show error state if no data loaded
   if (!stats && !dailySales && !isLoading) {
     return (
-      <div className="min-h-[400px] bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[400px] bg-slate-50 flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="text-red-500 text-5xl mb-4">⚠️</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <h3 className="text-lg font-bold text-slate-900 mb-2 tracking-tight">
             Không thể tải dữ liệu
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-slate-600 mb-4 font-medium">
             Vui lòng kiểm tra kết nối API hoặc thử lại sau.
           </p>
           <button
             onClick={reloadData}
-            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+            className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-sm hover:shadow"
           >
             Thử lại
           </button>
@@ -56,7 +56,7 @@ const DashboardTab: React.FC = () => {
   }
 
   return (
-    <div className="bg-gray-50">
+    <div className="bg-slate-50">
       <DashboardHeader 
         currentTime={currentTime}
         isConnected={isConnected}

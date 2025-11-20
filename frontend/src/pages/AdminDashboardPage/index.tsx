@@ -38,19 +38,19 @@ const NavButton = React.memo<{
   <button
     onClick={onClick}
     className={`
-      w-full flex items-start space-x-3 px-4 py-3 rounded-lg transition-all
+      w-full flex items-start space-x-3 px-4 py-3 rounded-lg transition-all duration-200
       ${isActive
-        ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-500'
-        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+        ? 'bg-gradient-to-r from-slate-50 to-blue-50 text-slate-900 border-l-4 border-blue-600 shadow-sm'
+        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
       }
     `}
   >
-    <Icon className={`w-5 h-5 mt-0.5 flex-shrink-0 ${isActive ? 'text-orange-600' : 'text-gray-500'}`} />
+    <Icon className={`w-5 h-5 mt-0.5 flex-shrink-0 transition-colors ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
     <div className="flex-1 text-left">
-      <div className={`font-medium ${isActive ? 'text-orange-900' : 'text-gray-900'}`}>
+      <div className={`font-semibold text-sm ${isActive ? 'text-slate-900' : 'text-slate-700'}`}>
         {item.name}
       </div>
-      <div className={`text-xs mt-0.5 ${isActive ? 'text-orange-600' : 'text-gray-500'}`}>
+      <div className={`text-xs mt-0.5 ${isActive ? 'text-slate-600' : 'text-slate-500'}`}>
         {item.description}
       </div>
     </div>
@@ -181,20 +181,20 @@ const AdminDashboardPage: React.FC = () => {
       <aside
         className={`
           fixed lg:static inset-y-0 left-0 z-50
-          w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
-          lg:translate-x-0 flex flex-col
+          w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out
+          lg:translate-x-0 flex flex-col shadow-sm
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="text-xs text-gray-500 mt-1">Quản trị hệ thống</p>
+            <h1 className="text-lg font-bold text-slate-900 tracking-tight">Admin Dashboard</h1>
+            <p className="text-xs text-slate-500 mt-1 font-medium">Quản trị hệ thống</p>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-500 hover:text-gray-700"
+            className="lg:hidden text-slate-400 hover:text-slate-600 transition-colors"
           >
             <XMarkIcon className="w-6 h-6" />
           </button>
@@ -220,19 +220,21 @@ const AdminDashboardPage: React.FC = () => {
         </nav>
 
         {/* User Info & Logout */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center space-x-3 mb-3 px-2">
-            <UserCircleIcon className="w-8 h-8 text-gray-400" />
+        <div className="p-4 border-t border-slate-200 bg-slate-50/50">
+          <div className="flex items-center space-x-3 mb-3 px-2 py-2 rounded-lg bg-white/80">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
+              <UserCircleIcon className="w-5 h-5 text-white" />
+            </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">
+              <p className="text-sm font-semibold text-slate-900 truncate">
                 {user?.name || 'Admin'}
               </p>
-              <p className="text-xs text-gray-500 truncate">Quản trị viên</p>
+              <p className="text-xs text-slate-500 truncate font-medium">Quản trị viên</p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition-colors text-sm font-medium"
+            className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg transition-all duration-200 text-sm font-semibold shadow-sm hover:shadow"
           >
             <ArrowRightOnRectangleIcon className="w-4 h-4" />
             <span>Đăng xuất</span>
@@ -241,26 +243,26 @@ const AdminDashboardPage: React.FC = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden bg-slate-50">
         {/* Top Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
-          <div className="px-4 sm:px-6 lg:px-8 py-4">
+        <header className="bg-white border-b border-slate-200 flex-shrink-0 shadow-sm">
+          <div className="px-4 sm:px-6 lg:px-8 py-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
                   onClick={() => setSidebarOpen(true)}
-                  className="lg:hidden text-gray-500 hover:text-gray-700"
+                  className="lg:hidden text-slate-500 hover:text-slate-700 transition-colors p-1.5 rounded-lg hover:bg-slate-100"
                 >
                   <Bars3Icon className="w-6 h-6" />
                 </button>
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">{activeNavItem.name}</h2>
-                  <p className="text-sm text-gray-500 mt-0.5">{activeNavItem.description}</p>
+                  <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{activeNavItem.name}</h2>
+                  <p className="text-sm text-slate-500 mt-1 font-medium">{activeNavItem.description}</p>
                 </div>
               </div>
               <button
                 onClick={() => navigate(-1)}
-                className="hidden sm:flex items-center space-x-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                className="hidden sm:flex items-center space-x-2 px-4 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-all duration-200 font-medium border border-slate-200 hover:border-slate-300"
                 title="Quay lại trang trước"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,8 +275,8 @@ const AdminDashboardPage: React.FC = () => {
         </header>
 
         {/* Tab Content - Scrollable */}
-        <main className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        <main className="flex-1 overflow-y-auto bg-slate-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {activeTab === 'overview' && <OverviewTab />}
             {activeTab === 'menu' && <MenuManagementTab />}
             {activeTab === 'stock' && <StockManagementTab />}
