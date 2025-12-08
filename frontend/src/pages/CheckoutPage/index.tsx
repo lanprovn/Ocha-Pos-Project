@@ -9,13 +9,12 @@ import { CompleteOrderButton } from './components/CompleteOrderButton';
 import OrderSuccessView from './components/OrderSuccessView';
 import HomeButton from '../../components/common/HomeButton';
 import QRPaymentModal from '../../components/features/payment/QRPaymentModal';
+import { isCustomerDisplay as checkIsCustomerDisplay } from './utils/checkoutUtils';
 
 const CheckoutPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  // Check if checkout is from customer page (via state or referrer)
-  const isCustomerDisplay = location.pathname.startsWith('/customer') || 
-    (location.state as any)?.fromCustomer === true;
+  const isCustomerDisplay = checkIsCustomerDisplay(location.pathname, location.state as any);
   
   const {
     items,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   CubeIcon,
@@ -14,17 +14,17 @@ import { ROUTES } from '../../../constants';
 import { dashboardService, type DashboardStats } from '../../../services/dashboard.service';
 import { formatPrice } from '../../../utils/formatPrice';
 
-// Shared refs outside component to persist across re-renders
-let globalIsLoadingRef = false;
-let globalIntervalRef: NodeJS.Timeout | null = null;
-let globalHasLoadedRef = false;
-
 const OverviewTab: React.FC = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Use refs inside component instead of global refs (React best practice)
+  const isLoadingRef = useRef(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -36,12 +36,12 @@ const OverviewTab: React.FC = () => {
   useEffect(() => {
     const loadStats = async (isBackgroundRefresh = false) => {
       // Prevent multiple simultaneous calls - silent skip
-      if (globalIsLoadingRef) {
+      if (isLoadingRef.current) {
         return;
       }
 
       try {
-        globalIsLoadingRef = true;
+        isLoadingRef.current = true;
         
         // Only show loading spinner on initial load
         if (!isBackgroundRefresh) {
@@ -52,41 +52,41 @@ const OverviewTab: React.FC = () => {
         
         const data = await dashboardService.getStats();
         setStats(data);
-        globalHasLoadedRef = true;
+        hasLoadedRef.current = true;
       } catch (error) {
         console.error('Error loading dashboard stats:', error);
         // Don't clear stats on error if we already have data
-        if (!globalHasLoadedRef) {
+        if (!hasLoadedRef.current) {
           setStats(null);
         }
       } finally {
         setIsInitialLoading(false);
         setIsRefreshing(false);
-        globalIsLoadingRef = false;
+        isLoadingRef.current = false;
       }
     };
 
     // Clear any existing interval first
-    if (globalIntervalRef) {
-      clearInterval(globalIntervalRef);
-      globalIntervalRef = null;
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
 
     // Initial load
     loadStats(false);
     
     // Background refresh every 30 seconds (silent, no loading spinner)
-    globalIntervalRef = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       // Only refresh if data has been loaded and not currently loading
-      if (globalHasLoadedRef && !globalIsLoadingRef) {
+      if (hasLoadedRef.current && !isLoadingRef.current) {
         loadStats(true);
       }
     }, 30000);
     
     return () => {
-      if (globalIntervalRef) {
-        clearInterval(globalIntervalRef);
-        globalIntervalRef = null;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
   }, []); // Empty deps - only run once on mount

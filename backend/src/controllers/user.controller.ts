@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import userService from '../services/user.service';
 import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth.middleware';
@@ -11,31 +11,27 @@ const loginSchema = z.object({
 });
 
 export class UserController {
-  async login(req: Request, res: Response) {
+  async login(req: Request, res: Response, next: NextFunction) {
     try {
       const validated = loginSchema.parse({ body: req.body });
       const result = await userService.login(validated.body);
       res.json(result);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else {
-        res.status(401).json({ error: error.message || 'Login failed' });
-      }
+    } catch (error) {
+      next(error);
     }
   }
 
-  async getMe(req: AuthRequest, res: Response) {
+  async getMe(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ error: 'Unauthorized', errorCode: 'UNAUTHORIZED' });
         return;
       }
 
       const user = await userService.findById(req.user.userId);
       res.json(user);
-    } catch (error: any) {
-      res.status(404).json({ error: error.message });
+    } catch (error) {
+      next(error);
     }
   }
 }

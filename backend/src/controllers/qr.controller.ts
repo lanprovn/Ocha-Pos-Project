@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import qrService from '../services/qr.service';
 import orderService from '../services/order.service';
 import { z } from 'zod';
+import logger from '../utils/logger';
 
 const generateQRSchema = z.object({
   body: z.object({
@@ -74,7 +75,11 @@ export class QRController {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: 'Validation error', details: error.errors });
       } else {
-        console.error('QR generation error:', error);
+        logger.error('QR generation error', {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          orderId: req.body?.orderId,
+        });
         return res.status(500).json({ error: error.message || 'Failed to generate QR code' });
       }
     }
@@ -113,7 +118,11 @@ export class QRController {
         order: updatedOrder,
       });
     } catch (error: any) {
-      console.error('Payment verification error:', error);
+      logger.error('Payment verification error', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        orderId: req.body?.orderId,
+      });
       return res.status(500).json({ error: error.message || 'Failed to verify payment' });
     }
   }

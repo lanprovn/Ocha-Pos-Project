@@ -3,6 +3,19 @@ import type { CustomerInfo, PaymentMethod } from '../types';
 import type { CartItem } from '../../../types/cart';
 import type { Topping } from '../../../types/product';
 
+/**
+ * Check if checkout is from customer display page
+ * @param pathname - Current pathname from useLocation
+ * @param locationState - Location state from useLocation
+ * @returns true if checkout is from customer page
+ */
+export const isCustomerDisplay = (
+  pathname: string,
+  locationState?: { fromCustomer?: boolean } | null
+): boolean => {
+  return pathname.startsWith('/customer') || locationState?.fromCustomer === true;
+};
+
 export const validatePhone = (phone: string): boolean => {
   // Vietnamese phone number format: 10-11 digits, may start with 0 or +84
   const phoneRegex = /^(0|\+84)[1-9]\d{8,9}$/;

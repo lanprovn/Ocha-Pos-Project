@@ -146,17 +146,72 @@ const StockManagementTab: React.FC = () => {
     try {
       setIsSavingProduct(true);
       if (productFormMode === 'create') {
-        await stockService.createProductStock(values);
-        toast.success('Đã tạo tồn kho sản phẩm thành công');
-      } else {
-        await stockService.updateProductStock(values);
-        toast.success('Đã cập nhật tồn kho sản phẩm thành công');
+        // Create product first, then create stock
+        const createdProduct = await productService.create({
+          name: values.name,
+          price: values.price,
+          categoryId: values.categoryId || undefined,
+          description: values.description,
+          image: values.image,
+          isAvailable: values.isActive,
+        });
+
+        await stockService.createProductStock({
+          productId: createdProduct.id,
+          quantity: values.quantity,
+          minStock: values.minStock,
+          maxStock: values.maxStock,
+          unit: values.unit,
+          isActive: values.isActive,
+        });
+
+        toast.success('Đã thêm sản phẩm mới');
+      } else if (editingProduct) {
+        // Update product and stock
+        await productService.update(editingProduct.productId, {
+          name: values.name,
+          price: values.price,
+          categoryId: values.categoryId || undefined,
+          description: values.description,
+          image: values.image,
+          isAvailable: values.isActive,
+        });
+
+        await stockService.updateProductStock(editingProduct.id, {
+          quantity: values.quantity,
+          minStock: values.minStock,
+          maxStock: values.maxStock,
+          unit: values.unit,
+          isActive: values.isActive,
+        });
+
+        toast.success('Đã cập nhật sản phẩm');
       }
       setProductFormOpen(false);
-      reloadData();
-      loadProducts();
+      setEditingProduct(null);
+      await reloadData();
+      await loadProducts();
     } catch (error: any) {
-      toast.error(error.message || 'Không thể lưu tồn kho sản phẩm');
+      console.error('Error saving product:', error);
+      toast.error(error?.message || 'Không thể lưu sản phẩm');
+    } finally {
+      setIsSavingProduct(false);
+    }
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!editingProduct) return;
+    try {
+      setIsSavingProduct(true);
+      await productService.delete(editingProduct.productId);
+      toast.success('Đã xóa sản phẩm');
+      setProductFormOpen(false);
+      setEditingProduct(null);
+      await reloadData();
+      await loadProducts();
+    } catch (error: any) {
+      console.error('Error deleting product:', error);
+      toast.error(error?.message || 'Không thể xóa sản phẩm');
     } finally {
       setIsSavingProduct(false);
     }
@@ -166,17 +221,55 @@ const StockManagementTab: React.FC = () => {
     try {
       setIsSavingIngredient(true);
       if (ingredientFormMode === 'create') {
-        await stockService.createIngredientStock(values);
-        toast.success('Đã tạo tồn kho nguyên liệu thành công');
+        await stockService.createIngredient({
+          name: values.name,
+          unit: values.unit,
+          quantity: values.quantity,
+          minStock: values.minStock,
+          maxStock: values.maxStock,
+          isActive: values.isActive,
+        });
+        toast.success('Đã thêm nguyên liệu mới');
       } else {
-        await stockService.updateIngredientStock(values);
-        toast.success('Đã cập nhật tồn kho nguyên liệu thành công');
+        const targetStockId = values.stockId || editingIngredient?.stockId;
+        if (!targetStockId) {
+          throw new Error('Không tìm thấy bản ghi tồn kho để cập nhật');
+        }
+        await stockService.updateIngredientStock(targetStockId, {
+          name: values.name,
+          unit: values.unit,
+          quantity: values.quantity,
+          minStock: values.minStock,
+          maxStock: values.maxStock,
+          isActive: values.isActive,
+        });
+        toast.success('Đã cập nhật nguyên liệu');
       }
       setIngredientFormOpen(false);
-      reloadData();
-      reloadIngredients();
+      setEditingIngredient(null);
+      await reloadData();
+      await reloadIngredients();
     } catch (error: any) {
-      toast.error(error.message || 'Không thể lưu tồn kho nguyên liệu');
+      console.error('Error saving ingredient:', error);
+      toast.error(error?.message || 'Không thể lưu nguyên liệu');
+    } finally {
+      setIsSavingIngredient(false);
+    }
+  };
+
+  const handleDeleteIngredient = async () => {
+    if (!editingIngredient) return;
+    try {
+      setIsSavingIngredient(true);
+      await stockService.deleteIngredient(editingIngredient.id);
+      toast.success('Đã xóa nguyên liệu');
+      setIngredientFormOpen(false);
+      setEditingIngredient(null);
+      await reloadIngredients();
+      await reloadData();
+    } catch (error: any) {
+      console.error('Error deleting ingredient:', error);
+      toast.error(error?.message || 'Không thể xóa nguyên liệu');
     } finally {
       setIsSavingIngredient(false);
     }
@@ -188,6 +281,33 @@ const StockManagementTab: React.FC = () => {
     lowStock: lowStockCount,
     outOfStock: outOfStockCount,
   };
+
+  const handleMarkAlertAsRead = async (alertId: string) => {
+    try {
+      await stockService.markAlertAsRead(alertId);
+      reloadData();
+    } catch (error) {
+      console.error('Error marking alert as read:', error);
+      toast.error('Không thể đánh dấu cảnh báo đã đọc. Vui lòng thử lại.');
+    }
+  };
+
+  const handleMarkIngredientAlertAsRead = (alertId: string) => {
+    markIngredientAlertAsRead(alertId);
+    reloadIngredients();
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-4 border-slate-200 border-t-slate-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Đang tải dữ liệu tồn kho...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -243,11 +363,11 @@ const StockManagementTab: React.FC = () => {
           {stockActiveTab === 'alerts' && (
             <AlertsTab
               alerts={alerts}
-              isLoading={isLoading}
-              onMarkAsRead={async (id) => {
-                await stockService.markAlertAsRead(id);
-                reloadData();
-              }}
+              ingredientAlerts={ingredientAlerts}
+              ingredients={ingredients}
+              getProductInfo={getProductInfo}
+              handleMarkAlertAsRead={handleMarkAlertAsRead}
+              handleMarkIngredientAlertAsRead={handleMarkIngredientAlertAsRead}
             />
           )}
 
@@ -281,25 +401,29 @@ const StockManagementTab: React.FC = () => {
 
       <ProductFormModal
         isOpen={isProductFormOpen}
+        mode={productFormMode}
         onClose={() => {
           setProductFormOpen(false);
           setEditingProduct(null);
         }}
         onSubmit={handleSaveProduct}
+        onDelete={productFormMode === 'edit' ? handleDeleteProduct : undefined}
         initialValues={productInitialValues}
-        categoryOptions={categoryOptions}
-        isLoading={isSavingProduct}
+        categories={categoryOptions}
+        loading={isSavingProduct}
       />
 
       <IngredientFormModal
         isOpen={isIngredientFormOpen}
+        mode={ingredientFormMode}
         onClose={() => {
           setIngredientFormOpen(false);
           setEditingIngredient(null);
         }}
         onSubmit={handleSaveIngredient}
+        onDelete={ingredientFormMode === 'edit' ? handleDeleteIngredient : undefined}
         initialValues={ingredientInitialValues}
-        isLoading={isSavingIngredient}
+        loading={isSavingIngredient}
       />
     </div>
   );

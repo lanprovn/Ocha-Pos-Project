@@ -39,3 +39,20 @@ export interface UpdateOrderInput {
   status?: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
 }
 
+/**
+ * Order với items - dùng cho internal operations
+ */
+export interface OrderWithItems {
+  id: string;
+  orderNumber: string;
+  items: Array<{
+    id: string;
+    productId: string;
+    quantity: number;
+    product?: {
+      id: string;
+      name: string;
+    } | null;
+  }>;
+}
+

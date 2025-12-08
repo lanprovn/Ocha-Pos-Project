@@ -7,6 +7,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './config/swagger';
 import env from './config/env';
 import logger from './utils/logger';
+import { errorHandler } from './middleware/errorHandler.middleware';
 
 // Routes
 import productRoutes from './routes/product.routes';
@@ -152,24 +153,13 @@ app.use('/api/reporting', reportingRoutes);
 
 // 404 handler
 app.use((_req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
-
-// Error handler
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  logger.error('Request error', {
-    error: err.message,
-    stack: err.stack,
-    status: err.status || 500,
-    path: _req.path,
-    method: _req.method,
-  });
-
-
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  res.status(404).json({ 
+    error: 'Route not found',
+    errorCode: 'NOT_FOUND',
   });
 });
+
+// Error handler middleware (must be last)
+app.use(errorHandler);
 
 export default app;

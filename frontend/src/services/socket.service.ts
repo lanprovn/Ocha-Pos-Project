@@ -79,8 +79,28 @@ export function subscribeToOrders(
     return () => {};
   }
 
-  socketInstance.emit('subscribe_orders');
+  // Helper function to subscribe to orders room
+  const subscribeToOrdersRoom = () => {
+    socketInstance.emit('subscribe_orders');
+  };
 
+  // Ensure socket is connected before subscribing
+  if (socketInstance.connected) {
+    // Socket already connected, subscribe immediately
+    subscribeToOrdersRoom();
+  } else {
+    // Socket not connected yet, wait for connection
+    socketInstance.once('connect', () => {
+      subscribeToOrdersRoom();
+    });
+    // Also try to subscribe if socket is already connecting
+    // (in case connect event was missed)
+    if (socketInstance.connecting) {
+      // Socket is connecting, will subscribe on connect event
+    }
+  }
+
+  // Register event listeners
   if (onOrderCreated) {
     socketInstance.on('order_created', onOrderCreated);
   }

@@ -1,17 +1,18 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import reportingService from '../services/reporting.service';
 
 export class ReportingController {
   /**
    * Get report data
    */
-  async getReport(req: Request, res: Response): Promise<void> {
+  async getReport(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { startDate, endDate, reportType } = req.query;
 
       if (!startDate || !endDate) {
         res.status(400).json({ 
-          error: 'startDate and endDate are required' 
+          error: 'startDate and endDate are required',
+          errorCode: 'VALIDATION_ERROR',
         });
         return;
       }
@@ -24,21 +25,22 @@ export class ReportingController {
 
       const reportData = await reportingService.getReport(filters);
       res.json(reportData);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    } catch (error) {
+      next(error);
     }
   }
 
   /**
    * Export report to Excel
    */
-  async exportReport(req: Request, res: Response): Promise<void> {
+  async exportReport(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { startDate, endDate, reportType } = req.query;
 
       if (!startDate || !endDate) {
         res.status(400).json({ 
-          error: 'startDate and endDate are required' 
+          error: 'startDate and endDate are required',
+          errorCode: 'VALIDATION_ERROR',
         });
         return;
       }
@@ -57,8 +59,8 @@ export class ReportingController {
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
       
       res.send(excelBuffer);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    } catch (error) {
+      next(error);
     }
   }
 }

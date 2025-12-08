@@ -19,12 +19,12 @@ async function startServer() {
     // Initialize Socket.io
     initializeSocketIO(httpServer);
 
-    // Start server
-    httpServer.listen(PORT, () => {
-      logger.info(`Server is running on http://localhost:${PORT}`, {
+    // Start server - listen on 0.0.0.0 to allow external connections (Docker, VPS)
+    httpServer.listen(PORT, '0.0.0.0', () => {
+      logger.info(`Server is running on http://0.0.0.0:${PORT}`, {
         port: PORT,
         environment: env.NODE_ENV,
-        apiBaseUrl: `http://localhost:${PORT}/api`,
+        apiBaseUrl: `http://0.0.0.0:${PORT}/api`,
       });
     });
   } catch (error: any) {

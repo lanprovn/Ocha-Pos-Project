@@ -59,21 +59,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       clearTimeout(draftOrderTimeoutRef.current);
     }
 
-    // Nếu cart rỗng và có orderCreator, cần xóa draft order
-    if (items.length === 0 && orderCreator) {
-      // Không cần xóa draft order, vì khi checkout sẽ tạo order mới
-      // Draft order cũ sẽ không hiển thị nữa (status khác CREATING)
-      return;
-    }
-
-    // Chỉ sync nếu có items và orderCreator đã được set
-    if (items.length === 0 || !orderCreator) {
+    // Chỉ sync nếu orderCreator đã được set
+    if (!orderCreator) {
       return;
     }
 
     // Sync function
     const syncDraftOrder = async () => {
       try {
+        // Map items to order items format
         const orderItems = items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -85,13 +79,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           note: item.note || null,
         }));
 
-        // Tính VAT 10% và thêm vào subtotal của item cuối cùng (giống checkout)
-        const currentTotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
-        const vat = currentTotal * 0.1;
-        const finalTotal = currentTotal + vat;
-        
-        const orderItemsWithVAT = [...orderItems];
+        // Tính VAT 10% và thêm vào subtotal của item cuối cùng (chỉ khi có items)
+        let orderItemsWithVAT = [...orderItems];
         if (orderItemsWithVAT.length > 0) {
+          const currentTotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
+          const vat = currentTotal * 0.1;
+          const finalTotal = currentTotal + vat;
+          
           // Thêm VAT vào item cuối cùng để tổng = finalTotal
           const lastItem = orderItemsWithVAT[orderItemsWithVAT.length - 1];
           const vatToAdd = finalTotal - currentTotal;
@@ -100,11 +94,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
             subtotal: lastItem.subtotal + vatToAdd,
           };
         }
+        // Nếu cart rỗng, orderItemsWithVAT sẽ là [] - backend sẽ update draft order với items rỗng
 
         await orderService.createOrUpdateDraft({
           orderCreator: orderCreator.type.toUpperCase() as 'STAFF' | 'CUSTOMER',
           orderCreatorName: orderCreator.name || null,
-          items: orderItemsWithVAT, // Sử dụng items có VAT
+          items: orderItemsWithVAT, // Có thể là [] nếu cart rỗng
         });
       } catch (error: any) {
         console.error('Failed to sync draft order to backend:', error);
@@ -208,6 +203,26 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     );
   };
 
+  const updateCartItemNote = (id: string, note: string) => {
+    setItems(prevItems =>
+      prevItems.map(item => {
+        if (item.id === id) {
+          return { ...item, note: note.trim() || undefined };
+        }
+        return item;
+      })
+    );
+    // Show toast notification
+    const item = items.find(item => item.id === id);
+    if (item) {
+      setTimeout(() => {
+        toast.success(note.trim() ? `Đã cập nhật ghi chú cho ${item.name}!` : `Đã xóa ghi chú cho ${item.name}!`, {
+          id: `note-${id}`
+        });
+      }, 0);
+    }
+  };
+
   const clearCart = () => {
     setItems([]);
     // Move toast outside of setState callback
@@ -242,6 +257,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     addToCart,
     removeFromCart,
     updateQuantity,
+    updateCartItemNote,
     clearCart,
     setCartItems,
     isCartOpen,

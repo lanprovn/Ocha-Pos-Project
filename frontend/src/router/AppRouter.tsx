@@ -12,7 +12,6 @@ import { CartProvider } from '../context/CartContext.tsx';
 import { ProductProvider } from '../context/ProductContext.tsx';
 import { IngredientProvider } from '../context/IngredientContext';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
-import { useAuth } from '../hooks/useAuth';
 import { ROUTES } from '@constants';
 
 // ===== Lazy load layouts =====
@@ -22,17 +21,9 @@ const CustomerDisplayLayout = lazy(() => import('../components/layout/CustomerDi
 
 // ===== Lazy load pages =====
 const LoginPage = lazy(() => import('../pages/LoginPage/index'));
-const ProductDetailPage = lazy(() => import('../pages/ProductDetailPage/index'));
 const CheckoutPage = lazy(() => import('../pages/CheckoutPage/index'));
-const OrderSuccessPage = lazy(() => import('../pages/OrderSuccessPage/index'));
-const DashboardPage = lazy(() => import('../pages/DashboardPage/index'));
-const StockManagementPage = lazy(() => import('../pages/StockManagementPage/index'));
 const OrderDisplayPage = lazy(() => import('../pages/OrderDisplayPage/index'));
 const PaymentCallbackPage = lazy(() => import('../pages/PaymentCallbackPage/index'));
-const ReportingPage = lazy(() => import('../pages/ReportingPage/index'));
-const ProductManagementPage = lazy(() => import('../pages/ProductManagementPage/index'));
-const CategoryManagementPage = lazy(() => import('../pages/CategoryManagementPage/index'));
-const MenuManagementPage = lazy(() => import('../pages/MenuManagementPage/index'));
 const AnalyticsPage = lazy(() => import('../pages/AnalyticsPage/index'));
 const AdminDashboardPage = lazy(() => import('../pages/AdminDashboardPage/index'));
 
@@ -66,31 +57,11 @@ function LayoutReset() {
 }
 
 // ===== Checkout Route Component =====
-// Component để tự động chọn layout cho checkout dựa trên authentication
+// Simplified: Route already has ProtectedRoute, so we just need to render POSLayoutNew
+// CheckoutPage will handle customer display logic internally
 const CheckoutRoute: React.FC = () => {
-  const location = useLocation();
-  const { isAuthenticated } = useAuth();
-  
-  // Kiểm tra xem có phải từ customer page không
-  const isFromCustomer = location.pathname.startsWith('/customer') || 
-    (location.state as any)?.fromCustomer === true;
-  
-  // Nếu đã đăng nhập và không phải từ customer page → hiển thị với POS layout
-  if (isAuthenticated && !isFromCustomer) {
-    return (
-      <ProtectedRoute>
-        <POSLayoutNew />
-      </ProtectedRoute>
-    );
-  }
-  
-  // Nếu không đăng nhập hoặc từ customer page → hiển thị standalone (public) với scroll
   return (
-    <div className="h-screen w-full overflow-hidden bg-gray-50">
-      <div className="h-full w-full overflow-y-auto">
-        <CheckoutPage />
-      </div>
-    </div>
+    <POSLayoutNew />
   );
 };
 
@@ -141,6 +112,7 @@ function AppRoutes() {
           </Route>
 
           {/* Product Detail - Redirect to home (use modal instead) - Staff Only */}
+          {/* Backward compatibility: Old product detail URLs redirect to home */}
           <Route path={ROUTES.PRODUCT(':id')} element={
             <ProtectedRoute requiredRole="STAFF">
               <POSLayoutNew />
@@ -149,21 +121,9 @@ function AppRoutes() {
             <Route index element={<Navigate to={ROUTES.HOME} replace />} />
           </Route>
 
-          {/* Order success - Redirect to checkout (now integrated) - Staff Only */}
-          <Route path={ROUTES.ORDER_SUCCESS} element={
-            <ProtectedRoute requiredRole="STAFF">
-              <MainLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<Navigate to={ROUTES.CHECKOUT} replace />} />
-          </Route>
-
-          {/* Checkout - Staff Only */}
-          <Route path={ROUTES.CHECKOUT} element={
-            <ProtectedRoute requiredRole="STAFF">
-              <CheckoutRoute />
-            </ProtectedRoute>
-          }>
+          {/* Checkout - Public (Customer) or Staff */}
+          {/* Customer can checkout without login, Staff can checkout from POS */}
+          <Route path={ROUTES.CHECKOUT} element={<CheckoutRoute />}>
             <Route index element={<CheckoutPage />} />
           </Route>
 
@@ -186,11 +146,9 @@ function AppRoutes() {
           {/* Menu Management - Redirect to Admin Dashboard */}
           <Route path={ROUTES.MENU_MANAGEMENT} element={
             <ProtectedRoute requiredRole="ADMIN">
-              <MainLayout />
+              <Navigate to={{ pathname: ROUTES.ADMIN_DASHBOARD, search: '?tab=menu' }} replace />
             </ProtectedRoute>
-          }>
-            <Route index element={<Navigate to={{ pathname: ROUTES.ADMIN_DASHBOARD, search: '?tab=menu' }} replace />} />
-          </Route>
+          } />
 
           {/* Backward compatibility - Redirect old routes - Staff Only */}
           {/* Doanh Thu - Redirect to Analytics */}
@@ -211,23 +169,19 @@ function AppRoutes() {
             <Route index element={<Navigate to={{ pathname: ROUTES.ANALYTICS, search: '?tab=reports' }} replace />} />
           </Route>
 
-          {/* Product Management - Redirect to Menu Management */}
+          {/* Product Management - Redirect directly to Admin Dashboard with subtab */}
           <Route path={ROUTES.PRODUCT_MANAGEMENT} element={
             <ProtectedRoute requiredRole="ADMIN">
-              <MainLayout />
+              <Navigate to={{ pathname: ROUTES.ADMIN_DASHBOARD, search: '?tab=menu&subtab=products' }} replace />
             </ProtectedRoute>
-          }>
-            <Route index element={<Navigate to={{ pathname: ROUTES.MENU_MANAGEMENT, search: '?tab=products' }} replace />} />
-          </Route>
+          } />
 
-          {/* Category Management - Redirect to Menu Management */}
+          {/* Category Management - Redirect directly to Admin Dashboard with subtab */}
           <Route path={ROUTES.CATEGORY_MANAGEMENT} element={
             <ProtectedRoute requiredRole="ADMIN">
-              <MainLayout />
+              <Navigate to={{ pathname: ROUTES.ADMIN_DASHBOARD, search: '?tab=menu&subtab=categories' }} replace />
             </ProtectedRoute>
-          }>
-            <Route index element={<Navigate to={{ pathname: ROUTES.MENU_MANAGEMENT, search: '?tab=categories' }} replace />} />
-          </Route>
+          } />
 
           {/* Stock Management - Redirect to Admin Dashboard with stock tab */}
           <Route path={ROUTES.STOCK_MANAGEMENT} element={

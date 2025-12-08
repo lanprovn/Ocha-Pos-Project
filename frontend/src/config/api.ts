@@ -34,7 +34,7 @@ export const API_ENDPOINTS = {
   REPORTING_EXPORT: `${API_BASE_URL}/reporting/export`,
   
   // Health
-  HEALTH: 'http://localhost:8080/health',
+  HEALTH: `${API_BASE_URL.replace('/api', '')}/health`,
 };
 
 export default API_BASE_URL;

@@ -1,6 +1,7 @@
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import env from '../config/env';
+import logger from '../utils/logger';
 
 // Socket.io event types
 export interface ServerToClientEvents {
@@ -57,50 +58,54 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
 
   // Connection handling
   io.on('connection', (socket: Socket) => {
-    console.log(`✅ Client connected: ${socket.id}`);
+    logger.info('Client connected', { socketId: socket.id });
 
     // Handle room joining
     socket.on('join_room', (room: string) => {
       socket.join(room);
-      console.log(`📦 Client ${socket.id} joined room: ${room}`);
+      logger.info('Client joined room', { socketId: socket.id, room });
     });
 
     // Handle room leaving
     socket.on('leave_room', (room: string) => {
       socket.leave(room);
-      console.log(`📤 Client ${socket.id} left room: ${room}`);
+      logger.info('Client left room', { socketId: socket.id, room });
     });
 
     // Subscribe to orders updates
     socket.on('subscribe_orders', () => {
       socket.join('orders');
-      console.log(`📋 Client ${socket.id} subscribed to orders`);
+      logger.info('Client subscribed to orders', { socketId: socket.id });
     });
 
     // Subscribe to display updates
     socket.on('subscribe_display', () => {
       socket.join('display');
-      console.log(`📺 Client ${socket.id} subscribed to display`);
+      logger.info('Client subscribed to display', { socketId: socket.id });
     });
 
     // Subscribe to dashboard updates
     socket.on('subscribe_dashboard', () => {
       socket.join('dashboard');
-      console.log(`📊 Client ${socket.id} subscribed to dashboard`);
+      logger.info('Client subscribed to dashboard', { socketId: socket.id });
     });
 
     // Handle disconnection
     socket.on('disconnect', () => {
-      console.log(`❌ Client disconnected: ${socket.id}`);
+      logger.info('Client disconnected', { socketId: socket.id });
     });
 
     // Handle errors
     socket.on('error', (error) => {
-      console.error(`❌ Socket error for ${socket.id}:`, error);
+      logger.error('Socket error', {
+        socketId: socket.id,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
     });
   });
 
-  console.log('✅ Socket.io initialized');
+  logger.info('Socket.io initialized');
   return io;
 }
 

@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CubeIcon, TagIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import ProductManagementTab from '../../MenuManagementPage/components/ProductManagementTab';
 import CategoryManagementTab from '../../MenuManagementPage/components/CategoryManagementTab';
@@ -6,7 +7,54 @@ import RecipeCheckTab from './RecipeCheckTab';
 import { useProducts } from '../../../hooks/useProducts';
 
 const MenuManagementTab: React.FC = () => {
-  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'recipes'>('products');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const subtabFromUrl = searchParams.get('subtab') as 'products' | 'categories' | 'recipes' | null;
+  
+  // Initialize activeSubTab from URL or default to 'products'
+  const [activeSubTab, setActiveSubTab] = useState<'products' | 'categories' | 'recipes'>(() => {
+    return (subtabFromUrl && ['products', 'categories', 'recipes'].includes(subtabFromUrl))
+      ? subtabFromUrl
+      : 'products';
+  });
+
+  // Use ref to track if we're updating from URL to prevent loops
+  const isUpdatingFromUrlRef = useRef(false);
+  const lastSubtabFromUrlRef = useRef(subtabFromUrl);
+
+  // Sync activeSubTab with URL param
+  useEffect(() => {
+    // Only update if URL param actually changed
+    if (subtabFromUrl === lastSubtabFromUrlRef.current) {
+      return;
+    }
+    
+    lastSubtabFromUrlRef.current = subtabFromUrl;
+    
+    // Update activeSubTab based on URL param
+    if (subtabFromUrl && ['products', 'categories', 'recipes'].includes(subtabFromUrl)) {
+      isUpdatingFromUrlRef.current = true;
+      setActiveSubTab(subtabFromUrl);
+      requestAnimationFrame(() => {
+        isUpdatingFromUrlRef.current = false;
+      });
+    }
+  }, [subtabFromUrl]);
+
+  // Update URL when tab changes
+  useEffect(() => {
+    // Don't update URL if we're currently syncing from URL
+    if (isUpdatingFromUrlRef.current) {
+      return;
+    }
+    
+    // Only update URL if it doesn't match activeSubTab
+    if (subtabFromUrl !== activeSubTab) {
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set('subtab', activeSubTab);
+      setSearchParams(newSearchParams, { replace: true });
+    }
+  }, [activeSubTab, subtabFromUrl, searchParams, setSearchParams]);
+
   const { products, categories, isLoading } = useProducts();
 
   // Calculate stats - use empty arrays as fallback to avoid flickering

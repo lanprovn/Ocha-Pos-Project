@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import paymentService from '../services/payment.service';
 import orderService from '../services/order.service';
 import { z } from 'zod';
+import logger from '../utils/logger';
 
 const createPaymentSchema = z.object({
   body: z.object({
@@ -71,7 +72,12 @@ export class PaymentController {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: 'Validation error', details: error.errors });
       } else {
-        console.error('Payment creation error:', error);
+        logger.error('Payment creation error', {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          orderId: req.body?.orderId,
+          paymentMethod: req.body?.paymentMethod,
+        });
         return res.status(500).json({ error: error.message || 'Failed to create payment' });
       }
     }
@@ -128,7 +134,12 @@ export class PaymentController {
 
       res.redirect(redirectUrl);
     } catch (error: any) {
-      console.error('Payment callback error:', error);
+      logger.error('Payment callback error', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        paymentMethod: req.query.paymentMethod,
+        queryParams: req.query,
+      });
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       res.redirect(`${frontendUrl}/checkout?error=payment_callback_error`);
     }

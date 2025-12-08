@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingCartIcon, MagnifyingGlassIcon, UserCircleIcon, HeartIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { useCart } from '../../hooks/useCart';
@@ -7,7 +7,7 @@ import { useProducts } from '../../hooks/useProducts';
 import { useFavorites } from '../../hooks/useFavorites';
 import ProductGrid from '../features/pos/product/ProductGrid';
 import ProductModal from '../features/pos/product/ProductModal';
-import OrderTrackingModal from './components/OrderTrackingModal';
+import OrderTrackingModal from './CustomerDisplayLayout/components/OrderTrackingModal';
 import HomeButton from '../common/HomeButton';
 import { formatPrice } from '../../utils/formatPrice';
 import toast from 'react-hot-toast';
@@ -20,10 +20,9 @@ import type { Product } from '../../types/product';
 export default function CustomerDisplayLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { items, totalPrice, totalItems, removeFromCart, updateQuantity, clearCart, setOrderCreator, addToCart } = useCart();
-  const { filteredProducts, setSelectedCategory, searchQuery, setSearchQuery, isLoading, categories } = useProducts();
+  const { items, totalPrice, totalItems, removeFromCart, updateQuantity, updateCartItemNote, clearCart, setOrderCreator, addToCart } = useCart();
+  const { filteredProducts, selectedCategory, setSelectedCategory, searchQuery, setSearchQuery, isLoading, categories } = useProducts();
   const { favorites, isFavorite } = useFavorites();
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -56,7 +55,7 @@ export default function CustomerDisplayLayout() {
     };
   }, [setOrderCreator]);
 
-  // Initialize category selection
+  // Initialize category selection on mount
   useEffect(() => {
     setSelectedCategory('all');
   }, [setSelectedCategory]);
@@ -83,7 +82,6 @@ export default function CustomerDisplayLayout() {
   };
 
   const handleCategorySelect = (categoryName: string) => {
-    setSelectedCategoryId(categoryName);
     setSelectedCategory(categoryName);
   };
 
@@ -101,7 +99,7 @@ export default function CustomerDisplayLayout() {
   const handleQuickAdd = (product: Product) => {
     const defaultSize = product.sizes?.[0];
     const basePrice = product.price + (defaultSize?.extraPrice || 0);
-    
+
     addToCart({
       productId: product.id,
       name: product.name,
@@ -113,7 +111,7 @@ export default function CustomerDisplayLayout() {
       quantity: 1,
       totalPrice: basePrice,
     });
-    
+
     toast.success(`Đã thêm ${product.name} vào giỏ hàng!`, {
       duration: 2000,
     });
@@ -164,7 +162,7 @@ export default function CustomerDisplayLayout() {
             </button>
             <span>/</span>
             <ShoppingCartIcon className="w-4 h-4" />
-            <span className="font-medium text-gray-800">{selectedCategoryId === 'all' ? 'Tất cả' : selectedCategoryId}</span>
+            <span className="font-medium text-gray-800">{selectedCategory === 'all' ? 'Tất cả' : selectedCategory}</span>
           </div>
         </div>
 
@@ -245,11 +243,10 @@ export default function CustomerDisplayLayout() {
                 <div
                   key={item.id}
                   onClick={() => setSelectedItemId(item.id)}
-                  className={`p-3 rounded-md border cursor-pointer transition-colors ${
-                    selectedItemId === item.id
+                  className={`p-3 rounded-md border cursor-pointer transition-colors ${selectedItemId === item.id
                       ? 'bg-slate-50 border-slate-400 shadow-sm'
                       : 'bg-white border-gray-300 hover:border-slate-400 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
@@ -260,6 +257,11 @@ export default function CustomerDisplayLayout() {
                       {item.selectedToppings.length > 0 && (
                         <p className="text-xs text-gray-500">
                           Topping: {item.selectedToppings.map(t => t.name).join(', ')}
+                        </p>
+                      )}
+                      {item.note && (
+                        <p className="text-xs text-gray-600 mt-1 italic">
+                          Ghi chú: {item.note}
                         </p>
                       )}
                     </div>
@@ -327,7 +329,7 @@ export default function CustomerDisplayLayout() {
           {/* Action Buttons */}
           <div className="p-4 border-t border-gray-300 bg-white space-y-2">
             {selectedItem && (
-              <div className="grid grid-cols-3 gap-2 mb-2">
+              <div className="grid grid-cols-2 gap-2 mb-2">
                 <button
                   onClick={() => {
                     const newQty = prompt('Nhập số lượng:', selectedItem.quantity.toString());
@@ -341,22 +343,9 @@ export default function CustomerDisplayLayout() {
                 </button>
                 <button
                   onClick={() => {
-                    const discount = prompt('Nhập % giảm giá:', '0');
-                    if (discount && !isNaN(Number(discount))) {
-                      // Apply discount logic here
-                      alert(`Giảm giá ${discount}%`);
-                    }
-                  }}
-                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors"
-                >
-                  % Giảm
-                </button>
-                <button
-                  onClick={() => {
                     const note = prompt('Ghi chú:', selectedItem.note || '');
                     if (note !== null) {
-                      // Update note logic here
-                      alert(`Ghi chú: ${note}`);
+                      updateCartItemNote(selectedItem.id, note);
                     }
                   }}
                   className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors"
@@ -365,7 +354,7 @@ export default function CustomerDisplayLayout() {
                 </button>
               </div>
             )}
-            
+
             <button
               onClick={clearCart}
               className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium text-gray-700 transition-colors"
@@ -379,11 +368,10 @@ export default function CustomerDisplayLayout() {
             <button
               onClick={handleCheckout}
               disabled={totalItems === 0}
-              className={`w-full py-3 rounded-md font-semibold text-white text-base transition-colors flex items-center justify-center space-x-2 ${
-                totalItems === 0
+              className={`w-full py-3 rounded-md font-semibold text-white text-base transition-colors flex items-center justify-center space-x-2 ${totalItems === 0
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-slate-700 hover:bg-slate-800'
-              }`}
+                }`}
             >
               <span>Thanh toán</span>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -395,90 +383,81 @@ export default function CustomerDisplayLayout() {
 
         {/* Right Panel - Product Grid */}
         <main className="flex-1 overflow-y-auto bg-white">
-              {location.pathname === '/customer' ? (
-            <div className="p-6">
-              {/* Category Filter & Favorites Toggle */}
-              <div className="mb-6 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-800">Danh mục</h3>
-                  <button
-                    onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      showFavoritesOnly
-                        ? 'bg-slate-700 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          <div className="p-6">
+            {/* Category Filter & Favorites Toggle */}
+            <div className="mb-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-800">Danh mục</h3>
+                <button
+                  onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${showFavoritesOnly
+                      ? 'bg-slate-700 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
-                    title={`${showFavoritesOnly ? 'Hiển thị tất cả' : 'Chỉ hiển thị món yêu thích'} (${favorites.length})`}
-                  >
-                    {showFavoritesOnly ? (
-                      <HeartIconSolid className="w-5 h-5" />
-                    ) : (
-                      <HeartIcon className="w-5 h-5" />
-                    )}
-                    <span>{showFavoritesOnly ? 'Món yêu thích' : 'Tất cả'}</span>
-                    {favorites.length > 0 && (
-                      <span className="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs">
-                        {favorites.length}
-                      </span>
-                    )}
-                  </button>
-                </div>
-                <div className="flex overflow-x-auto space-x-2 pb-2 scrollbar-hide">
-                  <button
-                    onClick={() => handleCategorySelect('all')}
-                    className={`flex-shrink-0 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      selectedCategoryId === 'all'
-                        ? 'bg-slate-700 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Tất cả
-                  </button>
-                  {categories.map((category) => (
-                    <button
-                      key={category.id}
-                      onClick={() => handleCategorySelect(category.name)}
-                      className={`flex-shrink-0 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        selectedCategoryId === category.name
-                          ? 'bg-slate-700 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {category.name}
-                    </button>
-                  ))}
-                </div>
+                  title={`${showFavoritesOnly ? 'Hiển thị tất cả' : 'Chỉ hiển thị món yêu thích'} (${favorites.length})`}
+                >
+                  {showFavoritesOnly ? (
+                    <HeartIconSolid className="w-5 h-5" />
+                  ) : (
+                    <HeartIcon className="w-5 h-5" />
+                  )}
+                  <span>{showFavoritesOnly ? 'Món yêu thích' : 'Tất cả'}</span>
+                  {favorites.length > 0 && (
+                    <span className="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs">
+                      {favorites.length}
+                    </span>
+                  )}
+                </button>
               </div>
+              <div className="flex overflow-x-auto space-x-2 pb-2 scrollbar-hide">
+                <button
+                  onClick={() => handleCategorySelect('all')}
+                  className={`flex-shrink-0 px-4 py-2 rounded-md text-sm font-medium transition-colors ${selectedCategory === 'all'
+                      ? 'bg-slate-700 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                >
+                  Tất cả
+                </button>
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => handleCategorySelect(category.name)}
+                    className={`flex-shrink-0 px-4 py-2 rounded-md text-sm font-medium transition-colors ${selectedCategory === category.name
+                        ? 'bg-slate-700 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-              {/* Product Grid */}
-              {isLoading ? (
-                <div className="text-center py-20">
-                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-slate-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Đang tải sản phẩm...</p>
-                </div>
-              ) : showFavoritesOnly && displayedProducts.length === 0 ? (
-                <div className="text-center py-12">
-                  <HeartIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                    Chưa có món yêu thích
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    Nhấn vào biểu tượng yêu thích trên sản phẩm để thêm vào danh sách
-                  </p>
-                </div>
-              ) : (
-                <ProductGrid 
-                  products={displayedProducts} 
-                  onProductClick={handleProductClick}
-                  onQuickAdd={handleQuickAdd}
-                />
-              )}
-            </div>
-          ) : (
-            <div className="p-6">
-              <Outlet />
-            </div>
-          )}
+            {/* Product Grid */}
+            {isLoading ? (
+              <div className="text-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-slate-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Đang tải sản phẩm...</p>
+              </div>
+            ) : showFavoritesOnly && displayedProducts.length === 0 ? (
+              <div className="text-center py-12">
+                <HeartIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                  Chưa có món yêu thích
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Nhấn vào biểu tượng yêu thích trên sản phẩm để thêm vào danh sách
+                </p>
+              </div>
+            ) : (
+              <ProductGrid
+                products={displayedProducts}
+                onProductClick={handleProductClick}
+                onQuickAdd={handleQuickAdd}
+              />
+            )}
+          </div>
         </main>
       </div>
 

@@ -23,6 +23,7 @@ export interface CartContextType {
   addToCart: (item: Omit<CartItem, 'id'>) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
+  updateCartItemNote: (id: string, note: string) => void;
   clearCart: () => void;
   setCartItems: (items: Omit<CartItem, 'id'>[]) => void; // Set cart items directly (for restore order)
   isCartOpen: boolean;

@@ -11,6 +11,7 @@ import {
   UpdateIngredientInput,
 } from '../types/stock.types';
 import { emitStockUpdated, emitStockAlert } from '../socket/socket.io';
+import logger from '../utils/logger';
 
 export class StockService {
   // ========== Product Stock ==========
@@ -741,8 +742,28 @@ export class StockService {
       }
     } catch (error) {
       // Don't throw error to avoid blocking stock update
-      console.error('Error creating stock alert:', error);
+      logger.error('Error creating stock alert', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
     }
+  }
+
+  /**
+   * Public method to check and create stock alerts
+   * Used after stock updates in transactions
+   */
+  async checkAndCreateStockAlertPublic(data: {
+    type: 'product' | 'ingredient';
+    stockId: string;
+    productId?: string;
+    ingredientId?: string;
+    currentQuantity: number;
+    minStock: number;
+    productName?: string;
+    ingredientName?: string;
+  }): Promise<void> {
+    return this.checkAndCreateStockAlert(data);
   }
 
   private transformAlert(alert: any) {

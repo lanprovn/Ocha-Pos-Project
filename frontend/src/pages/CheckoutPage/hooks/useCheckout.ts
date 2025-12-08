@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useCart } from '@hooks/useCart';
 import { useProducts } from '@hooks/useProducts';
-import { validatePhone } from '../utils/checkoutUtils';
+import { validatePhone, isCustomerDisplay as checkIsCustomerDisplay } from '../utils/checkoutUtils';
 import { orderService } from '@services/order.service';
 import paymentService from '@services/payment.service';
 import qrService from '@services/qr.service';
@@ -222,9 +222,7 @@ export const useCheckout = () => {
   }, [locationState?.orderId]);
   // For customer display: default to QR code (preferred)
   // For staff: default to cash
-  // Check if checkout is from customer page (via state or referrer)
-  const isCustomerDisplay = location.pathname.startsWith('/customer') || 
-    (location.state as any)?.fromCustomer === true;
+  const isCustomerDisplay = checkIsCustomerDisplay(location.pathname, location.state as any);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(isCustomerDisplay ? 'qr' : 'cash');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [showQRModal, setShowQRModal] = useState<boolean>(false);

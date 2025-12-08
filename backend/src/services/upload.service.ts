@@ -2,6 +2,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import logger from '../utils/logger';
 
 // Đảm bảo thư mục uploads tồn tại
 const uploadsDir = path.join(__dirname, '../../uploads/images');
@@ -92,7 +93,10 @@ export class UploadService {
     try {
       return fs.readdirSync(uploadsDir);
     } catch (error) {
-      console.error('Error listing files:', error);
+      logger.error('Error listing files', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       return [];
     }
   }

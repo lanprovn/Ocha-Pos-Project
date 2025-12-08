@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOrderDisplay } from '../../OrderDisplayPage/hooks/useOrderDisplay';
-import { OrderDisplayHeader } from '../../OrderDisplayPage/components/OrderDisplayHeader';
+import { useOrderFilters } from '../../OrderDisplayPage/hooks/useOrderFilters';
 import { OrderStatusSection } from '../../OrderDisplayPage/components/OrderStatusSection';
 import OrderFilters from '../../OrderDisplayPage/components/OrderFilters';
 import { EmptyState } from '../../../components/common/ui/EmptyState';
@@ -18,68 +18,15 @@ import {
 const OrderManagementTab: React.FC = () => {
   const navigate = useNavigate();
   const { orders: allOrders, currentTime, completedSectionRef } = useOrderDisplay();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState('');
-  const [paymentMethodFilter, setPaymentMethodFilter] = useState('all');
-
-  // Filter orders
-  const filteredOrders = useMemo(() => {
-    let filtered = [...allOrders];
-
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (order) =>
-          order.orderId?.toLowerCase().includes(query) ||
-          order.customerInfo?.name?.toLowerCase().includes(query) ||
-          order.customerInfo?.phone?.toLowerCase().includes(query)
-      );
-    }
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((order) => order.backendStatus === statusFilter);
-    }
-
-    // Date filter
-    if (dateFilter) {
-      const filterDate = new Date(dateFilter).toDateString();
-      filtered = filtered.filter((order) => {
-        const orderDate = new Date(order.timestamp).toDateString();
-        return orderDate === filterDate;
-      });
-    }
-
-    // Payment method filter
-    if (paymentMethodFilter !== 'all') {
-      filtered = filtered.filter((order) => {
-        const method = order.paymentMethod?.toUpperCase();
-        return method === paymentMethodFilter;
-      });
-    }
-
-    return filtered;
-  }, [allOrders, searchQuery, statusFilter, dateFilter, paymentMethodFilter]);
-
-  // Re-group filtered orders
-  const filteredGroupedOrders = useMemo(() => {
-    const grouped: { [key: string]: any[] } = {
-      creating: [],
-      paid: [],
-      preparing: [],
-      completed: [],
-    };
-
-    filteredOrders.forEach((order) => {
-      if (grouped[order.status]) {
-        grouped[order.status].push(order);
-      }
-    });
-
-    return grouped;
-  }, [filteredOrders]);
+  const {
+    filters,
+    setSearchQuery,
+    setStatusFilter,
+    setDateFilter,
+    setPaymentMethodFilter,
+    filteredOrders,
+    filteredGroupedOrders,
+  } = useOrderFilters(allOrders);
 
   // Memoize status sections to prevent recalculation
   const statusSections = useMemo(() => 
@@ -91,22 +38,6 @@ const OrderManagementTab: React.FC = () => {
   const handleOpenOrdersPage = useCallback(() => {
     navigate(ROUTES.ORDERS);
   }, [navigate]);
-
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchQuery(value);
-  }, []);
-
-  const handleStatusFilterChange = useCallback((value: string) => {
-    setStatusFilter(value);
-  }, []);
-
-  const handleDateFilterChange = useCallback((value: string) => {
-    setDateFilter(value);
-  }, []);
-
-  const handlePaymentMethodFilterChange = useCallback((value: string) => {
-    setPaymentMethodFilter(value);
-  }, []);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -226,14 +157,14 @@ const OrderManagementTab: React.FC = () => {
           
           {/* Filters */}
           <OrderFilters
-            searchQuery={searchQuery}
-            setSearchQuery={handleSearchChange}
-            statusFilter={statusFilter}
-            setStatusFilter={handleStatusFilterChange}
-            dateFilter={dateFilter}
-            setDateFilter={handleDateFilterChange}
-            paymentMethodFilter={paymentMethodFilter}
-            setPaymentMethodFilter={handlePaymentMethodFilterChange}
+            searchQuery={filters.searchQuery}
+            setSearchQuery={setSearchQuery}
+            statusFilter={filters.statusFilter}
+            setStatusFilter={setStatusFilter}
+            dateFilter={filters.dateFilter}
+            setDateFilter={setDateFilter}
+            paymentMethodFilter={filters.paymentMethodFilter}
+            setPaymentMethodFilter={setPaymentMethodFilter}
           />
         </div>
 
