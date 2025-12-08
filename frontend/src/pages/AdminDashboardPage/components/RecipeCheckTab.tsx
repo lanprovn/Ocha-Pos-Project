@@ -92,8 +92,8 @@ const RecipeCheckTab: React.FC = () => {
       filtered = filtered.filter(
         (p) =>
           p.name.toLowerCase().includes(query) ||
-          p.category?.name.toLowerCase().includes(query) ||
-          p.id.toLowerCase().includes(query)
+          (typeof p.category === 'string' ? p.category.toLowerCase().includes(query) : false) ||
+          String(p.id).toLowerCase().includes(query)
       );
     }
 
@@ -109,7 +109,7 @@ const RecipeCheckTab: React.FC = () => {
 
   // Function to get default recipes based on category
   const getDefaultRecipesForProduct = (product: ProductWithRecipe): CreateRecipeInput[] => {
-    const categoryName = product.category?.name?.toLowerCase() || '';
+    const categoryName = (typeof product.category === 'string' ? product.category : '').toLowerCase();
     const productName = product.name.toLowerCase();
     const productId = String(product.id); // Ensure it's a string
     const defaultRecipes: CreateRecipeInput[] = [];
@@ -267,7 +267,7 @@ const RecipeCheckTab: React.FC = () => {
     const productsToDelete = productsWithRecipes.filter((p) => p.hasRecipe);
     
     if (productsToDelete.length === 0) {
-      toast.info('Không có công thức nào để xóa!');
+      toast('Không có công thức nào để xóa!');
       return;
     }
 
@@ -525,7 +525,7 @@ const RecipeCheckTab: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm text-slate-600">
-                        {product.category?.name || 'Không có danh mục'}
+                        {typeof product.category === 'string' ? product.category : 'Không có danh mục'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -698,7 +698,7 @@ const RecipeCheckTab: React.FC = () => {
                   setNewRecipes([
                     ...newRecipes,
                     {
-                      productId: selectedProduct.id,
+                      productId: String(selectedProduct.id), // Convert number to string
                       ingredientId: '',
                       quantity: 0,
                       unit: 'g',
@@ -747,7 +747,7 @@ const RecipeCheckTab: React.FC = () => {
                     const updated = await Promise.all(
                       products.map(async (product) => {
                         try {
-                          const recipes = await recipeService.getByProduct(product.id);
+                          const recipes = await recipeService.getByProduct(String(product.id));
                           return {
                             ...product,
                             hasRecipe: recipes.length > 0,

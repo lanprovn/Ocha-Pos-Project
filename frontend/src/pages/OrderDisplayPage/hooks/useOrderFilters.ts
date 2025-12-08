@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import type { OrderTracking } from '../types';
+import type { OrderTracking, GroupedOrders } from '../types';
 
 export interface OrderFiltersState {
   searchQuery: string;
@@ -15,7 +15,7 @@ export interface UseOrderFiltersReturn {
   setDateFilter: (value: string) => void;
   setPaymentMethodFilter: (value: string) => void;
   filteredOrders: OrderTracking[];
-  filteredGroupedOrders: { [key: string]: OrderTracking[] };
+  filteredGroupedOrders: GroupedOrders;
 }
 
 /**
@@ -69,8 +69,8 @@ export const useOrderFilters = (allOrders: OrderTracking[]): UseOrderFiltersRetu
   }, [allOrders, searchQuery, statusFilter, dateFilter, paymentMethodFilter]);
 
   // Re-group filtered orders
-  const filteredGroupedOrders = useMemo(() => {
-    const grouped: { [key: string]: OrderTracking[] } = {
+  const filteredGroupedOrders = useMemo<GroupedOrders>(() => {
+    const grouped: GroupedOrders = {
       creating: [],
       paid: [],
       preparing: [],
@@ -78,8 +78,8 @@ export const useOrderFilters = (allOrders: OrderTracking[]): UseOrderFiltersRetu
     };
 
     filteredOrders.forEach((order) => {
-      if (grouped[order.status]) {
-        grouped[order.status].push(order);
+      if (order.status && order.status in grouped) {
+        grouped[order.status as keyof GroupedOrders].push(order);
       }
     });
 

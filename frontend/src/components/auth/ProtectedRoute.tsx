@@ -53,7 +53,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
       ROUTES.ANALYTICS,
     ];
     
-    if (staffOnlyRoutes.includes(location.pathname)) {
+    if (staffOnlyRoutes.includes(location.pathname as any)) {
       return <Navigate to={`${ROUTES.ADMIN_DASHBOARD}?tab=overview`} replace />;
     }
   }

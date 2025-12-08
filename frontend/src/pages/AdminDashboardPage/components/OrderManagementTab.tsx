@@ -48,7 +48,7 @@ const OrderManagementTab: React.FC = () => {
     const cancelledOrders = allOrders.filter(o => o.backendStatus === 'CANCELLED').length;
     const totalRevenue = allOrders
       .filter(o => o.backendStatus === 'COMPLETED')
-      .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+      .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
 
     return {
       totalOrders,

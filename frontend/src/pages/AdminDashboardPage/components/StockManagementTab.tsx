@@ -395,8 +395,9 @@ const StockManagementTab: React.FC = () => {
       <StockAdjustModal
         isOpen={showModal}
         onClose={handleCloseModal}
-        onSubmit={handleConfirm}
-        data={selectedProduct || selectedIngredient}
+        onConfirm={handleConfirm}
+        product={selectedProduct || null}
+        ingredient={selectedIngredient || null}
       />
 
       <ProductFormModal

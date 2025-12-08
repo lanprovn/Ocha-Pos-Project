@@ -62,8 +62,8 @@ export function useOrderTracking() {
         data: orderTracking
       };
 
-      // Gửi qua BroadcastChannel - chỉ khi channel đã mở
-      if (channel && channel.readyState === 'open') {
+      // Gửi qua BroadcastChannel
+      if (channel) {
         try {
           channel.postMessage(message);
         } catch (error) {
@@ -158,7 +158,7 @@ export function useOrderTracking() {
             data: orders[orderIndex]
           };
           
-          if (channel && channel.readyState === 'open') {
+          if (channel) {
             try {
               channel.postMessage(message);
             } catch (error) {

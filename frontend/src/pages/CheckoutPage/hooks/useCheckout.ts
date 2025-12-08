@@ -105,7 +105,6 @@ export const useCheckout = () => {
             } else {
               // Create size object from name if not found
               selectedSize = {
-                id: `size-${orderItem.selectedSize}`,
                 name: orderItem.selectedSize,
                 extraPrice: 0
               };
@@ -122,7 +121,6 @@ export const useCheckout = () => {
               } else {
                 // Create topping object from name if not found
                 selectedToppings.push({
-                  id: `topping-${toppingName}`,
                   name: toppingName,
                   extraPrice: 0
                 });
