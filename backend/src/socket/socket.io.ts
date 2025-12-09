@@ -2,34 +2,12 @@ import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import env from '../config/env';
 import logger from '../utils/logger';
-
-// Socket.io event types
-export interface ServerToClientEvents {
-  order_created: (order: any) => void;
-  order_updated: (order: any) => void;
-  order_status_changed: (data: { orderId: string; status: string }) => void;
-  display_update: (data: any) => void;
-  stock_alert: (alert: any) => void;
-  stock_updated: (data: { type: 'product' | 'ingredient'; productId?: string; ingredientId?: string; stockId: string; oldQuantity: number; newQuantity: number }) => void;
-  dashboard_update: (data: any) => void;
-}
-
-export interface ClientToServerEvents {
-  join_room: (room: string) => void;
-  leave_room: (room: string) => void;
-  subscribe_orders: () => void;
-  subscribe_display: () => void;
-  subscribe_dashboard: () => void;
-}
-
-export interface InterServerEvents {
-  ping: () => void;
-}
-
-export interface SocketData {
-  userId?: string;
-  userRole?: string;
-}
+import type {
+  ServerToClientEvents,
+  ClientToServerEvents,
+  InterServerEvents,
+  SocketData,
+} from '@ocha-pos/shared-types';
 
 let io: SocketIOServer<
   ClientToServerEvents,
@@ -129,8 +107,18 @@ export function getIO(): SocketIOServer<
  */
 export function emitOrderCreated(order: any): void {
   if (io) {
-    io.to('orders').emit('order_created', order);
-    io.to('dashboard').emit('dashboard_update', { type: 'order_created', order });
+    try {
+      io.to('orders').emit('order_created', order);
+      io.to('dashboard').emit('dashboard_update', { type: 'order_created', order });
+      logger.debug('Emitted order_created event', { orderId: order.id, orderNumber: order.orderNumber });
+    } catch (error) {
+      logger.error('Failed to emit order_created event', {
+        error: error instanceof Error ? error.message : String(error),
+        orderId: order.id,
+      });
+    }
+  } else {
+    logger.warn('Socket.io not initialized, cannot emit order_created event', { orderId: order.id });
   }
 }
 
@@ -139,8 +127,18 @@ export function emitOrderCreated(order: any): void {
  */
 export function emitOrderUpdated(order: any): void {
   if (io) {
-    io.to('orders').emit('order_updated', order);
-    io.to('dashboard').emit('dashboard_update', { type: 'order_updated', order });
+    try {
+      io.to('orders').emit('order_updated', order);
+      io.to('dashboard').emit('dashboard_update', { type: 'order_updated', order });
+      logger.debug('Emitted order_updated event', { orderId: order.id, orderNumber: order.orderNumber, status: order.status });
+    } catch (error) {
+      logger.error('Failed to emit order_updated event', {
+        error: error instanceof Error ? error.message : String(error),
+        orderId: order.id,
+      });
+    }
+  } else {
+    logger.warn('Socket.io not initialized, cannot emit order_updated event', { orderId: order.id });
   }
 }
 

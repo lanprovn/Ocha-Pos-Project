@@ -1,24 +1,9 @@
 import { io, Socket } from 'socket.io-client';
 import API_BASE_URL from '../config/api';
-
-// Socket.io event types
-export interface ServerToClientEvents {
-  order_created: (order: any) => void;
-  order_updated: (order: any) => void;
-  order_status_changed: (data: { orderId: string; status: string }) => void;
-  display_update: (data: any) => void;
-  stock_alert: (alert: any) => void;
-  stock_updated: (data: { type: 'product' | 'ingredient'; productId?: string; ingredientId?: string; stockId: string; oldQuantity: number; newQuantity: number }) => void;
-  dashboard_update: (data: any) => void;
-}
-
-export interface ClientToServerEvents {
-  join_room: (room: string) => void;
-  leave_room: (room: string) => void;
-  subscribe_orders: () => void;
-  subscribe_display: () => void;
-  subscribe_dashboard: () => void;
-}
+import type {
+  ServerToClientEvents,
+  ClientToServerEvents,
+} from '@ocha-pos/shared-types';
 
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 
@@ -40,10 +25,8 @@ export function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> 
 
       socket.on('connect', () => {
         console.log('✅ Socket.io connected:', socket?.id);
-        // Auto join orders room khi connect
-        if (socket) {
-          socket.emit('subscribe_orders');
-        }
+        // Note: Don't auto-subscribe here - let each component subscribe explicitly
+        // This prevents duplicate subscriptions and race conditions
       });
 
       socket.on('disconnect', () => {
@@ -77,7 +60,12 @@ export function subscribeToOrders(
 
   // Helper function to subscribe to orders room
   const subscribeToOrdersRoom = () => {
-    socketInstance.emit('subscribe_orders');
+    if (socketInstance.connected) {
+      socketInstance.emit('subscribe_orders');
+      console.log('📡 Subscribed to orders room');
+    } else {
+      console.warn('⚠️ Socket not connected, will subscribe when connected');
+    }
   };
 
   // Ensure socket is connected before subscribing
@@ -89,7 +77,6 @@ export function subscribeToOrders(
     socketInstance.once('connect', () => {
       subscribeToOrdersRoom();
     });
-    // Socket will subscribe on connect event
   }
 
   // Register event listeners

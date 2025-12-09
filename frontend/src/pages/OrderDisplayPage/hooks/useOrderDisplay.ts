@@ -136,9 +136,12 @@ export const useOrderDisplay = () => {
     console.log('📦 Socket: order_created event received', order.id, order.orderNumber);
     // Order created - reload all orders để đảm bảo sync
     // Delay nhỏ để đảm bảo backend đã lưu xong
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       loadOrders();
     }, 300);
+    
+    // Store timeout ID for cleanup (if needed)
+    return () => clearTimeout(timeoutId);
   }, [loadOrders]);
 
   const handleOrderUpdated = useCallback((order: Order) => {
@@ -173,9 +176,12 @@ export const useOrderDisplay = () => {
     console.log('📊 Socket: order_status_changed event received', data.orderId, data.status);
     // Order status changed - reload all orders để đảm bảo sync
     // Delay nhỏ để đảm bảo backend đã update xong
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       loadOrders();
     }, 300);
+    
+    // Note: Timeout cleanup is handled by React's cleanup, but we store it for reference
+    return () => clearTimeout(timeoutId);
   }, [loadOrders]);
 
   // Listen to socket events for real-time updates
@@ -196,17 +202,27 @@ export const useOrderDisplay = () => {
   
   // Listen to custom window events (fallback nếu socket không hoạt động)
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    
     const handleOrderCompleted = (event: CustomEvent) => {
       console.log('📢 Custom event: orderCompleted', event.detail);
+      // Clear previous timeout if exists
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       // Reload orders khi nhận custom event
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         loadOrders();
+        timeoutId = null;
       }, 500);
     };
 
     window.addEventListener('orderCompleted', handleOrderCompleted as EventListener);
     return () => {
       window.removeEventListener('orderCompleted', handleOrderCompleted as EventListener);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [loadOrders]);
 

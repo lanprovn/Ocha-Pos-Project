@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import orderService from '../services/order.service';
 import { emitOrderCreated, emitOrderUpdated, emitOrderStatusChanged } from '../socket/socket.io';
 import { z } from 'zod';
+import { OrderStatus, PaymentMethod, PaymentStatus, OrderCreator } from '@ocha-pos/shared-types';
 
 // Schema for draft order - allows empty items array for real-time cart sync
 const createDraftOrderSchema = z.object({
@@ -10,9 +11,9 @@ const createDraftOrderSchema = z.object({
     customerPhone: z.string().optional().nullable(),
     customerTable: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
-    paymentMethod: z.enum(['CASH', 'CARD', 'QR']).optional(),
-    paymentStatus: z.enum(['PENDING', 'SUCCESS', 'FAILED']).optional(),
-    orderCreator: z.enum(['STAFF', 'CUSTOMER']).optional(),
+    paymentMethod: z.nativeEnum(PaymentMethod).optional(),
+    paymentStatus: z.nativeEnum(PaymentStatus).optional(),
+    orderCreator: z.nativeEnum(OrderCreator).optional(),
     orderCreatorName: z.string().optional().nullable(),
     items: z.array(
       z.object({
@@ -35,9 +36,9 @@ const createOrderSchema = z.object({
     customerPhone: z.string().optional().nullable(),
     customerTable: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
-    paymentMethod: z.enum(['CASH', 'CARD', 'QR']).optional(),
-    paymentStatus: z.enum(['PENDING', 'SUCCESS', 'FAILED']).optional(),
-    orderCreator: z.enum(['STAFF', 'CUSTOMER']).optional(),
+    paymentMethod: z.nativeEnum(PaymentMethod).optional(),
+    paymentStatus: z.nativeEnum(PaymentStatus).optional(),
+    orderCreator: z.nativeEnum(OrderCreator).optional(),
     orderCreatorName: z.string().optional().nullable(),
     items: z.array(
       z.object({
@@ -55,7 +56,7 @@ const createOrderSchema = z.object({
 
 const updateOrderStatusSchema = z.object({
   body: z.object({
-    status: z.enum(['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED']),
+    status: z.nativeEnum(OrderStatus),
   }),
   params: z.object({
     id: z.string().uuid(),

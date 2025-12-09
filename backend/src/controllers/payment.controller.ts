@@ -3,6 +3,7 @@ import paymentService from '../services/payment.service';
 import orderService from '../services/order.service';
 import { z } from 'zod';
 import logger from '../utils/logger';
+import { PaymentStatus, OrderStatus } from '@ocha-pos/shared-types';
 
 const createPaymentSchema = z.object({
   body: z.object({
@@ -64,7 +65,7 @@ export class PaymentController {
       // Cập nhật order với transaction ID
       await orderService.update(orderId, {
         paymentTransactionId: paymentResponse.transactionId,
-        paymentStatus: 'PENDING',
+        paymentStatus: PaymentStatus.PENDING,
       });
 
       return res.json(paymentResponse);
@@ -116,14 +117,14 @@ export class PaymentController {
 
       // Cập nhật order status
       await orderService.update(order.id, {
-        paymentStatus: callback.status === 'success' ? 'SUCCESS' : 'FAILED',
+        paymentStatus: callback.status === 'success' ? PaymentStatus.SUCCESS : PaymentStatus.FAILED,
         paymentTransactionId: callback.transactionId,
         paymentDate: callback.transactionDate ? new Date(callback.transactionDate) : new Date(),
       });
 
       // Nếu thanh toán thành công, cập nhật order status thành COMPLETED
       if (callback.status === 'success') {
-        await orderService.updateStatus(order.id, { status: 'COMPLETED' });
+        await orderService.updateStatus(order.id, { status: OrderStatus.COMPLETED });
       }
 
       // Redirect về frontend

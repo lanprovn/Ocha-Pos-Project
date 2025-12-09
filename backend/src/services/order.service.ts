@@ -7,6 +7,7 @@ import stockService from './stock.service';
 import logger from '../utils/logger';
 import { InsufficientStockError, OrderNotFoundError } from '../errors';
 import { emitStockUpdated } from '../socket/socket.io';
+import { StockTransactionType } from '@ocha-pos/shared-types';
 
 export class OrderService {
   /**
@@ -212,7 +213,7 @@ export class OrderService {
             // Không trong transaction: dùng service như cũ
             await stockService.createTransaction({
               productId: item.productId,
-              type: 'SALE',
+              type: StockTransactionType.SALE,
               quantity: item.quantity,
               reason: `Tự động trừ từ đơn hàng ${order.orderNumber}`,
             });
@@ -270,7 +271,7 @@ export class OrderService {
             await prismaClient.stockTransaction.create({
               data: {
                 ingredientId,
-                type: 'SALE',
+                type: StockTransactionType.SALE,
                 quantity: quantityToDeduct,
                 reason: `Tự động trừ từ đơn hàng ${order.orderNumber}`,
               },
@@ -303,7 +304,7 @@ export class OrderService {
             // Không trong transaction: dùng service như cũ
             await stockService.createTransaction({
               ingredientId,
-              type: 'SALE',
+              type: StockTransactionType.SALE,
               quantity: quantityToDeduct,
               reason: `Tự động trừ từ đơn hàng ${order.orderNumber}`,
             });

@@ -3,6 +3,7 @@ import qrService from '../services/qr.service';
 import orderService from '../services/order.service';
 import { z } from 'zod';
 import logger from '../utils/logger';
+import { PaymentStatus, OrderStatus } from '@ocha-pos/shared-types';
 
 const generateQRSchema = z.object({
   body: z.object({
@@ -105,12 +106,12 @@ export class QRController {
 
       // Cập nhật payment status
       await orderService.update(orderId, {
-        paymentStatus: 'SUCCESS',
+        paymentStatus: PaymentStatus.SUCCESS,
         paymentDate: new Date(),
       });
 
       // Cập nhật order status thành COMPLETED sau khi thanh toán thành công
-      await orderService.updateStatus(orderId, { status: 'COMPLETED' });
+      await orderService.updateStatus(orderId, { status: OrderStatus.COMPLETED });
 
       const updatedOrder = await orderService.findById(orderId);
       return res.json({

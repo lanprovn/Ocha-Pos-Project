@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon src/server.ts",
-    "build": "tsc",
+    "build": "tsc && tsc-alias -p tsconfig.json",
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -29,6 +29,7 @@
   "author": "Lan Pro <lanprovn@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "@ocha-pos/shared-types": "file:../shared-types",
     "@prisma/client": "^5.0.0",
     "@types/multer": "^2.0.0",
     "axios": "^1.13.2",
@@ -65,6 +66,7 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "ts-node": "^10.9.1",
+    "tsc-alias": "^1.8.16",
     "typescript": "^5.0.0"
   }
 }

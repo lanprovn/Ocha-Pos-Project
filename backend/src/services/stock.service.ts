@@ -12,6 +12,7 @@ import {
 } from '../types/stock.types';
 import { emitStockUpdated, emitStockAlert } from '../socket/socket.io';
 import logger from '../utils/logger';
+import { StockAlertType } from '@ocha-pos/shared-types';
 
 export class StockService {
   // ========== Product Stock ==========
@@ -707,8 +708,8 @@ export class StockService {
       // Only create alert if stock is at or below minStock
       if (data.currentQuantity <= data.minStock) {
         const alertType = data.currentQuantity === 0 
-          ? 'OUT_OF_STOCK' 
-          : 'LOW_STOCK';
+          ? StockAlertType.OUT_OF_STOCK 
+          : StockAlertType.LOW_STOCK;
         
         const itemName = data.productName || data.ingredientName || 'Sản phẩm';
         const itemType = data.type === 'product' ? 'sản phẩm' : 'nguyên liệu';
