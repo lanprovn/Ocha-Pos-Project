@@ -80,10 +80,14 @@ files.forEach(file => {
   );
   
   if (content !== originalContent) {
-    fs.writeFileSync(file, content, 'utf8');
-    console.log(`Fixed imports in: ${path.relative(distPath, file)}`);
+    try {
+      fs.writeFileSync(file, content, 'utf8');
+      console.log(`Fixed imports in: ${path.relative(distPath, file)}`);
+    } catch (err) {
+      console.error(`Error writing file ${file}:`, err.message);
+    }
   }
 });
 
-console.log('Fixed shared-types imports');
+console.log(`✅ Fixed shared-types imports in ${files.length} files`);
 
