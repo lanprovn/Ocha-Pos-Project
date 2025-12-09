@@ -70,10 +70,15 @@ async function main() {
   const categoryMap = new Map<string, string>(); // category name -> categoryId
 
   for (const cat of productsData.categories) {
+    // Transform category image path: /src/assets/img/... -> /img/...
+    const categoryImagePath = cat.image 
+      ? cat.image.replace('/src/assets/img/', '/img/')
+      : null;
+
     const category = await prisma.category.create({
       data: {
         name: cat.name,
-        image: cat.image || null,
+        image: categoryImagePath,
         description: cat.description || null,
         icon: null,
       },
@@ -95,6 +100,11 @@ async function main() {
       continue;
     }
 
+    // Transform image path: /src/assets/img/gallery/... -> /img/gallery/...
+    const imagePath = prod.image 
+      ? prod.image.replace('/src/assets/img/', '/img/')
+      : null;
+
     // Tạo product với sizes và toppings
     const product = await prisma.product.create({
       data: {
@@ -102,7 +112,7 @@ async function main() {
         description: prod.description || null,
         price: prod.price,
         categoryId: categoryId,
-        image: prod.image || null,
+        image: imagePath,
         rating: prod.rating ? parseFloat(prod.rating.toString()) : null,
         discount: prod.discount ? parseFloat(prod.discount.toString()) : null,
         stock: prod.stock || 0,
