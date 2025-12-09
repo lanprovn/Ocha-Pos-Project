@@ -1,0 +1,879 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "name": "Cà Phê Americano Nóng",
+      "category": "Cà Phê",
+      "price": 59000,
+      "rating": 4.5,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/americano-nong.webp",
+      "description": "Cà phê Americano nóng thơm ngon, đậm đà hương vị truyền thống.",
+      "stock": 50,
+      "isPopular": true,
+      "tags": ["hot", "popular", "premium"],
+      "sizes": [
+        { "name": "Nhỏ", "extraPrice": 0 },
+        { "name": "Vừa", "extraPrice": 5000 },
+        { "name": "Lớn", "extraPrice": 10000 }
+      ],
+      "toppings": [
+        { "name": "Thêm đường", "extraPrice": 0 },
+        { "name": "Thêm sữa", "extraPrice": 3000 },
+        { "name": "Kem tươi", "extraPrice": 5000 },
+        { "name": "Caramel", "extraPrice": 8000 }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Cà Phê Americano Đá",
+      "category": "Cà Phê",
+      "price": 59000,
+      "rating": 4.3,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/americano.webp",
+      "description": "Cà phê Americano đá mát lạnh, giải nhiệt ngày hè.",
+      "stock": 45,
+      "isPopular": false,
+      "tags": ["cold"],
+      "sizes": [
+        { "name": "Nhỏ", "extraPrice": 0 },
+        { "name": "Vừa", "extraPrice": 5000 },
+        { "name": "Lớn", "extraPrice": 10000 }
+      ],
+      "toppings": [
+        { "name": "Thêm đường", "extraPrice": 0 },
+        { "name": "Thêm sữa", "extraPrice": 3000 },
+        { "name": "Kem tươi", "extraPrice": 5000 },
+        { "name": "Caramel", "extraPrice": 8000 }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Bạc Xỉu Nóng",
+      "category": "Cà Phê",
+      "price": 55000,
+      "rating": 4.7,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/bac-xiu-nong.webp",
+      "description": "Bạc xỉu nóng với sữa đặc và cà phê đậm đà.",
+      "stock": 40,
+      "isPopular": true,
+      "tags": ["hot", "sweet", "popular"]
+    },
+    {
+      "id": 4,
+      "name": "Bạc Xỉu Đá",
+      "category": "Cà Phê",
+      "price": 55000,
+      "rating": 4.6,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/bac-xiu.webp",
+      "description": "Bạc xỉu đá mát lạnh, ngọt ngào và thơm ngon.",
+      "stock": 35,
+      "isPopular": true
+    },
+    {
+      "id": 5,
+      "name": "Bánh Choux Kem",
+      "category": "Bánh Ngọt",
+      "price": 35000,
+      "rating": 4.4,
+      "restaurant": "Paris Baguette",
+      "image": "/src/assets/img/gallery/banh-choux.webp",
+      "description": "Bánh choux với kem tươi ngọt ngào, giòn tan.",
+      "stock": 25,
+      "isPopular": false
+    },
+    {
+      "id": 6,
+      "name": "Bánh Chuối Nướng",
+      "category": "Bánh Ngọt",
+      "price": 32000,
+      "rating": 4.2,
+      "restaurant": "Paris Baguette",
+      "image": "/src/assets/img/gallery/banh-chuoi.webp",
+      "description": "Bánh chuối nướng thơm ngon, mềm mịn.",
+      "stock": 30,
+      "isPopular": false
+    },
+    {
+      "id": 7,
+      "name": "Bánh Croissant",
+      "category": "Bánh Ngọt",
+      "price": 28000,
+      "rating": 4.5,
+      "restaurant": "Paris Baguette",
+      "image": "/src/assets/img/gallery/banh-croisaint.webp",
+      "description": "Bánh croissant giòn tan, thơm bơ ngọt ngào.",
+      "stock": 40,
+      "isPopular": true
+    },
+    {
+      "id": 8,
+      "name": "Bánh Mousse Cacao",
+      "category": "Bánh Ngọt",
+      "price": 45000,
+      "rating": 4.8,
+      "restaurant": "Paris Baguette",
+      "image": "/src/assets/img/gallery/banh-mousse-ca-cao.webp",
+      "description": "Bánh mousse cacao đậm đà, mềm mịn như tan trong miệng.",
+      "stock": 20,
+      "isPopular": true
+    },
+    {
+      "id": 9,
+      "name": "Bánh Phô Mai Caramel",
+      "category": "Bánh Ngọt",
+      "price": 42000,
+      "rating": 4.6,
+      "restaurant": "Paris Baguette",
+      "image": "/src/assets/img/gallery/banh-pho-mai-caramel.webp",
+      "description": "Bánh phô mai với caramel ngọt ngào, béo ngậy.",
+      "stock": 22,
+      "isPopular": true
+    },
+    {
+      "id": 10,
+      "name": "Bánh Phô Mai Chanh Dây",
+      "category": "Bánh Ngọt",
+      "price": 40000,
+      "rating": 4.4,
+      "restaurant": "Paris Baguette",
+      "image": "/src/assets/img/gallery/banh-pho-mai-chanh-day.webp",
+      "description": "Bánh phô mai với chanh dây chua ngọt thanh mát.",
+      "stock": 18,
+      "isPopular": false
+    },
+    {
+      "id": 11,
+      "name": "Bánh Phô Mai Trà Xanh",
+      "category": "Bánh Ngọt",
+      "price": 43000,
+      "rating": 4.7,
+      "restaurant": "Paris Baguette",
+      "image": "/src/assets/img/gallery/banh-pho-mai-tra-xanh.webp",
+      "description": "Bánh phô mai trà xanh thơm ngon, thanh mát.",
+      "stock": 25,
+      "isPopular": true
+    },
+    {
+      "id": 12,
+      "name": "Bánh Sữa Chua Phô Mai",
+      "category": "Bánh Ngọt",
+      "price": 38000,
+      "rating": 4.3,
+      "restaurant": "Paris Baguette",
+      "image": "/src/assets/img/gallery/banh-sua-chua-pho-mai.webp",
+      "description": "Bánh sữa chua phô mai mát lạnh, ngọt ngào.",
+      "stock": 28,
+      "isPopular": false
+    },
+    {
+      "id": 13,
+      "name": "Bánh Tiramisu",
+      "category": "Bánh Ngọt",
+      "price": 50000,
+      "rating": 4.9,
+      "restaurant": "Paris Baguette",
+      "image": "/src/assets/img/gallery/banh-tiramisu.webp",
+      "description": "Bánh tiramisu đậm đà hương vị cà phê, mềm mịn.",
+      "stock": 15,
+      "isPopular": true
+    },
+    {
+      "id": 14,
+      "name": "Burger Thịt Bò",
+      "category": "Burger",
+      "price": 89000,
+      "rating": 4.6,
+      "restaurant": "Burger King",
+      "image": "/src/assets/img/gallery/burger.png",
+      "description": "Burger thịt bò nướng thơm ngon với rau tươi và sốt đặc biệt.",
+      "stock": 30,
+      "isPopular": true,
+      "sizes": [
+        { "name": "Nhỏ", "extraPrice": 0 },
+        { "name": "Vừa", "extraPrice": 15000 },
+        { "name": "Lớn", "extraPrice": 25000 }
+      ],
+      "toppings": [
+        { "name": "Thêm phô mai", "extraPrice": 10000 },
+        { "name": "Thêm thịt xông khói", "extraPrice": 15000 },
+        { "name": "Thêm rau tươi", "extraPrice": 5000 },
+        { "name": "Sốt đặc biệt", "extraPrice": 8000 }
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Cappuccino",
+      "category": "Cà Phê",
+      "price": 65000,
+      "rating": 4.5,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/cappuccino.webp",
+      "description": "Cappuccino với lớp bọt sữa mịn màng, thơm ngon.",
+      "stock": 35,
+      "isPopular": true
+    },
+    {
+      "id": 16,
+      "name": "Cappuccino Nóng",
+      "category": "Cà Phê",
+      "price": 65000,
+      "rating": 4.7,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/cappucino-nong.webp",
+      "description": "Cappuccino nóng với lớp bọt sữa dày, thơm ngon.",
+      "stock": 40,
+      "isPopular": true
+    },
+    {
+      "id": 17,
+      "name": "Caramel Macchiato Nóng",
+      "category": "Cà Phê",
+      "price": 75000,
+      "rating": 4.8,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/caramel-macchiato-nong.webp",
+      "description": "Caramel macchiato nóng ngọt ngào, thơm ngon.",
+      "stock": 25,
+      "isPopular": true
+    },
+    {
+      "id": 18,
+      "name": "Caramel Macchiato Đá",
+      "category": "Cà Phê",
+      "price": 75000,
+      "rating": 4.6,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/caramel-macchiato.webp",
+      "description": "Caramel macchiato đá mát lạnh, ngọt ngào.",
+      "stock": 30,
+      "isPopular": true
+    },
+    {
+      "id": 19,
+      "name": "Cheese Burger",
+      "category": "Burger",
+      "price": 75000,
+      "rating": 4.4,
+      "restaurant": "Burger King",
+      "image": "/src/assets/img/gallery/cheese-burger.png",
+      "description": "Cheese burger với phô mai tan chảy, thơm ngon.",
+      "stock": 35,
+      "isPopular": true
+    },
+    {
+      "id": 20,
+      "name": "Mì Chow Mein",
+      "category": "Mì Noodles",
+      "price": 65000,
+      "rating": 4.3,
+      "restaurant": "Phở Việt",
+      "image": "/src/assets/img/gallery/chowmein.png",
+      "description": "Mì chow mein với rau tươi và thịt bò, đậm đà.",
+      "stock": 25,
+      "isPopular": false
+    },
+    {
+      "id": 21,
+      "name": "Classic Phin Freeze",
+      "category": "Cà Phê",
+      "price": 45000,
+      "rating": 4.2,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/classic-phin-freeze.webp",
+      "description": "Cà phê phin đá mát lạnh, đậm đà hương vị.",
+      "stock": 30,
+      "isPopular": false
+    },
+    {
+      "id": 22,
+      "name": "Sandwich Giòn",
+      "category": "Sandwich",
+      "price": 55000,
+      "rating": 4.5,
+      "restaurant": "Subway",
+      "image": "/src/assets/img/gallery/crispy-sandwiches.png",
+      "description": "Sandwich giòn với thịt nướng và rau tươi.",
+      "stock": 40,
+      "isPopular": true
+    },
+    {
+      "id": 23,
+      "name": "Sandwich Đặc Biệt",
+      "category": "Sandwich",
+      "price": 60000,
+      "rating": 4.6,
+      "restaurant": "Subway",
+      "image": "/src/assets/img/gallery/crispy-sandwitch.png",
+      "description": "Sandwich đặc biệt với nhiều loại thịt và rau.",
+      "stock": 35,
+      "isPopular": true
+    },
+    {
+      "id": 24,
+      "name": "Bánh Dancake",
+      "category": "Bánh Ngọt",
+      "price": 38000,
+      "rating": 4.1,
+      "restaurant": "Paris Baguette",
+      "image": "/src/assets/img/gallery/dancake.png",
+      "description": "Bánh dancake mềm mịn, ngọt ngào.",
+      "stock": 20,
+      "isPopular": false
+    },
+    {
+      "id": 25,
+      "name": "Espresso Nóng",
+      "category": "Cà Phê",
+      "price": 45000,
+      "rating": 4.4,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/espresso-nong.webp",
+      "description": "Espresso nóng đậm đà, thơm ngon.",
+      "stock": 45,
+      "isPopular": true
+    },
+    {
+      "id": 26,
+      "name": "Freeze Caramel",
+      "category": "Đồ Uống Lạnh",
+      "price": 65000,
+      "rating": 4.3,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/freeze-caramel.webp",
+      "description": "Freeze caramel mát lạnh, ngọt ngào.",
+      "stock": 30,
+      "isPopular": false
+    },
+    {
+      "id": 27,
+      "name": "Freeze Chocolate",
+      "category": "Đồ Uống Lạnh",
+      "price": 65000,
+      "rating": 4.5,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/freeze-choco.webp",
+      "description": "Freeze chocolate đậm đà, mát lạnh.",
+      "stock": 25,
+      "isPopular": true
+    },
+    {
+      "id": 28,
+      "name": "Freeze Cookies",
+      "category": "Đồ Uống Lạnh",
+      "price": 65000,
+      "rating": 4.2,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/freeze-cookies.webp",
+      "description": "Freeze cookies thơm ngon, mát lạnh.",
+      "stock": 28,
+      "isPopular": false
+    },
+    {
+      "id": 29,
+      "name": "Freeze Kem Mây Dâu Tằm",
+      "category": "Đồ Uống Lạnh",
+      "price": 75000,
+      "rating": 4.6,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/freeze-kem-may-dau-tam.webp",
+      "description": "Freeze kem mây dâu tằm ngọt ngào, mát lạnh.",
+      "stock": 22,
+      "isPopular": true
+    },
+    {
+      "id": 30,
+      "name": "Freeze Trà Xanh",
+      "category": "Đồ Uống Lạnh",
+      "price": 65000,
+      "rating": 4.4,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/freeze-tra-xanh.webp",
+      "description": "Freeze trà xanh thanh mát, mát lạnh.",
+      "stock": 30,
+      "isPopular": true
+    },
+    {
+      "id": 31,
+      "name": "Gà Rán Giòn",
+      "category": "Gà Rán",
+      "price": 78000,
+      "rating": 4.7,
+      "restaurant": "KFC",
+      "image": "/src/assets/img/gallery/fried-chicken.png",
+      "description": "Gà rán giòn tan, thơm ngon với gia vị đặc biệt.",
+      "stock": 50,
+      "isPopular": true
+    },
+    {
+      "id": 32,
+      "name": "Latte Nóng",
+      "category": "Cà Phê",
+      "price": 65000,
+      "rating": 4.5,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/latte-nong.webp",
+      "description": "Latte nóng với sữa mịn màng, thơm ngon.",
+      "stock": 35,
+      "isPopular": true
+    },
+    {
+      "id": 33,
+      "name": "Latte Đá",
+      "category": "Cà Phê",
+      "price": 65000,
+      "rating": 4.4,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/latte.webp",
+      "description": "Latte đá mát lạnh, thơm ngon.",
+      "stock": 40,
+      "isPopular": true
+    },
+    {
+      "id": 34,
+      "name": "Mì Noodles",
+      "category": "Mì Noodles",
+      "price": 58000,
+      "rating": 4.3,
+      "restaurant": "Phở Việt",
+      "image": "/src/assets/img/gallery/noodles.png",
+      "description": "Mì noodles với nước dùng đậm đà, thơm ngon.",
+      "stock": 30,
+      "isPopular": false
+    },
+    {
+      "id": 35,
+      "name": "Cà Phê Phin Đen Đá",
+      "category": "Cà Phê",
+      "price": 39000,
+      "rating": 4.6,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/phin-den-da.webp",
+      "description": "Cà phê phin đen đá đậm đà, thơm ngon.",
+      "stock": 60,
+      "isPopular": true
+    },
+    {
+      "id": 36,
+      "name": "Cà Phê Phin Đen Nóng",
+      "category": "Cà Phê",
+      "price": 39000,
+      "rating": 4.7,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/phin-den-nong.webp",
+      "description": "Cà phê phin đen nóng đậm đà, thơm ngon.",
+      "stock": 55,
+      "isPopular": true
+    },
+    {
+      "id": 37,
+      "name": "Cà Phê Phin Sữa Đá",
+      "category": "Cà Phê",
+      "price": 42000,
+      "rating": 4.8,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/phin-sua-da.webp",
+      "description": "Cà phê phin sữa đá ngọt ngào, thơm ngon.",
+      "stock": 50,
+      "isPopular": true
+    },
+    {
+      "id": 38,
+      "name": "Pizza Margherita",
+      "category": "Pizza",
+      "price": 120000,
+      "rating": 4.6,
+      "restaurant": "Pizza Hut",
+      "image": "/src/assets/img/gallery/pizza.png",
+      "description": "Pizza margherita với phô mai mozzarella và cà chua tươi.",
+      "stock": 25,
+      "isPopular": true,
+      "sizes": [
+        { "name": "Nhỏ (6 inch)", "extraPrice": 0 },
+        { "name": "Vừa (9 inch)", "extraPrice": 30000 },
+        { "name": "Lớn (12 inch)", "extraPrice": 60000 }
+      ],
+      "toppings": [
+        { "name": "Thêm phô mai mozzarella", "extraPrice": 15000 },
+        { "name": "Thêm pepperoni", "extraPrice": 20000 },
+        { "name": "Thêm nấm", "extraPrice": 10000 },
+        { "name": "Thêm ô liu", "extraPrice": 8000 }
+      ]
+    },
+    {
+      "id": 39,
+      "name": "Bánh Toffes",
+      "category": "Bánh Ngọt",
+      "price": 40000,
+      "rating": 4.3,
+      "restaurant": "Paris Baguette",
+      "image": "/src/assets/img/gallery/toffes-cake.png",
+      "description": "Bánh toffes ngọt ngào, thơm ngon.",
+      "stock": 20,
+      "isPopular": false
+    },
+    {
+      "id": 40,
+      "name": "Trà Đào Tằm",
+      "category": "Trà",
+      "price": 55000,
+      "rating": 4.4,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/tra-dau-tam.webp",
+      "description": "Trà đào tằm thanh mát, ngọt ngào.",
+      "stock": 40,
+      "isPopular": true
+    },
+    {
+      "id": 41,
+      "name": "Trà Sen Vàng Nóng",
+      "category": "Trà",
+      "price": 55000,
+      "rating": 4.5,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/tra-sen-vang-nong.webp",
+      "description": "Trà sen vàng nóng thơm ngon, thanh mát.",
+      "stock": 30,
+      "isPopular": true
+    },
+    {
+      "id": 42,
+      "name": "Trà Sen Vàng Sên",
+      "category": "Trà",
+      "price": 65000,
+      "rating": 4.6,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/tra-sen-vang-sen.webp",
+      "description": "Trà sen vàng sên ngọt ngào, thơm ngon.",
+      "stock": 25,
+      "isPopular": true
+    },
+    {
+      "id": 43,
+      "name": "Trà Sen Vàng Đá",
+      "category": "Trà",
+      "price": 55000,
+      "rating": 4.4,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/tra-sen-vang.webp",
+      "description": "Trà sen vàng đá mát lạnh, thanh mát.",
+      "stock": 35,
+      "isPopular": true
+    },
+    {
+      "id": 44,
+      "name": "Trà Thạch Đào",
+      "category": "Trà",
+      "price": 55000,
+      "rating": 4.3,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/tra-thach-dao.webp",
+      "description": "Trà thạch đào mát lạnh, ngọt ngào.",
+      "stock": 30,
+      "isPopular": false
+    },
+    {
+      "id": 45,
+      "name": "Trà Thạch Vải Nóng",
+      "category": "Trà",
+      "price": 55000,
+      "rating": 4.4,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/tra-thach-vai-nong.webp",
+      "description": "Trà thạch vải nóng thơm ngon, ngọt ngào.",
+      "stock": 25,
+      "isPopular": false
+    },
+    {
+      "id": 46,
+      "name": "Trà Thạch Vải Đá",
+      "category": "Trà",
+      "price": 55000,
+      "rating": 4.5,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/tra-thach-vai.webp",
+      "description": "Trà thạch vải đá mát lạnh, ngọt ngào.",
+      "stock": 30,
+      "isPopular": true
+    },
+    {
+      "id": 47,
+      "name": "Trà Thanh Đào Nóng",
+      "category": "Trà",
+      "price": 55000,
+      "rating": 4.3,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/tra-thanh-dao-nong.webp",
+      "description": "Trà thanh đào nóng thơm ngon, thanh mát.",
+      "stock": 28,
+      "isPopular": false
+    },
+    {
+      "id": 48,
+      "name": "Trà Thanh Đào Đá",
+      "category": "Trà",
+      "price": 55000,
+      "rating": 4.4,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/tra-thanh-dao.webp",
+      "description": "Trà thanh đào đá mát lạnh, thanh mát.",
+      "stock": 32,
+      "isPopular": true
+    },
+    {
+      "id": 49,
+      "name": "Trà Xanh Dâu Đỏ Nóng",
+      "category": "Trà",
+      "price": 55000,
+      "rating": 4.5,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/tra-xanh-dau-do-nong.webp",
+      "description": "Trà xanh dâu đỏ nóng thơm ngon, thanh mát.",
+      "stock": 25,
+      "isPopular": true
+    },
+    {
+      "id": 50,
+      "name": "Trà Xanh Dâu Đỏ Đá",
+      "category": "Trà",
+      "price": 55000,
+      "rating": 4.6,
+      "restaurant": "Highland Coffee",
+      "image": "/src/assets/img/gallery/tra-xanh-dau-do.webp",
+      "description": "Trà xanh dâu đỏ đá mát lạnh, thanh mát.",
+      "stock": 30,
+      "isPopular": true
+    },
+    {
+      "id": 51,
+      "name": "Bít Tết Thịt Bò",
+      "category": "Thịt Nướng",
+      "price": 180000,
+      "rating": 4.8,
+      "restaurant": "Red Square",
+      "image": "/src/assets/img/gallery/steak.png",
+      "description": "Bít tết thịt bò nướng thơm ngon, mềm mịn.",
+      "stock": 15,
+      "isPopular": true
+    },
+    {
+      "id": 52,
+      "name": "Sub Sandwich",
+      "category": "Sandwich",
+      "price": 65000,
+      "rating": 4.4,
+      "restaurant": "Subway",
+      "image": "/src/assets/img/gallery/sub-sandwich.png",
+      "description": "Sub sandwich với nhiều loại thịt và rau tươi.",
+      "stock": 35,
+      "isPopular": true
+    },
+    {
+      "id": 53,
+      "name": "Súp Thái",
+      "category": "Súp",
+      "price": 75000,
+      "rating": 4.5,
+      "restaurant": "Thai Express",
+      "image": "/src/assets/img/gallery/thai-soup.png",
+      "description": "Súp thái cay nóng, đậm đà hương vị.",
+      "stock": 20,
+      "isPopular": true
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "Cà Phê",
+      "image": "/src/assets/img/gallery/americano-nong.webp",
+      "description": "Các loại cà phê thơm ngon",
+      "productCount": 12
+    },
+    {
+      "id": 2,
+      "name": "Bánh Ngọt",
+      "image": "/src/assets/img/gallery/banh-tiramisu.webp",
+      "description": "Bánh ngọt và dessert",
+      "productCount": 8
+    },
+    {
+      "id": 3,
+      "name": "Burger",
+      "image": "/src/assets/img/gallery/burger.png",
+      "description": "Burger thơm ngon",
+      "productCount": 2
+    },
+    {
+      "id": 4,
+      "name": "Mì Noodles",
+      "image": "/src/assets/img/gallery/noodles.png",
+      "description": "Mì và noodles",
+      "productCount": 2
+    },
+    {
+      "id": 5,
+      "name": "Sandwich",
+      "image": "/src/assets/img/gallery/crispy-sandwiches.png",
+      "description": "Sandwich giòn tan",
+      "productCount": 3
+    },
+    {
+      "id": 6,
+      "name": "Đồ Uống Lạnh",
+      "image": "/src/assets/img/gallery/freeze-caramel.webp",
+      "description": "Đồ uống lạnh mát",
+      "productCount": 5
+    },
+    {
+      "id": 7,
+      "name": "Gà Rán",
+      "image": "/src/assets/img/gallery/fried-chicken.png",
+      "description": "Gà rán giòn tan",
+      "productCount": 1
+    },
+    {
+      "id": 8,
+      "name": "Pizza",
+      "image": "/src/assets/img/gallery/pizza.png",
+      "description": "Pizza thơm ngon",
+      "productCount": 1
+    },
+    {
+      "id": 9,
+      "name": "Trà",
+      "image": "/src/assets/img/gallery/tra-sen-vang.webp",
+      "description": "Trà thơm ngon",
+      "productCount": 10
+    },
+    {
+      "id": 10,
+      "name": "Thịt Nướng",
+      "image": "/src/assets/img/gallery/steak.png",
+      "description": "Thịt nướng thơm ngon",
+      "productCount": 1
+    },
+    {
+      "id": 11,
+      "name": "Súp",
+      "image": "/src/assets/img/gallery/thai-soup.png",
+      "description": "Súp nóng thơm ngon",
+      "productCount": 1
+    }
+  ],
+  "restaurants": [
+    {
+      "id": 1,
+      "name": "Highland Coffee",
+      "image": "/src/assets/img/gallery/highland-logo.png",
+      "rating": 4.6,
+      "deliveryTime": "15-20 phút",
+      "deliveryFee": 15000,
+      "categories": ["Cà Phê", "Trà", "Đồ Uống Lạnh"]
+    },
+    {
+      "id": 2,
+      "name": "Paris Baguette",
+      "image": "/src/assets/img/gallery/paris-baguette-logo.png",
+      "rating": 4.5,
+      "deliveryTime": "20-25 phút",
+      "deliveryFee": 20000,
+      "categories": ["Bánh Ngọt"]
+    },
+    {
+      "id": 3,
+      "name": "Burger King",
+      "image": "/src/assets/img/gallery/burger-king-logo.png",
+      "rating": 4.4,
+      "deliveryTime": "18-22 phút",
+      "deliveryFee": 18000,
+      "categories": ["Burger"]
+    },
+    {
+      "id": 4,
+      "name": "Phở Việt",
+      "image": "/src/assets/img/gallery/pho-viet-logo.png",
+      "rating": 4.7,
+      "deliveryTime": "12-18 phút",
+      "deliveryFee": 12000,
+      "categories": ["Mì Noodles"]
+    },
+    {
+      "id": 5,
+      "name": "Subway",
+      "image": "/src/assets/img/gallery/subway-logo.png",
+      "rating": 4.3,
+      "deliveryTime": "16-20 phút",
+      "deliveryFee": 16000,
+      "categories": ["Sandwich"]
+    },
+    {
+      "id": 6,
+      "name": "KFC",
+      "image": "/src/assets/img/gallery/kfc-logo.png",
+      "rating": 4.5,
+      "deliveryTime": "20-25 phút",
+      "deliveryFee": 20000,
+      "categories": ["Gà Rán"]
+    },
+    {
+      "id": 7,
+      "name": "Pizza Hut",
+      "image": "/src/assets/img/gallery/pizza-hut-logo.png",
+      "rating": 4.6,
+      "deliveryTime": "25-30 phút",
+      "deliveryFee": 25000,
+      "categories": ["Pizza"]
+    },
+    {
+      "id": 8,
+      "name": "Red Square",
+      "image": "/src/assets/img/gallery/red-square-logo.png",
+      "rating": 4.8,
+      "deliveryTime": "30-35 phút",
+      "deliveryFee": 30000,
+      "categories": ["Thịt Nướng"]
+    },
+    {
+      "id": 9,
+      "name": "Thai Express",
+      "image": "/src/assets/img/gallery/thai-express-logo.png",
+      "rating": 4.4,
+      "deliveryTime": "22-28 phút",
+      "deliveryFee": 22000,
+      "categories": ["Súp"]
+    }
+  ],
+  "discountItems": [
+    {
+      "id": 1,
+      "name": "Giảm 20% Cà Phê",
+      "image": "/src/assets/img/gallery/discount-item-1.png",
+      "discount": 20,
+      "daysRemaining": 5
+    },
+    {
+      "id": 2,
+      "name": "Giảm 15% Bánh Ngọt",
+      "image": "/src/assets/img/gallery/discount-item-2.png",
+      "discount": 15,
+      "daysRemaining": 3
+    },
+    {
+      "id": 3,
+      "name": "Giảm 25% Burger",
+      "image": "/src/assets/img/gallery/discount-item-3.png",
+      "discount": 25,
+      "daysRemaining": 7
+    },
+    {
+      "id": 4,
+      "name": "Giảm 30% Pizza",
+      "image": "/src/assets/img/gallery/discount-item-4.png",
+      "discount": 30,
+      "daysRemaining": 2
+    }
+  ]
+}

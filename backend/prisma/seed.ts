@@ -5,11 +5,11 @@ import { hashPassword } from '../src/utils/bcrypt';
 
 const prisma = new PrismaClient();
 
-// Đọc file JSON từ frontend
-const productsJsonPath = path.join(__dirname, '../../frontend/src/assets/products.json');
+// Đọc file JSON từ prisma/data (đã copy vào backend folder)
+const productsJsonPath = path.join(__dirname, 'data/products.json');
 const productsData = JSON.parse(fs.readFileSync(productsJsonPath, 'utf-8'));
 
-const ingredientsJsonPath = path.join(__dirname, '../../frontend/src/data/ingredients.json');
+const ingredientsJsonPath = path.join(__dirname, 'data/ingredients.json');
 const ingredientsData = JSON.parse(fs.readFileSync(ingredientsJsonPath, 'utf-8'));
 
 async function main() {
