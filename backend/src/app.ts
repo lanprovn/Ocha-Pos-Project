@@ -23,6 +23,9 @@ import reportingRoutes from './routes/reporting.routes';
 
 const app: Express = express();
 
+// Trust proxy (required for Railway and other reverse proxies)
+app.set('trust proxy', true);
+
 // Security middleware
 app.use(helmet());
 
