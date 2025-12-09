@@ -19,7 +19,7 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@ocha-pos/shared-types": ["../shared-types/src"]
+      "@ocha-pos/shared-types": ["../shared-types/dist"]
     }
   },
   "include": ["src/**/*"],

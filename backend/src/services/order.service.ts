@@ -131,6 +131,18 @@ export class OrderService {
 
       return this.transformOrder(order);
     }
+    } catch (error) {
+      logger.error('Error in createOrUpdateDraft', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        data: {
+          itemsCount: data.items?.length || 0,
+          orderCreator: data.orderCreator,
+          orderCreatorName: data.orderCreatorName,
+        },
+      });
+      throw error;
+    }
   }
 
   /**
