@@ -11,7 +11,11 @@ export default defineConfig({
   },
   preview: {
     port: Number(process.env.PORT) || 4173,
-    host: true
+    host: true,
+    allowedHosts: [
+      '.railway.app',
+      '.up.railway.app'
+    ]
   },
   resolve: {
     alias: {
