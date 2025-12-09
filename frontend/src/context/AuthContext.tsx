@@ -34,22 +34,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      // Verify token by getting user info
-      const userData = await authService.getMe();
+      // Get role context for this tab
+      const roleContext = authService.getRoleContext();
+      
+      // If no role context, check localStorage user but don't auto-set
       const savedUser = authService.getUser();
       
-      if (savedUser) {
+      if (savedUser && roleContext) {
+        // This tab has its own context
         setUser(savedUser);
-      } else if (userData) {
-        const userInfo = {
-          id: userData.id,
-          email: userData.email,
-          name: userData.name,
-          role: userData.role,
-        };
-        setUser(userInfo);
-        // Update localStorage
-        authService.saveAuth(token, userInfo);
+      } else {
+        // Verify token by getting user info
+        const userData = await authService.getMe();
+        if (userData) {
+          const userInfo = {
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            role: userData.role,
+          };
+          
+          // Only set if no role context exists (new tab, not from another tab)
+          if (!roleContext) {
+            setUser(userInfo);
+            authService.saveAuth(token, userInfo);
+          }
+        }
       }
     } catch (error) {
       // Token invalid, clear auth
@@ -73,8 +83,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error(`Bạn không có quyền đăng nhập với vai trò ${role === 'STAFF' ? 'Nhân viên' : 'Quản trị viên'}`);
       }
 
-      // Save auth
-      authService.saveAuth(response.token, response.user);
+      // Save auth with role context
+      authService.saveAuth(response.token, response.user, role);
       setUser(response.user);
 
       toast.success(`Đăng nhập thành công! Chào mừng ${response.user.name}`);

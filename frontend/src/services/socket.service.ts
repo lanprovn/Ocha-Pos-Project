@@ -61,7 +61,7 @@ export function subscribeToOrders(
   // Helper function to subscribe to orders room
   const subscribeToOrdersRoom = () => {
     if (socketInstance.connected) {
-      socketInstance.emit('subscribe_orders');
+    socketInstance.emit('subscribe_orders');
       console.log('📡 Subscribed to orders room');
     } else {
       console.warn('⚠️ Socket not connected, will subscribe when connected');

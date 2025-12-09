@@ -39,30 +39,52 @@ export const authService = {
 
   // Logout (just clear token)
   logout(): void {
+    // Clear both localStorage and sessionStorage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('roleContext'); // Role context for this tab
   },
 
   // Save token and user
-  saveAuth(token: string, user: LoginResponse['user']): void {
+  saveAuth(token: string, user: LoginResponse['user'], roleContext?: 'STAFF' | 'ADMIN'): void {
+    // Save to sessionStorage for this tab
+    sessionStorage.setItem('token', token);
+    sessionStorage.setItem('user', JSON.stringify(user));
+    if (roleContext) {
+      sessionStorage.setItem('roleContext', roleContext);
+    }
+    
+    // Also save to localStorage for API calls (shared across tabs)
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
   },
 
-  // Get token
+  // Get token (prefer sessionStorage, fallback to localStorage)
   getToken(): string | null {
-    return localStorage.getItem('token');
+    return sessionStorage.getItem('token') || localStorage.getItem('token');
   },
 
-  // Get user from localStorage
+  // Get user from sessionStorage (this tab's context)
   getUser(): LoginResponse['user'] | null {
-    const userStr = localStorage.getItem('user');
+    const userStr = sessionStorage.getItem('user');
     if (!userStr) return null;
     try {
       return JSON.parse(userStr);
     } catch {
       return null;
     }
+  },
+
+  // Get role context for this tab
+  getRoleContext(): 'STAFF' | 'ADMIN' | null {
+    return sessionStorage.getItem('roleContext') as 'STAFF' | 'ADMIN' | null;
+  },
+
+  // Set role context for this tab
+  setRoleContext(role: 'STAFF' | 'ADMIN'): void {
+    sessionStorage.setItem('roleContext', role);
   },
 
   // Check if authenticated

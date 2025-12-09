@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import { ROUTES } from '@constants';
+import { authService } from '@services/auth.service';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -34,17 +35,25 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
   }
 
+  // Get role context for this tab
+  const roleContext = authService.getRoleContext();
+
   // Check if route requires specific role
   if (requiredRole && user?.role !== requiredRole) {
-    // Redirect based on user role
-    if (user?.role === 'ADMIN') {
-      return <Navigate to={`${ROUTES.ADMIN_DASHBOARD}?tab=overview`} replace />;
+    // Only redirect if role context matches required role
+    // This prevents redirect when user from another tab is detected
+    if (roleContext === requiredRole) {
+      if (user?.role === 'ADMIN') {
+        return <Navigate to={`${ROUTES.ADMIN_DASHBOARD}?tab=overview`} replace />;
+      }
+      return <Navigate to={ROUTES.HOME} replace />;
     }
-    return <Navigate to={ROUTES.HOME} replace />;
+    // If role context doesn't match, redirect to login
+    return <Navigate to={ROUTES.LOGIN} replace />;
   }
 
-  // Block admin from accessing staff-only routes (POS, Checkout, Orders, Analytics)
-  if (!requiredRole && user?.role === 'ADMIN') {
+  // Block admin from accessing staff-only routes (only if role context is ADMIN)
+  if (!requiredRole && user?.role === 'ADMIN' && roleContext === 'ADMIN') {
     // These are staff-only routes, admin should not access them
     const staffOnlyRoutes = [
       ROUTES.HOME,
@@ -58,8 +67,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     }
   }
 
-  // Block staff from accessing admin-only routes
-  if (user?.role === 'STAFF' && location.pathname === ROUTES.ADMIN_DASHBOARD) {
+  // Block staff from accessing admin-only routes (only if role context is STAFF)
+  if (user?.role === 'STAFF' && roleContext === 'STAFF' && location.pathname === ROUTES.ADMIN_DASHBOARD) {
     return <Navigate to={ROUTES.HOME} replace />;
   }
 

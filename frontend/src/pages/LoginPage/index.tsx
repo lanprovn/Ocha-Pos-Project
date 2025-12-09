@@ -5,6 +5,7 @@ import { ROUTES } from '@constants';
 import toast from 'react-hot-toast';
 import PageWrapper from '@components/layout/PageWrapper';
 import PageContainer from '@components/layout/PageContainer';
+import { authService } from '@services/auth.service';
 
 const LoginPage: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<'STAFF' | 'ADMIN' | null>(null);
@@ -14,14 +15,20 @@ const LoginPage: React.FC = () => {
   const { login, isAuthenticated, user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated AND has role context
   useEffect(() => {
     if (!authLoading && isAuthenticated && user) {
-      if (user.role === 'ADMIN') {
-        navigate(`${ROUTES.ADMIN_DASHBOARD}?tab=overview`, { replace: true });
-      } else {
-        navigate(ROUTES.HOME, { replace: true });
+      const roleContext = authService.getRoleContext();
+      
+      // Only redirect if this tab has its own role context
+      if (roleContext) {
+        if (user.role === 'ADMIN' && roleContext === 'ADMIN') {
+          navigate(`${ROUTES.ADMIN_DASHBOARD}?tab=overview`, { replace: true });
+        } else if (user.role === 'STAFF' && roleContext === 'STAFF') {
+          navigate(ROUTES.HOME, { replace: true });
+        }
       }
+      // If no role context, stay on login page (user can choose role)
     }
   }, [isAuthenticated, user, authLoading, navigate]);
 

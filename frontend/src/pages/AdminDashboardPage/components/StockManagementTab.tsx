@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useIngredients } from '../../../context/IngredientContext';
 import StockAdjustModal from '../../../components/features/stock/StockAdjustModal';
@@ -26,7 +26,14 @@ const StockManagementTab: React.FC = () => {
     markAlertAsRead: markIngredientAlertAsRead,
   } = useIngredients();
   
-  const { categories: productCategories = [], loadProducts } = useProducts();
+  const { categories: productCategories = [], loadProducts, products } = useProducts();
+
+  // Load products on mount to ensure product names are available
+  useEffect(() => {
+    if (products.length === 0) {
+      loadProducts();
+    }
+  }, [products.length, loadProducts]);
 
   const categoryOptions = useMemo(
     () =>

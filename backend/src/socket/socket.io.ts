@@ -108,8 +108,8 @@ export function getIO(): SocketIOServer<
 export function emitOrderCreated(order: any): void {
   if (io) {
     try {
-      io.to('orders').emit('order_created', order);
-      io.to('dashboard').emit('dashboard_update', { type: 'order_created', order });
+    io.to('orders').emit('order_created', order);
+    io.to('dashboard').emit('dashboard_update', { type: 'order_created', order });
       logger.debug('Emitted order_created event', { orderId: order.id, orderNumber: order.orderNumber });
     } catch (error) {
       logger.error('Failed to emit order_created event', {
@@ -128,8 +128,8 @@ export function emitOrderCreated(order: any): void {
 export function emitOrderUpdated(order: any): void {
   if (io) {
     try {
-      io.to('orders').emit('order_updated', order);
-      io.to('dashboard').emit('dashboard_update', { type: 'order_updated', order });
+    io.to('orders').emit('order_updated', order);
+    io.to('dashboard').emit('dashboard_update', { type: 'order_updated', order });
       logger.debug('Emitted order_updated event', { orderId: order.id, orderNumber: order.orderNumber, status: order.status });
     } catch (error) {
       logger.error('Failed to emit order_updated event', {
