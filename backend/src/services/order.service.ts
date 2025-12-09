@@ -23,10 +23,11 @@ export class OrderService {
    * Tìm draft order theo orderCreator và orderCreatorName, nếu có thì update, không thì tạo mới
    */
   async createOrUpdateDraft(data: CreateOrderInput) {
-    // Calculate total amount from items
-    const totalAmount = data.items.reduce((sum, item) => {
-      return sum + item.subtotal;
-    }, 0);
+    try {
+      // Calculate total amount from items
+      const totalAmount = data.items.reduce((sum, item) => {
+        return sum + item.subtotal;
+      }, 0);
 
     // Tìm draft order đang tạo (status = CREATING) của cùng một người tạo
     const existingDraft = await prisma.order.findFirst({
@@ -180,7 +181,7 @@ export class OrderService {
             await prismaClient.stockTransaction.create({
               data: {
                 productId: item.productId,
-                type: 'SALE',
+                type: StockTransactionType.SALE,
                 quantity: item.quantity,
                 reason: `Tự động trừ từ đơn hàng ${order.orderNumber}`,
               },

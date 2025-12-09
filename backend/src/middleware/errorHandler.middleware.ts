@@ -63,13 +63,22 @@ export function errorHandler(
   }
 
   // Handle unknown errors
+  // Always log full error details for debugging
+  logger.error('Unhandled error', {
+    error: err.message,
+    stack: err.stack,
+    name: err.name,
+    path: req.path,
+    method: req.method,
+  });
+
   return res.status(500).json({
     error: 'Internal server error',
     errorCode: 'INTERNAL_ERROR',
-    ...(process.env.NODE_ENV === 'development' && { 
-      stack: err.stack,
+    ...(process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'production' ? { 
       message: err.message,
-    }),
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    } : {}),
   });
 }
 

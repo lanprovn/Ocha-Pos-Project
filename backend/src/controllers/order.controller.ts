@@ -78,6 +78,8 @@ export class OrderController {
       
       res.status(200).json(order);
     } catch (error) {
+      // Log error for debugging
+      console.error('Error in createOrUpdateDraft:', error);
       // Pass error to error handler middleware
       next(error);
     }
@@ -93,6 +95,8 @@ export class OrderController {
       
       res.status(201).json(order);
     } catch (error) {
+      // Log error for debugging
+      console.error('Error in create order:', error);
       // Pass error to error handler middleware
       next(error);
     }

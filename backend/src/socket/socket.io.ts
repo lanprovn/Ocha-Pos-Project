@@ -27,11 +27,12 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
     SocketData
   >(httpServer, {
     cors: {
-      origin: env.FRONTEND_URL || 'http://localhost:3000',
+      origin: env.FRONTEND_URL ? env.FRONTEND_URL.split(',').map(url => url.trim()) : 'http://localhost:3000',
       methods: ['GET', 'POST'],
       credentials: true,
     },
     transports: ['websocket', 'polling'],
+    allowEIO3: true, // Allow Engine.IO v3 clients
   });
 
   // Connection handling
