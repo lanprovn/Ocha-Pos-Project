@@ -1,12 +1,12 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
-  "$comment": "Root Directory is set to 'backend' on Railway. Build shared-types from ../shared-types",
+  "$comment": "CRITICAL: Railway Root Directory MUST be '.' (root) not 'backend'. This config assumes root deployment.",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd ../shared-types && npm install && npm run build && cd ../backend && npm install && npm run build"
+    "buildCommand": "cd shared-types && npm install && npm run build && cd ../backend && npm install && npm run build"
   },
   "deploy": {
-    "startCommand": "npm run prisma:generate && npx prisma migrate deploy && npm run prisma:seed && npm start",
+    "startCommand": "cd backend && npm run prisma:generate && npx prisma migrate deploy && npm run prisma:seed && npm start",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
