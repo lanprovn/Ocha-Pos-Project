@@ -14,17 +14,21 @@ export class UploadController {
         return;
       }
 
-      const filename = req.file.filename;
-      const fileUrl = uploadService.getFileUrl(filename);
-      const fullUrl = `${env.BACKEND_URL}${fileUrl}`;
+      const result = await uploadService.uploadImage(req.file);
+      
+      // For local storage, prefix with BACKEND_URL
+      const fullUrl = result.storage === 'cloudinary' 
+        ? result.fullUrl 
+        : `${env.BACKEND_URL}${result.url}`;
 
       res.status(201).json({
         message: 'Upload thành công',
-        filename,
-        url: fileUrl,
+        filename: result.filename,
+        url: result.url,
         fullUrl,
-        size: req.file.size,
-        mimetype: req.file.mimetype,
+        size: result.size,
+        mimetype: result.mimetype,
+        storage: result.storage,
       });
     } catch (error: any) {
       logger.error('Upload error', {
@@ -48,7 +52,8 @@ export class UploadController {
         return;
       }
 
-      await uploadService.deleteFile(filename);
+      // Try to delete - filename can be either local filename or Cloudinary URL
+      await uploadService.deleteImage(filename);
 
       res.json({ message: 'Xóa file thành công' });
     } catch (error: any) {
@@ -57,7 +62,7 @@ export class UploadController {
         stack: error instanceof Error ? error.stack : undefined,
         filename: req.params.filename,
       });
-      if (error.message === 'File không tồn tại') {
+      if (error.message === 'File không tồn tại' || error.message.includes('không tồn tại')) {
         res.status(404).json({ error: error.message });
       } else {
         res.status(500).json({ error: error.message || 'Lỗi khi xóa file' });
@@ -67,6 +72,8 @@ export class UploadController {
 
   /**
    * List all uploaded images
+   * Note: This only lists local storage files. Cloudinary images are not listed here.
+   * To list Cloudinary images, you would need to use Cloudinary Admin API.
    */
   async listImages(_req: Request, res: Response): Promise<void> {
     try {
@@ -75,9 +82,14 @@ export class UploadController {
         filename,
         url: uploadService.getFileUrl(filename),
         fullUrl: `${env.BACKEND_URL}${uploadService.getFileUrl(filename)}`,
+        storage: 'local' as const,
       }));
 
-      res.json({ images, count: images.length });
+      res.json({ 
+        images, 
+        count: images.length,
+        note: 'This endpoint only lists local storage files. Cloudinary images are managed separately.',
+      });
     } catch (error: any) {
       logger.error('List images error', {
         error: error instanceof Error ? error.message : String(error),

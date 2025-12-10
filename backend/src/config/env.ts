@@ -46,6 +46,10 @@ const envSchema = z.object({
   BANK_ACCOUNT_NUMBER: z.string().optional(),
   BANK_ACCOUNT_NAME: z.string().optional(),
   QR_TEMPLATE: z.enum(['print', 'compact2', 'compact', 'qr_only']).default('print'),
+  // Cloudinary Configuration (optional - fallback to local storage if not provided)
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
 });
 
 const env = envSchema.parse(process.env);
