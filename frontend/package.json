@@ -1,7 +1,7 @@
 {
   "name": "ocha-viet-pos",
   "description": "Modern Point of Sale (POS) system for Vietnamese cafes and restaurants",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "author": "Lan Pro <lanprovn@gmail.com>",
   "license": "MIT",
