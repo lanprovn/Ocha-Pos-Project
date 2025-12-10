@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { XMarkIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useRef } from 'react';
+import { XMarkIcon, PhotoIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import { useProducts } from '../../../hooks/useProducts';
+import uploadService from '../../../services/upload.service';
+import toast from 'react-hot-toast';
 import type { Product, Size, Topping } from '../../../types/product';
 
 interface ProductFormModalProps {
@@ -38,6 +40,8 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [tagInput, setTagInput] = useState('');
   const [sizeInput, setSizeInput] = useState({ name: '', extraPrice: '' });
   const [toppingInput, setToppingInput] = useState({ name: '', extraPrice: '' });
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (product && Array.isArray(categories) && categories.length > 0) {
@@ -155,6 +159,45 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     });
   };
 
+  const handleFileSelect = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Chỉ cho phép upload file hình ảnh (JPEG, PNG, WebP, GIF)');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Kích thước file không được vượt quá 5MB');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const result = await uploadService.uploadImage(file);
+      
+      // Auto-fill image URL with the uploaded image URL
+      setFormData({ ...formData, image: result.fullUrl });
+      toast.success('Upload hình ảnh thành công!');
+    } catch (error: any) {
+      toast.error(error.message || 'Lỗi khi upload hình ảnh');
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -167,10 +210,10 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
       
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
-        <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl max-h-[90vh] my-auto transform transition-all flex flex-col overflow-hidden">
-          <form onSubmit={handleSubmit} className="flex flex-col h-full">
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl max-h-[95vh] my-auto transform transition-all flex flex-col overflow-hidden">
+          <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[95vh]">
             {/* Header */}
-            <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-b">
+            <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-b flex-shrink-0">
               <h3 className="text-lg font-medium text-gray-900">
                 {product ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}
               </h3>
@@ -184,7 +227,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </div>
 
             {/* Body */}
-            <div className="bg-white px-6 py-4 flex-1 overflow-y-auto">
+            <div className="bg-white px-6 py-4 flex-1 overflow-y-auto min-h-0">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left Column */}
                 <div className="space-y-4">
@@ -248,23 +291,48 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
                   {/* Image URL */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">URL hình ảnh</label>
-                    <input
-                      type="url"
-                      value={formData.image}
-                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500"
-                    />
-                    {formData.image && (
-                      <img
-                        src={formData.image}
-                        alt="Preview"
-                        className="mt-2 h-32 w-32 object-cover rounded"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Hình ảnh sản phẩm
+                    </label>
+                    <div className="flex space-x-2">
+                      <input
+                        type="url"
+                        value={formData.image}
+                        onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                        placeholder="https://example.com/image.jpg hoặc upload từ máy tính"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500"
                       />
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleFileSelect}
+                        disabled={isUploading}
+                        className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                      >
+                        <ArrowUpTrayIcon className="w-5 h-5" />
+                        <span>{isUploading ? 'Đang upload...' : 'Upload'}</span>
+                      </button>
+                    </div>
+                    {formData.image && (
+                      <div className="mt-2">
+                        <img
+                          src={formData.image}
+                          alt="Preview"
+                          className="h-32 w-32 object-cover rounded border border-gray-300"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          {formData.image.includes('cloudinary.com') ? '✅ Cloudinary' : '📁 Local'}
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -462,7 +530,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </div>
 
             {/* Footer */}
-            <div className="bg-gray-50 px-6 py-4 flex items-center justify-end space-x-3 border-t">
+            <div className="bg-gray-50 px-6 py-4 flex items-center justify-end space-x-3 border-t flex-shrink-0">
               <button
                 type="button"
                 onClick={onClose}

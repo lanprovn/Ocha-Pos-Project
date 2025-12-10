@@ -51,6 +51,12 @@ export class UploadService {
     // Try Cloudinary first if configured
     if (cloudinaryService.isConfigured()) {
       try {
+        logger.info('📤 Uploading to Cloudinary...', {
+          filename: file.originalname,
+          size: file.size,
+          mimetype: file.mimetype,
+        });
+        
         const result = await cloudinaryService.uploadImage(
           file.buffer,
           'ocha-pos/products',
@@ -58,6 +64,11 @@ export class UploadService {
             public_id: `product-${Date.now()}-${uuidv4()}`,
           }
         );
+
+        logger.info('✅ Cloudinary upload successful', {
+          public_id: result.public_id,
+          url: result.secure_url,
+        });
 
         return {
           filename: result.public_id,
@@ -68,11 +79,14 @@ export class UploadService {
           storage: 'cloudinary',
         };
       } catch (error) {
-        logger.warn('Cloudinary upload failed, falling back to local storage', {
+        logger.warn('❌ Cloudinary upload failed, falling back to local storage', {
           error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
         });
         // Fall through to local storage
       }
+    } else {
+      logger.info('📁 Using local storage (Cloudinary not configured)');
     }
 
     // Fallback to local storage

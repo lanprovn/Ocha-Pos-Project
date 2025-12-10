@@ -69,14 +69,22 @@ const ProductTable: React.FC<ProductTableProps> = ({
               <tr key={product.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex-shrink-0 h-16 w-16">
-                    <img
-                      className="h-16 w-16 rounded-lg object-cover"
-                      src={product.image || '/placeholder-product.png'}
-                      alt={product.name}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder-product.png';
-                      }}
-                    />
+                    {product.image ? (
+                      <img
+                        className="h-16 w-16 rounded-lg object-cover border border-gray-200"
+                        src={product.image}
+                        alt={product.name}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/placeholder-product.png';
+                          target.onerror = null; // Prevent infinite loop
+                        }}
+                      />
+                    ) : (
+                      <div className="h-16 w-16 rounded-lg bg-gray-100 flex items-center justify-center">
+                        <PhotoIcon className="h-8 w-8 text-gray-400" />
+                      </div>
+                    )}
                   </div>
                 </td>
                 <td className="px-6 py-4">

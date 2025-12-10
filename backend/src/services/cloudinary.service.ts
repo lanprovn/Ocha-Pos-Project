@@ -11,9 +11,16 @@ if (env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SE
     api_secret: env.CLOUDINARY_API_SECRET,
     secure: true, // Use HTTPS
   });
-  logger.info('Cloudinary configured successfully');
+  logger.info('✅ Cloudinary configured successfully', {
+    cloud_name: env.CLOUDINARY_CLOUD_NAME,
+    api_key: env.CLOUDINARY_API_KEY.substring(0, 5) + '...', // Only log first 5 chars for security
+  });
 } else {
-  logger.warn('Cloudinary not configured - will use local storage');
+  logger.warn('⚠️ Cloudinary not configured - will use local storage', {
+    has_cloud_name: !!env.CLOUDINARY_CLOUD_NAME,
+    has_api_key: !!env.CLOUDINARY_API_KEY,
+    has_api_secret: !!env.CLOUDINARY_API_SECRET,
+  });
 }
 
 export interface CloudinaryUploadResult {

@@ -101,23 +101,48 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
 
         // Transform API products to match frontend format
         const backendBaseUrl = API_BASE_URL.replace('/api', '');
-        const transformedProducts: Product[] = apiProducts.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          price: p.price,
-          image: p.image || `${backendBaseUrl}/uploads/images/gallery/default-food.png`,
-          category: typeof p.category === 'string' ? p.category : p.category?.name || 'Unknown',
-          restaurant: p.restaurant || 'Ocha Viet',
-          rating: p.rating || 0,
-          description: p.description || '',
-          discount: p.discount || 0,
-          isAvailable: p.isAvailable !== false,
-          stock: p.stock || 0,
-          isPopular: p.isPopular || false,
-          tags: p.tags || [],
-          sizes: p.sizes || [],
-          toppings: p.toppings || [],
-        }));
+        const transformedProducts: Product[] = apiProducts.map((p: any) => {
+          // Handle image URL: if it's a full URL (Cloudinary or external), use it directly
+          // If it's a relative path (local storage), prefix with backend URL
+          // If it's localhost URL, replace with current backend URL (for production compatibility)
+          // If it's /src/assets path (from seed data), use as is (frontend will handle it)
+          let imageUrl = p.image || `${backendBaseUrl}/uploads/images/gallery/default-food.png`;
+          
+          if (p.image) {
+            if (p.image.startsWith('http://localhost:') || p.image.startsWith('https://localhost:')) {
+              // Replace localhost URL with current backend URL (for production)
+              const urlPath = p.image.replace(/^https?:\/\/localhost:\d+/, '');
+              imageUrl = `${backendBaseUrl}${urlPath}`;
+            } else if (p.image.startsWith('http') || p.image.startsWith('//') || p.image.startsWith('https')) {
+              // Full URL (Cloudinary or external) - use as is
+              imageUrl = p.image;
+            } else if (p.image.startsWith('/src/assets/') || p.image.startsWith('/img/')) {
+              // Frontend asset path (from seed data) - use as is, frontend will resolve it
+              imageUrl = p.image;
+            } else {
+              // Relative path (backend uploads) - prefix with backend URL
+              imageUrl = `${backendBaseUrl}${p.image.startsWith('/') ? '' : '/'}${p.image}`;
+            }
+          }
+          
+          return {
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            image: imageUrl,
+            category: typeof p.category === 'string' ? p.category : p.category?.name || 'Unknown',
+            restaurant: p.restaurant || 'Ocha Viet',
+            rating: p.rating || 0,
+            description: p.description || '',
+            discount: p.discount || 0,
+            isAvailable: p.isAvailable !== false,
+            stock: p.stock || 0,
+            isPopular: p.isPopular || false,
+            tags: p.tags || [],
+            sizes: p.sizes || [],
+            toppings: p.toppings || [],
+          };
+        });
 
         // Transform API categories
         const transformedCategories: Category[] = apiCategories.map((c: any) => ({

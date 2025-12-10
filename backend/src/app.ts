@@ -26,8 +26,21 @@ const app: Express = express();
 // Trust proxy (required for Railway and other reverse proxies)
 app.set('trust proxy', true);
 
-// Security middleware
-app.use(helmet());
+// Security middleware - configure Helmet to allow images
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow images to be loaded from different origins
+    crossOriginEmbedderPolicy: false, // Allow embedding images
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:', 'http:', 'https://res.cloudinary.com', 'https://*.cloudinary.com'],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+      },
+    },
+  })
+);
 
 // CORS
 app.use(
@@ -66,8 +79,15 @@ app.use((req, _res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (uploaded images)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Serve static files (uploaded images) - must be after CORS but before routes
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
+  setHeaders: (res) => {
+    // Allow cross-origin requests for images
+    res.setHeader('Access-Control-Allow-Origin', env.FRONTEND_URL);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  },
+}));
 
 // Swagger API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
