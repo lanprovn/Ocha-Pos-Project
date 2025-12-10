@@ -10,6 +10,8 @@ package-lock.json
 # Build output
 dist/
 build/
+# Exception: shared-types/dist is needed for Railway builds when root directory is backend/frontend
+!shared-types/dist/
 
 # Logs
 logs/
