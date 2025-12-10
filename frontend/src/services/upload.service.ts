@@ -7,7 +7,6 @@ export interface UploadImageResponse {
   fullUrl: string;
   size: number;
   mimetype: string;
-  storage?: 'cloudinary' | 'local';
 }
 
 export interface ListImagesResponse {

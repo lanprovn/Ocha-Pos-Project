@@ -23,9 +23,9 @@ import reportingRoutes from './routes/reporting.routes';
 
 const app: Express = express();
 
-// Trust proxy (required for Railway and other reverse proxies)
-// Use 1 instead of true to only trust first proxy hop (Railway)
-// This prevents rate limiting bypass while still working with Railway's proxy
+// Trust proxy (required for reverse proxies)
+// Use 1 instead of true to only trust first proxy hop
+// This prevents rate limiting bypass while still working with proxies
 app.set('trust proxy', 1);
 
 // Security middleware - configure Helmet to allow images
@@ -36,7 +36,7 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        imgSrc: ["'self'", 'data:', 'https:', 'http:', 'https://res.cloudinary.com', 'https://*.cloudinary.com'],
+        imgSrc: ["'self'", 'data:', 'https:', 'http:'],
         scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
       },
@@ -62,7 +62,7 @@ if (env.NODE_ENV === 'production') {
     message: 'Too many requests from this IP, please try again later.',
     // Skip rate limiting for health check endpoint
     skip: (req) => req.path === '/health' || req.path === '/api/health',
-    // Railway uses 1 proxy hop, so trust proxy: 1 is safe and prevents bypass
+    // Trust proxy: 1 is safe and prevents bypass
     // req.ip will correctly get the client IP from X-Forwarded-For header
   });
   app.use('/api/', limiter);

@@ -24,7 +24,6 @@ export function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> 
         reconnectionAttempts: Infinity, // Keep trying to reconnect
         timeout: 20000, // Connection timeout
         path: '/socket.io/',
-        // Railway-specific: prefer polling if websocket fails
         upgrade: true,
         rememberUpgrade: false,
       });

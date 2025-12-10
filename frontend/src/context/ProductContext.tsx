@@ -102,19 +102,19 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         // Transform API products to match frontend format
         const backendBaseUrl = API_BASE_URL.replace('/api', '');
         const transformedProducts: Product[] = apiProducts.map((p: any) => {
-          // Handle image URL: if it's a full URL (Cloudinary or external), use it directly
+          // Handle image URL: if it's a full URL (external), use it directly
           // If it's a relative path (local storage), prefix with backend URL
-          // If it's localhost URL, replace with current backend URL (for production compatibility)
+          // If it's localhost URL, replace with current backend URL
           // If it's /src/assets path (from seed data), use as is (frontend will handle it)
           let imageUrl = p.image || `${backendBaseUrl}/uploads/images/gallery/default-food.png`;
           
           if (p.image) {
             if (p.image.startsWith('http://localhost:') || p.image.startsWith('https://localhost:')) {
-              // Replace localhost URL with current backend URL (for production)
+              // Replace localhost URL with current backend URL
               const urlPath = p.image.replace(/^https?:\/\/localhost:\d+/, '');
               imageUrl = `${backendBaseUrl}${urlPath}`;
             } else if (p.image.startsWith('http') || p.image.startsWith('//') || p.image.startsWith('https')) {
-              // Full URL (Cloudinary or external) - use as is
+              // Full URL (external) - use as is
               imageUrl = p.image;
             } else if (p.image.startsWith('/src/assets/') || p.image.startsWith('/img/')) {
               // Frontend asset path (from seed data) - use as is, frontend will resolve it

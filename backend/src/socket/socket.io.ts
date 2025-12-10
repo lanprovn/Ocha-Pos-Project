@@ -40,10 +40,9 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
     },
     transports: ['websocket', 'polling'],
     allowEIO3: true, // Allow Engine.IO v3 clients
-    // Railway-specific configurations
     path: '/socket.io/',
     allowUpgrades: true, // Allow upgrade from HTTP to WebSocket
-    pingTimeout: 60000, // 60 seconds - Railway needs longer timeout
+    pingTimeout: 60000, // 60 seconds
     pingInterval: 25000, // 25 seconds - check connection every 25s
   });
 

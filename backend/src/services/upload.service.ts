@@ -3,17 +3,23 @@ import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import logger from '../utils/logger';
-import cloudinaryService from './cloudinary.service';
 
-// Đảm bảo thư mục uploads tồn tại (fallback cho local storage)
+// Đảm bảo thư mục uploads tồn tại
 const uploadsDir = path.join(__dirname, '../../uploads/images');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Cấu hình storage cho multer
-// Use memory storage to get buffer for Cloudinary, fallback to disk for local storage
-const storage = multer.memoryStorage();
+// Cấu hình storage cho multer - dùng disk storage cho local
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (_req, file, cb) => {
+    const filename = `${Date.now()}-${uuidv4()}${path.extname(file.originalname)}`;
+    cb(null, filename);
+  },
+});
 
 // Filter để chỉ cho phép upload hình ảnh
 const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
@@ -40,104 +46,36 @@ export interface UploadResult {
   fullUrl: string;
   size: number;
   mimetype: string;
-  storage: 'cloudinary' | 'local';
 }
 
 export class UploadService {
   /**
-   * Upload image - uses Cloudinary if configured, otherwise falls back to local storage
+   * Upload image - local storage only
    */
   async uploadImage(file: Express.Multer.File): Promise<UploadResult> {
-    // Try Cloudinary first if configured
-    if (cloudinaryService.isConfigured()) {
-      try {
-        logger.info('📤 Uploading to Cloudinary...', {
-          filename: file.originalname,
-          size: file.size,
-          mimetype: file.mimetype,
-        });
-        
-        const result = await cloudinaryService.uploadImage(
-          file.buffer,
-          'ocha-pos/products',
-          {
-            public_id: `product-${Date.now()}-${uuidv4()}`,
-          }
-        );
-
-        logger.info('✅ Cloudinary upload successful', {
-          public_id: result.public_id,
-          url: result.secure_url,
-        });
-
-        return {
-          filename: result.public_id,
-          url: result.secure_url,
-          fullUrl: result.secure_url,
-          size: result.bytes,
-          mimetype: file.mimetype,
-          storage: 'cloudinary',
-        };
-      } catch (error) {
-        logger.warn('❌ Cloudinary upload failed, falling back to local storage', {
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-        });
-        // Fall through to local storage
-      }
-    } else {
-      logger.info('📁 Using local storage (Cloudinary not configured)');
-    }
-
-    // Fallback to local storage
-    const filename = `${Date.now()}-${uuidv4()}${path.extname(file.originalname)}`;
-    const filePath = path.join(uploadsDir, filename);
-
-    return new Promise((resolve, reject) => {
-      fs.writeFile(filePath, file.buffer, (error) => {
-        if (error) {
-          reject(error);
-        } else {
-          const fileUrl = this.getFileUrl(filename);
-          resolve({
-            filename,
-            url: fileUrl,
-            fullUrl: fileUrl, // Will be prefixed with BACKEND_URL in controller
-            size: file.size,
-            mimetype: file.mimetype,
-            storage: 'local',
-          });
-        }
-      });
+    const filename = file.filename || `${Date.now()}-${uuidv4()}${path.extname(file.originalname)}`;
+    const fileUrl = this.getFileUrl(filename);
+    
+    logger.info('📁 Image uploaded to local storage', {
+      filename,
+      size: file.size,
+      mimetype: file.mimetype,
     });
+
+    return {
+      filename,
+      url: fileUrl,
+      fullUrl: fileUrl, // Will be prefixed with BACKEND_URL in controller
+      size: file.size,
+      mimetype: file.mimetype,
+    };
   }
 
   /**
-   * Delete image - handles both Cloudinary and local storage
+   * Delete image
    */
-  async deleteImage(urlOrFilename: string): Promise<void> {
-    // Check if it's a Cloudinary URL
-    if (cloudinaryService.isCloudinaryUrl(urlOrFilename)) {
-      if (cloudinaryService.isConfigured()) {
-        const publicId = cloudinaryService.extractPublicId(urlOrFilename);
-        if (publicId) {
-          try {
-            await cloudinaryService.deleteImage(publicId);
-            return;
-          } catch (error) {
-            logger.error('Failed to delete from Cloudinary', {
-              error: error instanceof Error ? error.message : String(error),
-              publicId,
-            });
-            throw error;
-          }
-        }
-      }
-      throw new Error('Cloudinary không được cấu hình hoặc URL không hợp lệ');
-    }
-
-    // Local storage deletion
-    const filePath = this.getFilePath(urlOrFilename);
+  async deleteImage(filename: string): Promise<void> {
+    const filePath = this.getFilePath(filename);
     if (!fs.existsSync(filePath)) {
       throw new Error('File không tồn tại');
     }
@@ -154,21 +92,21 @@ export class UploadService {
   }
 
   /**
-   * Get URL của file đã upload (local storage)
+   * Get URL của file đã upload
    */
   getFileUrl(filename: string): string {
     return `/uploads/images/${filename}`;
   }
 
   /**
-   * Get full path của file (local storage)
+   * Get full path của file
    */
   getFilePath(filename: string): string {
     return path.join(uploadsDir, filename);
   }
 
   /**
-   * Kiểm tra file có tồn tại không (local storage)
+   * Kiểm tra file có tồn tại không
    */
   fileExists(filename: string): boolean {
     const filePath = this.getFilePath(filename);
@@ -176,7 +114,7 @@ export class UploadService {
   }
 
   /**
-   * Lấy danh sách tất cả files trong uploads directory (local storage only)
+   * Lấy danh sách tất cả files trong uploads directory
    */
   listFiles(): string[] {
     try {
@@ -192,4 +130,3 @@ export class UploadService {
 }
 
 export default new UploadService();
-

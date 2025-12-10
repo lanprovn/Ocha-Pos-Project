@@ -187,9 +187,8 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
       // Auto-fill image URL with the uploaded image URL
       setFormData({ ...formData, image: result.fullUrl });
       
-      // Show success message with storage info
-      const storageInfo = result.storage === 'cloudinary' ? ' (Cloudinary)' : ' (Local)';
-      toast.success(`Upload hình ảnh thành công!${storageInfo}`);
+      // Show success message
+      toast.success('Upload hình ảnh thành công!');
     } catch (error: any) {
       // Better error handling
       let errorMessage = 'Lỗi khi upload hình ảnh';
@@ -356,7 +355,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                           }}
                         />
                         <p className="mt-1 text-xs text-gray-500">
-                          {formData.image.includes('cloudinary.com') ? '✅ Cloudinary' : '📁 Local'}
+                          📁 Local Storage
                         </p>
                       </div>
                     )}
