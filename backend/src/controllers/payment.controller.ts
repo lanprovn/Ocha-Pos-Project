@@ -4,6 +4,7 @@ import orderService from '../services/order.service';
 import { z } from 'zod';
 import logger from '../utils/logger';
 import { PaymentStatus, OrderStatus } from '@ocha-pos/shared-types';
+import env from '../config/env';
 
 const createPaymentSchema = z.object({
   body: z.object({
@@ -40,8 +41,9 @@ export class PaymentController {
         description: `Thanh toán đơn hàng ${order.orderNumber}`,
         customerName: order.customerName || undefined,
         customerPhone: order.customerPhone || undefined,
-        returnUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/callback?success=true`,
-        cancelUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/callback?success=false`,
+        returnUrl: `${env.FRONTEND_URL}/payment/callback?success=true`,
+        cancelUrl: `${env.FRONTEND_URL}/payment/callback?success=false`,
+        clientIp: req.ip || req.socket.remoteAddress || '127.0.0.1',
       };
 
       let paymentResponse;
@@ -103,16 +105,14 @@ export class PaymentController {
 
       if (!callback) {
         // Invalid signature - redirect về checkout với error
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-        return res.redirect(`${frontendUrl}/checkout?error=payment_verification_failed`);
+        return res.redirect(`${env.FRONTEND_URL}/checkout?error=payment_verification_failed`);
       }
 
       // Tìm order bằng orderNumber (từ callback.orderId)
       const order = await orderService.getByOrderNumber(callback.orderId);
 
       if (!order) {
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-        return res.redirect(`${frontendUrl}/checkout?error=order_not_found`);
+        return res.redirect(`${env.FRONTEND_URL}/checkout?error=order_not_found`);
       }
 
       // Cập nhật order status
@@ -128,10 +128,9 @@ export class PaymentController {
       }
 
       // Redirect về frontend
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const redirectUrl = callback.status === 'success'
-        ? `${frontendUrl}/order-success?orderId=${order.id}`
-        : `${frontendUrl}/checkout?error=payment_failed&orderId=${order.id}`;
+        ? `${env.FRONTEND_URL}/order-success?orderId=${order.id}`
+        : `${env.FRONTEND_URL}/checkout?error=payment_failed&orderId=${order.id}`;
 
       res.redirect(redirectUrl);
     } catch (error: any) {
@@ -141,8 +140,7 @@ export class PaymentController {
         paymentMethod: req.query.paymentMethod,
         queryParams: req.query,
       });
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-      res.redirect(`${frontendUrl}/checkout?error=payment_callback_error`);
+      res.redirect(`${env.FRONTEND_URL}/checkout?error=payment_callback_error`);
     }
   }
 }

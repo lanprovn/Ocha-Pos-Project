@@ -9,6 +9,7 @@ export interface PaymentRequest {
   customerPhone?: string;
   returnUrl: string;
   cancelUrl: string;
+  clientIp?: string;
 }
 
 export interface PaymentResponse {
@@ -30,7 +31,6 @@ export class PaymentService {
     tmnCode: process.env.VNPAY_TMN_CODE || '',
     secretKey: process.env.VNPAY_SECRET_KEY || '',
     url: process.env.VNPAY_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
-    returnUrl: process.env.VNPAY_RETURN_URL || 'http://localhost:3000/payment/callback',
   };
 
   /**
@@ -54,8 +54,8 @@ export class PaymentService {
       vnp_OrderInfo: request.description.substring(0, 255), // Max 255 chars
       vnp_OrderType: 'other',
       vnp_Locale: 'vn',
-      vnp_ReturnUrl: this.vnpayConfig.returnUrl,
-      vnp_IpAddr: '127.0.0.1',
+      vnp_ReturnUrl: request.returnUrl, // Use returnUrl from request instead of config
+      vnp_IpAddr: request.clientIp || '127.0.0.1', // Use client IP from request
       vnp_CreateDate: createDate,
       vnp_ExpireDate: expireDate,
     };

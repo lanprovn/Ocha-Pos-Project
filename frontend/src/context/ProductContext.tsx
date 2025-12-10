@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type { ProductContextType, Product, Restaurant, Category, DiscountItem } from '../types/product';
 import productsData from '../assets/products.json';
 import { productService, categoryService } from '../services/product.service';
+import API_BASE_URL from '../config/api';
 
 // Toggle này để chuyển đổi giữa mock data và API
 // Mặc định dùng API nếu VITE_USE_API không được set hoặc = 'true'
@@ -99,11 +100,12 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         }
 
         // Transform API products to match frontend format
+        const backendBaseUrl = API_BASE_URL.replace('/api', '');
         const transformedProducts: Product[] = apiProducts.map((p: any) => ({
           id: p.id,
           name: p.name,
           price: p.price,
-          image: p.image || 'http://localhost:8080/uploads/images/gallery/default-food.png',
+          image: p.image || `${backendBaseUrl}/uploads/images/gallery/default-food.png`,
           category: typeof p.category === 'string' ? p.category : p.category?.name || 'Unknown',
           restaurant: p.restaurant || 'Ocha Viet',
           rating: p.rating || 0,
