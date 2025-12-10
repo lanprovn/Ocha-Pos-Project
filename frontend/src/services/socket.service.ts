@@ -20,7 +20,13 @@ export function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> 
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionDelay: 1000,
-        reconnectionAttempts: 5,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: Infinity, // Keep trying to reconnect
+        timeout: 20000, // Connection timeout
+        path: '/socket.io/',
+        // Railway-specific: prefer polling if websocket fails
+        upgrade: true,
+        rememberUpgrade: false,
       });
 
       socket.on('connect', () => {

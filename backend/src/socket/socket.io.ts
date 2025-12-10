@@ -20,6 +20,13 @@ let io: SocketIOServer<
  * Initialize Socket.io server
  */
 export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
+  // Parse FRONTEND_URL - support both single URL and comma-separated URLs
+  let allowedOrigins: string | string[] = 'http://localhost:3000';
+  if (env.FRONTEND_URL) {
+    const urls = env.FRONTEND_URL.split(',').map(url => url.trim()).filter(Boolean);
+    allowedOrigins = urls.length === 1 ? urls[0] : urls;
+  }
+
   io = new SocketIOServer<
     ClientToServerEvents,
     ServerToClientEvents,
@@ -27,12 +34,26 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
     SocketData
   >(httpServer, {
     cors: {
-      origin: env.FRONTEND_URL ? env.FRONTEND_URL.split(',').map(url => url.trim()) : 'http://localhost:3000',
+      origin: allowedOrigins,
       methods: ['GET', 'POST'],
       credentials: true,
     },
     transports: ['websocket', 'polling'],
     allowEIO3: true, // Allow Engine.IO v3 clients
+    // Railway-specific configurations
+    path: '/socket.io/',
+    allowUpgrades: true, // Allow upgrade from HTTP to WebSocket
+    pingTimeout: 60000, // 60 seconds - Railway needs longer timeout
+    pingInterval: 25000, // 25 seconds - check connection every 25s
+  });
+
+  // Log Socket.io configuration
+  logger.info('Socket.io configuration', {
+    allowedOrigins: Array.isArray(allowedOrigins) ? allowedOrigins.join(', ') : allowedOrigins,
+    transports: ['websocket', 'polling'],
+    path: '/socket.io/',
+    pingTimeout: 60000,
+    pingInterval: 25000,
   });
 
   // Connection handling
