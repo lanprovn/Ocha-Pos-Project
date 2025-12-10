@@ -3,10 +3,10 @@
   "$comment": "IMPORTANT: Railway must deploy from ROOT of monorepo. Configure Root Directory in Railway Settings to '.' (root)",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd shared-types && npm install && npm run build && cd ../frontend && npm install && npm run build"
+    "buildCommand": "npm install && npm run build --workspace=shared-types && npm run build --workspace=frontend"
   },
   "deploy": {
-    "startCommand": "npm run preview",
+    "startCommand": "cd frontend && npm run preview",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }

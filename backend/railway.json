@@ -3,7 +3,7 @@
   "$comment": "IMPORTANT: Railway must deploy from ROOT of monorepo. Configure Root Directory in Railway Settings to '.' (root)",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd shared-types && npm install && npm run build && cd ../backend && npm install && npm run build"
+    "buildCommand": "npm install && npm run build --workspace=shared-types && npm run build --workspace=backend"
   },
   "deploy": {
     "startCommand": "cd backend && npm run prisma:generate && npx prisma migrate deploy && npm run prisma:seed && npm start",
