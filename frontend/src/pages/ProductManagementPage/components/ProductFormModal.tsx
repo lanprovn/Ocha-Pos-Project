@@ -186,9 +186,32 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
       
       // Auto-fill image URL with the uploaded image URL
       setFormData({ ...formData, image: result.fullUrl });
-      toast.success('Upload hình ảnh thành công!');
+      
+      // Show success message with storage info
+      const storageInfo = result.storage === 'cloudinary' ? ' (Cloudinary)' : ' (Local)';
+      toast.success(`Upload hình ảnh thành công!${storageInfo}`);
     } catch (error: any) {
-      toast.error(error.message || 'Lỗi khi upload hình ảnh');
+      // Better error handling
+      let errorMessage = 'Lỗi khi upload hình ảnh';
+      
+      // Error message từ axios interceptor đã được transform
+      if (error.message) {
+        const msg = error.message.toLowerCase();
+        if (msg.includes('đăng nhập') || msg.includes('unauthorized') || msg.includes('401')) {
+          errorMessage = 'Bạn cần đăng nhập để upload hình ảnh';
+        } else if (msg.includes('quyền') || msg.includes('forbidden') || msg.includes('403')) {
+          errorMessage = 'Bạn không có quyền upload hình ảnh';
+        } else if (msg.includes('không thể kết nối') || msg.includes('network')) {
+          errorMessage = 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.';
+        } else if (msg.includes('quá lớn') || msg.includes('413')) {
+          errorMessage = 'File quá lớn (tối đa 5MB)';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      console.error('Upload error:', error);
+      toast.error(errorMessage);
     } finally {
       setIsUploading(false);
       // Reset file input
