@@ -1,12 +1,12 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
-  "$comment": "IMPORTANT: Railway must deploy from ROOT of monorepo. Configure Root Directory in Railway Settings to '.' (root)",
+  "$comment": "Root Directory is set to 'frontend' on Railway. Build shared-types from ../shared-types",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "npm install && npm run build --workspace=shared-types && npm run build --workspace=frontend"
+    "buildCommand": "cd ../shared-types && npm install && npm run build && cd ../frontend && npm install && npm run build"
   },
   "deploy": {
-    "startCommand": "cd frontend && npm run preview -- --host 0.0.0.0 --port ${PORT:-4173}",
+    "startCommand": "npm run preview -- --host 0.0.0.0 --port ${PORT:-4173}",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
