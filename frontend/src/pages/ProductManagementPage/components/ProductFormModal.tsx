@@ -294,7 +294,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Hình ảnh sản phẩm
                     </label>
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-2 items-center">
                       <input
                         type="url"
                         value={formData.image}
@@ -308,14 +308,16 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                         onChange={handleFileUpload}
                         accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
                         className="hidden"
+                        aria-hidden="true"
                       />
                       <button
                         type="button"
                         onClick={handleFileSelect}
                         disabled={isUploading}
-                        className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                        className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 whitespace-nowrap flex-shrink-0"
+                        aria-label="Upload hình ảnh"
                       >
-                        <ArrowUpTrayIcon className="w-5 h-5" />
+                        <ArrowUpTrayIcon className="w-5 h-5 flex-shrink-0" />
                         <span>{isUploading ? 'Đang upload...' : 'Upload'}</span>
                       </button>
                     </div>
