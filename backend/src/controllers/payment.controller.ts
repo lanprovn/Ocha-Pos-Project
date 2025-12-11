@@ -3,7 +3,7 @@ import paymentService from '../services/payment.service';
 import orderService from '../services/order.service';
 import { z } from 'zod';
 import logger from '../utils/logger';
-import { PaymentStatus, OrderStatus } from '@ocha-pos/shared-types';
+import { PaymentStatus, OrderStatus } from '../types/common.types';
 import env from '../config/env';
 
 const createPaymentSchema = z.object({

@@ -337,8 +337,8 @@ const StockManagementTab: React.FC = () => {
       />
 
       {/* Tab Content */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-8">
-        <div className="p-6">
+      <div className="bg-white rounded-lg border border-slate-200">
+        <div className="p-5">
           {stockActiveTab === 'stocks' && (
             <StocksTab
               filteredStocks={filteredStocks}

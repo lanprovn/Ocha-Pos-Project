@@ -71,9 +71,6 @@
       ],
       "@constants": [
         "./src/constants/index.ts"
-      ],
-      "@ocha-pos/shared-types": [
-        "../shared-types/src"
       ]
     }
   },

@@ -3,7 +3,7 @@ import API_BASE_URL from '../config/api';
 import type {
   ServerToClientEvents,
   ClientToServerEvents,
-} from '@ocha-pos/shared-types';
+} from '../types/socket.types';
 
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 

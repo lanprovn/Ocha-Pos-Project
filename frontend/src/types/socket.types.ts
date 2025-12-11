@@ -1,13 +1,11 @@
 /**
- * Socket.io event types shared between Frontend and Backend
+ * Socket.io event types for Frontend
  */
-
-import { Order } from './order.types';
 
 // ===== Socket.io Event Types =====
 export interface ServerToClientEvents {
-  order_created: (order: Order) => void;
-  order_updated: (order: Order) => void;
+  order_created: (order: any) => void;
+  order_updated: (order: any) => void;
   order_status_changed: (data: { orderId: string; status: string }) => void;
   display_update: (data: any) => void;
   stock_alert: (alert: any) => void;
@@ -28,14 +26,5 @@ export interface ClientToServerEvents {
   subscribe_orders: () => void;
   subscribe_display: () => void;
   subscribe_dashboard: () => void;
-}
-
-export interface InterServerEvents {
-  ping: () => void;
-}
-
-export interface SocketData {
-  userId?: string;
-  userRole?: string;
 }
 

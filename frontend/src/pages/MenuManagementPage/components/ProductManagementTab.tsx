@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
-import { PlusIcon } from '@heroicons/react/24/outline';
 import { productService } from '../../../services/product.service';
 import { useProducts } from '../../../hooks/useProducts';
 import ProductFormModal from '../../ProductManagementPage/components/ProductFormModal';
@@ -130,10 +129,9 @@ const ProductManagementTab: React.FC = () => {
         </div>
         <button
           onClick={handleCreate}
-          className="ml-4 flex items-center space-x-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
+          className="ml-4 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all font-semibold shadow-sm hover:shadow-md text-sm"
         >
-          <PlusIcon className="w-5 h-5" />
-          <span>Thêm Sản Phẩm</span>
+          Thêm Sản Phẩm
         </button>
       </div>
 

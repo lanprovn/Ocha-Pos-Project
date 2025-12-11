@@ -34,7 +34,6 @@
     "test:coverage": "vitest --coverage"
   },
   "dependencies": {
-    "@ocha-pos/shared-types": "file:../shared-types",
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/postcss": "^4.1.14",

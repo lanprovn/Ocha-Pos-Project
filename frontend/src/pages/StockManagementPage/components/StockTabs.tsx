@@ -19,9 +19,9 @@ export const StockTabs: React.FC<StockTabsProps> = ({
   ingredientsCount
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-8">
+    <div className="bg-white rounded-lg border border-slate-200 mb-6">
       <div className="border-b border-slate-200">
-        <nav className="flex space-x-8 px-6 overflow-x-auto">
+        <nav className="flex space-x-6 px-5 overflow-x-auto">
           <button
             onClick={() => onTabChange('stocks')}
             className={`py-4 px-1 border-b-2 font-semibold text-sm whitespace-nowrap transition-colors ${

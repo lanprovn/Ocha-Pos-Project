@@ -11,16 +11,14 @@ export const StockAlertsCard: React.FC<StockAlertsCardProps> = ({ alerts, lowSto
   const unreadAlerts = alerts.filter((alert) => !alert.isRead).length;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 border-l-4 border-l-red-500">
-      <div>
-        <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Cảnh Báo Tồn Kho</p>
-        <p className="text-3xl font-bold text-slate-900 mb-1">
-          {unreadAlerts}
-        </p>
-        <p className="text-sm text-slate-600 mt-1 font-medium">
-          {outOfStockCount} hết hàng • {lowStockCount} cần nhập
-        </p>
-      </div>
+    <div className="bg-gradient-to-br from-red-50 to-rose-100/50 rounded-lg border-l-4 border-red-500 p-5 hover:shadow-md transition-shadow">
+      <p className="text-xs text-red-700 mb-3 font-medium uppercase tracking-wide">Cảnh Báo Tồn Kho</p>
+      <p className="text-2xl font-bold text-red-900 mb-1">
+        {unreadAlerts}
+      </p>
+      <p className="text-sm text-red-700 mt-1 font-medium">
+        {outOfStockCount} hết hàng • {lowStockCount} cần nhập
+      </p>
     </div>
   );
 };

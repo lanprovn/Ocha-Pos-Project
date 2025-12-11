@@ -16,8 +16,11 @@ export class UploadController {
 
       const result = await uploadService.uploadImage(req.file);
       
-      // Prefix with BACKEND_URL for full URL
-      const fullUrl = `${env.BACKEND_URL}${result.url}`;
+      // If result.url is already a full URL (Cloudinary), use it directly
+      // Otherwise, prefix with BACKEND_URL for local storage
+      const fullUrl = result.url.startsWith('http')
+        ? result.url
+        : `${env.BACKEND_URL}${result.url}`;
 
       res.status(201).json({
         message: 'Upload thành công',

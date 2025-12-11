@@ -25,7 +25,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
   outOfStockCount,
 }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       <RevenueCard dailySales={dailySales} yesterdaySales={yesterdaySales} stats={stats} />
       <OrdersCard stats={stats} />
       <AverageOrderCard stats={stats} />

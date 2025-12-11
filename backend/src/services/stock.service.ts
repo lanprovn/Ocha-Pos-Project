@@ -12,7 +12,7 @@ import {
 } from '../types/stock.types';
 import { emitStockUpdated, emitStockAlert } from '../socket/socket.io';
 import logger from '../utils/logger';
-import { StockAlertType } from '@ocha-pos/shared-types';
+import { StockAlertType } from '../types/common.types';
 
 export class StockService {
   // ========== Product Stock ==========

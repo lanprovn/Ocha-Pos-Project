@@ -5,8 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon src/server.ts",
-    "build": "tsc && tsc-alias -p tsconfig.json && node scripts/fix-shared-types-imports.js",
-    "build:shared": "cd ../shared-types && npm install && npm run build",
+    "build": "tsc && tsc-alias -p tsconfig.json",
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -18,7 +17,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:unit": "jest tests/unit",
-    "test:integration": "jest tests/integration"
+    "test:integration": "jest tests/integration",
+    "migrate:images": "ts-node --transpile-only scripts/migrate-images-to-cloudinary.ts"
   },
   "keywords": [
     "pos",
@@ -30,11 +30,11 @@
   "author": "Lan Pro <lanprovn@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@ocha-pos/shared-types": "file:../shared-types",
     "@prisma/client": "^5.0.0",
     "@types/multer": "^2.0.0",
     "axios": "^1.13.2",
     "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.8.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "dotenv": "^16.3.0",

@@ -56,9 +56,9 @@ const AnalyticsTab: React.FC = () => {
     <div>
       {/* Sub Tabs */}
       <div className="mb-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+        <div className="bg-white rounded-lg border border-slate-200">
           <div className="border-b border-slate-200">
-            <nav className="-mb-px flex space-x-8 px-6" aria-label="Sub Tabs">
+            <nav className="-mb-px flex space-x-6 px-5" aria-label="Sub Tabs">
               <button
                 onClick={() => setActiveSubTab('dashboard')}
                 className={`

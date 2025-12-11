@@ -1,15 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  CubeIcon,
-  Squares2X2Icon,
-  ChartBarIcon,
-  DocumentChartBarIcon,
-  ShoppingCartIcon,
-  CurrencyDollarIcon,
-  ExclamationTriangleIcon,
-  ArrowTrendingUpIcon,
-} from '@heroicons/react/24/outline';
 import { ROUTES } from '../../../constants';
 import { dashboardService, type DashboardStats } from '../../../services/dashboard.service';
 import { formatPrice } from '../../../utils/formatPrice';
@@ -114,41 +104,29 @@ const OverviewTab: React.FC = () => {
       id: 'orders',
       title: 'Quản Lý Đơn Hàng',
       description: 'Xem và quản lý tất cả đơn hàng',
-      icon: DocumentChartBarIcon,
-      color: 'bg-blue-500',
-      hoverColor: 'hover:bg-blue-600',
-      gradient: 'from-blue-500 to-blue-600',
       onClick: handleNavigateToOrders,
+      color: 'blue',
     },
     {
       id: 'menu',
       title: 'Quản Lý Menu',
       description: 'Quản lý sản phẩm và danh mục',
-      icon: CubeIcon,
-      color: 'bg-indigo-500',
-      hoverColor: 'hover:bg-indigo-600',
-      gradient: 'from-indigo-500 to-indigo-600',
       onClick: handleNavigateToMenu,
+      color: 'indigo',
     },
     {
       id: 'stock',
       title: 'Quản Lý Tồn Kho',
       description: 'Theo dõi và quản lý tồn kho sản phẩm',
-      icon: Squares2X2Icon,
-      color: 'bg-emerald-500',
-      hoverColor: 'hover:bg-emerald-600',
-      gradient: 'from-emerald-500 to-emerald-600',
       onClick: handleNavigateToStock,
+      color: 'emerald',
     },
     {
       id: 'analytics',
       title: 'Phân Tích & Báo Cáo',
       description: 'Xem báo cáo doanh thu và thống kê',
-      icon: ChartBarIcon,
-      color: 'bg-purple-500',
-      hoverColor: 'hover:bg-purple-600',
-      gradient: 'from-purple-500 to-purple-600',
       onClick: handleNavigateToAnalytics,
+      color: 'purple',
     },
   ], [handleNavigateToOrders, handleNavigateToMenu, handleNavigateToStock, handleNavigateToAnalytics]);
 
@@ -181,113 +159,86 @@ const OverviewTab: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Welcome Section */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-slate-900 mb-2 tracking-tight">Chào mừng đến Admin Dashboard</h2>
-          <p className="text-slate-600 font-medium">
-            Quản lý toàn bộ hệ thống từ một nơi • <span className="text-slate-500">{currentTime.toLocaleString('vi-VN')}</span>
+          <h2 className="text-2xl font-bold text-slate-900 mb-1">Tổng quan</h2>
+          <p className="text-sm text-slate-500">
+            {currentTime.toLocaleString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
           </p>
         </div>
         {isRefreshing && (
-          <div className="flex items-center space-x-2 text-sm text-slate-500 bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm">
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-blue-600"></div>
-            <span className="font-medium">Đang cập nhật...</span>
+          <div className="flex items-center space-x-2 text-sm text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+            <div className="animate-spin rounded-full h-3 w-3 border-2 border-slate-300 border-t-blue-600"></div>
+            <span>Đang cập nhật...</span>
           </div>
         )}
       </div>
 
       {/* Quick Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Tổng Sản Phẩm</p>
-              <p className="text-3xl font-bold text-slate-900 mb-1">
-                {stats?.overview.totalProducts.toLocaleString('vi-VN') || '0'}
-              </p>
-            </div>
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-3 shadow-sm group-hover:shadow-md transition-shadow">
-              <CubeIcon className="w-6 h-6 text-white" />
-            </div>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-lg border-l-4 border-blue-500 p-5 hover:shadow-md transition-shadow">
+          <p className="text-xs text-blue-700 mb-3 font-medium uppercase tracking-wide">Tổng Sản Phẩm</p>
+          <p className="text-2xl font-bold text-blue-900">
+            {stats?.overview.totalProducts.toLocaleString('vi-VN') || '0'}
+          </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Cảnh Báo Tồn Kho</p>
-              <p className="text-3xl font-bold text-slate-900 mb-1">
-                {(lowStockCount + outOfStockCount).toLocaleString('vi-VN')}
-              </p>
-              <p className="text-xs text-slate-500 mt-1 font-medium">
-                {lowStockCount} thấp • {outOfStockCount} hết
-              </p>
-            </div>
-            <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl p-3 shadow-sm group-hover:shadow-md transition-shadow">
-              <ExclamationTriangleIcon className="w-6 h-6 text-white" />
-            </div>
-          </div>
+        <div className="bg-gradient-to-br from-amber-50 to-orange-100/50 rounded-lg border-l-4 border-amber-500 p-5 hover:shadow-md transition-shadow">
+          <p className="text-xs text-amber-700 mb-3 font-medium uppercase tracking-wide">Cảnh Báo Tồn Kho</p>
+          <p className="text-2xl font-bold text-amber-900 mb-1">
+            {(lowStockCount + outOfStockCount).toLocaleString('vi-VN')}
+          </p>
+          <p className="text-xs text-amber-700 mt-2">
+            {lowStockCount} thấp • {outOfStockCount} hết
+          </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Doanh Thu Hôm Nay</p>
-              <p className="text-3xl font-bold text-slate-900 mb-1">
-                {stats?.overview.todayRevenue ? formatPrice(stats.overview.todayRevenue) : '0₫'}
-              </p>
-              <p className="text-xs text-slate-500 mt-1 font-medium">
-                {stats?.overview.todayOrders || 0} đơn hàng
-              </p>
-            </div>
-            <div className="bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl p-3 shadow-sm group-hover:shadow-md transition-shadow">
-              <CurrencyDollarIcon className="w-6 h-6 text-white" />
-            </div>
-          </div>
+        <div className="bg-gradient-to-br from-emerald-50 to-green-100/50 rounded-lg border-l-4 border-emerald-500 p-5 hover:shadow-md transition-shadow">
+          <p className="text-xs text-emerald-700 mb-3 font-medium uppercase tracking-wide">Doanh Thu Hôm Nay</p>
+          <p className="text-2xl font-bold text-emerald-900 mb-1">
+            {stats?.overview.todayRevenue ? formatPrice(stats.overview.todayRevenue) : '0₫'}
+          </p>
+          <p className="text-xs text-emerald-700 mt-2">
+            {stats?.overview.todayOrders || 0} đơn hàng
+          </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Tổng Doanh Thu</p>
-              <p className="text-3xl font-bold text-slate-900 mb-1">
-                {stats?.overview.totalRevenue ? formatPrice(stats.overview.totalRevenue) : '0₫'}
-              </p>
-              <p className="text-xs text-slate-500 mt-1 font-medium">
-                TB: {stats?.overview.averageOrderValue ? formatPrice(stats.overview.averageOrderValue) : '0₫'}/đơn
-              </p>
-            </div>
-            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-3 shadow-sm group-hover:shadow-md transition-shadow">
-              <ArrowTrendingUpIcon className="w-6 h-6 text-white" />
-            </div>
-          </div>
+        <div className="bg-gradient-to-br from-indigo-50 to-purple-100/50 rounded-lg border-l-4 border-indigo-500 p-5 hover:shadow-md transition-shadow">
+          <p className="text-xs text-indigo-700 mb-3 font-medium uppercase tracking-wide">Tổng Doanh Thu</p>
+          <p className="text-2xl font-bold text-indigo-900 mb-1">
+            {stats?.overview.totalRevenue ? formatPrice(stats.overview.totalRevenue) : '0₫'}
+          </p>
+          <p className="text-xs text-indigo-700 mt-2">
+            TB: {stats?.overview.averageOrderValue ? formatPrice(stats.overview.averageOrderValue) : '0₫'}/đơn
+          </p>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div>
-        <h3 className="text-xl font-bold text-slate-900 mb-6 tracking-tight">Chức Năng Quản Lý</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <h3 className="text-lg font-bold text-slate-900 mb-4">Chức Năng Quản Lý</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {adminFeatures.map((feature) => {
-            const Icon = feature.icon;
+            const colorClasses = {
+              blue: 'border-blue-300 hover:border-blue-400 hover:bg-blue-50 group-hover:text-blue-600',
+              indigo: 'border-indigo-300 hover:border-indigo-400 hover:bg-indigo-50 group-hover:text-indigo-600',
+              emerald: 'border-emerald-300 hover:border-emerald-400 hover:bg-emerald-50 group-hover:text-emerald-600',
+              purple: 'border-purple-300 hover:border-purple-400 hover:bg-purple-50 group-hover:text-purple-600',
+            };
             return (
               <button
                 key={feature.id}
                 onClick={feature.onClick}
-                className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-lg hover:border-slate-300 transition-all duration-200 text-left group relative overflow-hidden"
+                className={`bg-white rounded-lg border-2 ${colorClasses[feature.color as keyof typeof colorClasses]} p-5 hover:shadow-md transition-all text-left group`}
               >
-                <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${feature.gradient} opacity-3 group-hover:opacity-5 transition-opacity`} />
-                <div className={`bg-gradient-to-br ${feature.gradient} w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:scale-105 transition-transform shadow-sm`}>
-                  <Icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-base font-bold text-slate-900 mb-2 group-hover:text-slate-800 transition-colors">
+                <h3 className="text-base font-semibold text-slate-900 mb-1">
                   {feature.title}
                 </h3>
-                <p className="text-sm text-slate-600 font-medium">{feature.description}</p>
-                <div className="mt-4 flex items-center text-sm text-slate-400 group-hover:text-blue-600 transition-colors font-medium">
-                  <span>Truy cập</span>
+                <p className="text-sm text-slate-600 mb-3">{feature.description}</p>
+                <div className={`flex items-center text-sm text-slate-400 ${colorClasses[feature.color as keyof typeof colorClasses]} transition-colors font-medium`}>
+                  <span>Xem chi tiết</span>
                   <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -300,43 +251,55 @@ const OverviewTab: React.FC = () => {
 
       {/* Orders Status Summary */}
       {stats && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h3 className="text-lg font-bold text-slate-900 mb-5 tracking-tight">Trạng Thái Đơn Hàng</h3>
-            <div className="space-y-3">
-              {Object.entries(stats.ordersByStatus || {}).map(([status, count]) => (
-                <div key={status} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors">
-                  <span className="text-sm text-slate-600 capitalize font-medium">
-                    {status === 'CREATING' ? 'Đang tạo' :
-                     status === 'PENDING' ? 'Chờ xử lý' :
-                     status === 'CONFIRMED' ? 'Đã xác nhận' :
-                     status === 'PREPARING' ? 'Đang chuẩn bị' :
-                     status === 'READY' ? 'Sẵn sàng' :
-                     status === 'COMPLETED' ? 'Hoàn thành' :
-                     status === 'CANCELLED' ? 'Đã hủy' : status}
-                  </span>
-                  <span className="text-lg font-bold text-slate-900">{count}</span>
-                </div>
-              ))}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-white rounded-lg border border-slate-200 p-5">
+            <h3 className="text-base font-semibold text-slate-900 mb-4">Trạng Thái Đơn Hàng</h3>
+            <div className="space-y-2">
+              {Object.entries(stats.ordersByStatus || {}).map(([status, count]) => {
+                const statusConfig: Record<string, { label: string; bg: string; border: string; text: string }> = {
+                  CREATING: { label: 'Đang tạo', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700' },
+                  PENDING: { label: 'Chờ xử lý', bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700' },
+                  CONFIRMED: { label: 'Đã xác nhận', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
+                  PREPARING: { label: 'Đang chuẩn bị', bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700' },
+                  READY: { label: 'Sẵn sàng', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
+                  COMPLETED: { label: 'Hoàn thành', bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
+                  CANCELLED: { label: 'Đã hủy', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
+                };
+                const config = statusConfig[status] || { label: status, bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700' };
+                return (
+                  <div key={status} className={`flex items-center justify-between py-2.5 px-3 rounded border ${config.border} ${config.bg} hover:shadow-sm transition-all`}>
+                    <span className={`text-sm font-medium ${config.text}`}>
+                      {config.label}
+                    </span>
+                    <span className={`text-base font-bold ${config.text}`}>{count}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h3 className="text-lg font-bold text-slate-900 mb-5 tracking-tight">Phương Thức Thanh Toán</h3>
-            <div className="space-y-3">
-              {Object.entries(stats.paymentStats || {}).map(([method, data]) => (
-                <div key={method} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors">
-                  <span className="text-sm text-slate-600 capitalize font-medium">
-                    {method === 'cash' ? 'Tiền mặt' :
-                     method === 'card' ? 'Thẻ' :
-                     method === 'qr' ? 'QR Code' : method}
-                  </span>
-                  <div className="text-right">
-                    <span className="text-lg font-bold text-slate-900 block">{data.count} đơn</span>
-                    <span className="text-xs text-slate-500 font-medium">{formatPrice(data.revenue)}</span>
+          <div className="bg-white rounded-lg border border-slate-200 p-5">
+            <h3 className="text-base font-semibold text-slate-900 mb-4">Phương Thức Thanh Toán</h3>
+            <div className="space-y-2">
+              {Object.entries(stats.paymentStats || {}).map(([method, data]) => {
+                const methodConfig: Record<string, { label: string; bg: string; border: string; text: string }> = {
+                  cash: { label: 'Tiền mặt', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
+                  card: { label: 'Thẻ', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
+                  qr: { label: 'QR Code', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
+                };
+                const config = methodConfig[method] || { label: method, bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700' };
+                return (
+                  <div key={method} className={`flex items-center justify-between py-2.5 px-3 rounded border ${config.border} ${config.bg} hover:shadow-sm transition-all`}>
+                    <span className={`text-sm font-medium ${config.text}`}>
+                      {config.label}
+                    </span>
+                    <div className="text-right">
+                      <span className={`text-base font-bold block ${config.text}`}>{data.count} đơn</span>
+                      <span className={`text-xs ${config.text} opacity-75`}>{formatPrice(data.revenue)}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -344,31 +307,36 @@ const OverviewTab: React.FC = () => {
 
       {/* Top Products */}
       {stats && stats.topProducts && stats.topProducts.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-lg font-bold text-slate-900 mb-5 tracking-tight">Sản Phẩm Bán Chạy</h3>
-          <div className="space-y-3">
-            {stats.topProducts.slice(0, 5).map((product, index) => (
-              <div key={product.productId} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors border border-slate-100">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm shadow-sm ${
-                    index === 0 ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white' :
-                    index === 1 ? 'bg-gradient-to-br from-slate-400 to-slate-500 text-white' :
-                    index === 2 ? 'bg-gradient-to-br from-amber-300 to-amber-400 text-white' :
-                    'bg-slate-200 text-slate-600'
-                  }`}>
-                    #{index + 1}
+        <div className="bg-white rounded-lg border border-slate-200 p-5">
+          <h3 className="text-base font-semibold text-slate-900 mb-4">Sản Phẩm Bán Chạy</h3>
+          <div className="space-y-2">
+            {stats.topProducts.slice(0, 5).map((product, index) => {
+              const rankColors = [
+                { bg: 'bg-gradient-to-r from-amber-400 to-orange-500', text: 'text-white', border: 'border-amber-300' },
+                { bg: 'bg-gradient-to-r from-slate-400 to-slate-500', text: 'text-white', border: 'border-slate-300' },
+                { bg: 'bg-gradient-to-r from-amber-300 to-amber-400', text: 'text-white', border: 'border-amber-200' },
+                { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-200' },
+                { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-200' },
+              ];
+              const rankColor = rankColors[index] || rankColors[3];
+              return (
+                <div key={product.productId} className={`flex items-center justify-between py-2.5 px-3 rounded border ${rankColor.border} ${index < 3 ? 'bg-gradient-to-r from-slate-50 to-white' : 'bg-slate-50'} hover:shadow-sm transition-all`}>
+                  <div className="flex items-center space-x-3 flex-1">
+                    <span className={`text-xs font-bold ${rankColor.bg} ${rankColor.text} w-7 h-7 rounded-full flex items-center justify-center`}>
+                      #{index + 1}
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-900">{product.name}</p>
+                      <p className="text-xs text-slate-500">{product.category || 'Không có danh mục'}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">{product.name}</p>
-                    <p className="text-xs text-slate-500 font-medium">{product.category || 'Không có danh mục'}</p>
+                  <div className="text-right ml-4">
+                    <p className="text-sm font-semibold text-slate-900">{product.quantity} món</p>
+                    <p className="text-xs text-emerald-600 font-medium">{formatPrice(product.revenue)}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-slate-900">{product.quantity} món</p>
-                  <p className="text-xs text-slate-500 font-medium">{formatPrice(product.revenue)}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

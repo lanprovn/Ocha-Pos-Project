@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import orderService from '../services/order.service';
 import { emitOrderCreated, emitOrderUpdated, emitOrderStatusChanged } from '../socket/socket.io';
 import { z } from 'zod';
-import { OrderStatus, PaymentMethod, PaymentStatus, OrderCreator } from '@ocha-pos/shared-types';
+import { OrderStatus, PaymentMethod, PaymentStatus, OrderCreator } from '../types/common.types';
 
 // Schema for draft order - allows empty items array for real-time cart sync
 const createDraftOrderSchema = z.object({

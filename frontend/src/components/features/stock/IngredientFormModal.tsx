@@ -176,7 +176,7 @@ const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4 overflow-y-auto">
         <form
           onSubmit={handleSubmit}
-          className="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 w-full max-w-xl mx-auto border border-white/50 transform animate-scale-in space-y-4"
+          className="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl p-6 sm:p-8 lg:p-10 w-full max-w-5xl mx-auto border border-white/50 transform animate-scale-in space-y-5"
         >
           <div className="flex items-center justify-between">
             <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
@@ -206,7 +206,7 @@ const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
               name="name"
               value={formState.name}
               onChange={handleChange}
-              className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               placeholder="Ví dụ: Trân châu đen"
               required
             />
@@ -220,7 +220,7 @@ const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
               name="unit"
               value={formState.unit}
               onChange={handleChange}
-              className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             >
               {INGREDIENT_UNITS.map((unit) => (
                 <option key={unit} value={unit}>
@@ -230,7 +230,7 @@ const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
             </select>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700">
                 Số lượng ban đầu
@@ -241,7 +241,7 @@ const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
                 min="0"
                 value={formState.quantity}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 placeholder="Ví dụ: 1000"
               />
             </div>
@@ -255,7 +255,7 @@ const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
                 min="0"
                 value={formState.minStock}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 placeholder="Ví dụ: 100"
               />
             </div>
@@ -269,7 +269,7 @@ const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
                 min="0"
                 value={formState.maxStock}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 placeholder="Ví dụ: 5000"
               />
             </div>

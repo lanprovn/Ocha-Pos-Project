@@ -7,7 +7,7 @@ import type {
   ClientToServerEvents,
   InterServerEvents,
   SocketData,
-} from '@ocha-pos/shared-types';
+} from '../types/socket.types';
 
 let io: SocketIOServer<
   ClientToServerEvents,

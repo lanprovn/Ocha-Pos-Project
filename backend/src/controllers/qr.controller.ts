@@ -3,7 +3,7 @@ import qrService from '../services/qr.service';
 import orderService from '../services/order.service';
 import { z } from 'zod';
 import logger from '../utils/logger';
-import { PaymentStatus, OrderStatus } from '@ocha-pos/shared-types';
+import { PaymentStatus, OrderStatus } from '../types/common.types';
 
 const generateQRSchema = z.object({
   body: z.object({

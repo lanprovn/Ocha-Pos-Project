@@ -38,5 +38,8 @@
     "npm": ">=8.0.0"
   },
   "author": "Lan Pro <lanprovn@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "baseline-browser-mapping": "^2.9.6"
+  }
 }

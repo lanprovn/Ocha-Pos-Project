@@ -7,7 +7,7 @@ import stockService from './stock.service';
 import logger from '../utils/logger';
 import { InsufficientStockError, OrderNotFoundError } from '../errors';
 import { emitStockUpdated } from '../socket/socket.io';
-import { StockTransactionType } from '@ocha-pos/shared-types';
+import { StockTransactionType } from '../types/common.types';
 
 export class OrderService {
   /**

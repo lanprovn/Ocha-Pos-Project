@@ -1,5 +1,5 @@
 /**
- * Common types and enums shared between Frontend and Backend
+ * Common types and enums for Backend
  */
 
 // ===== Order Status =====

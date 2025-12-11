@@ -7,13 +7,7 @@ import OrderFilters from '../../OrderDisplayPage/components/OrderFilters';
 import { EmptyState } from '../../../components/common/ui/EmptyState';
 import { getStatusSections } from '../../OrderDisplayPage/utils/orderDisplayUtils';
 import { ROUTES } from '../../../constants';
-import {
-  DocumentChartBarIcon,
-  ArrowRightIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  CurrencyDollarIcon,
-} from '@heroicons/react/24/outline';
+import { formatPrice } from '../../../utils/formatPrice';
 
 const OrderManagementTab: React.FC = () => {
   const navigate = useNavigate();
@@ -63,89 +57,60 @@ const OrderManagementTab: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Tổng Đơn Hàng</p>
-              <p className="text-3xl font-bold text-slate-900 mb-1">{stats.totalOrders}</p>
-            </div>
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-3 shadow-sm group-hover:shadow-md transition-shadow">
-              <DocumentChartBarIcon className="w-6 h-6 text-white" />
-            </div>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-lg border-l-4 border-blue-500 p-5 hover:shadow-md transition-shadow">
+          <p className="text-xs text-blue-700 mb-3 font-medium uppercase tracking-wide">Tổng Đơn Hàng</p>
+          <p className="text-2xl font-bold text-blue-900">{stats.totalOrders}</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Chờ Xử Lý</p>
-              <p className="text-3xl font-bold text-slate-900 mb-1">{stats.pendingOrders}</p>
-            </div>
-            <div className="bg-gradient-to-br from-amber-500 to-yellow-500 rounded-xl p-3 shadow-sm group-hover:shadow-md transition-shadow">
-              <ClockIcon className="w-6 h-6 text-white" />
-            </div>
-          </div>
+        <div className="bg-gradient-to-br from-amber-50 to-yellow-100/50 rounded-lg border-l-4 border-amber-500 p-5 hover:shadow-md transition-shadow">
+          <p className="text-xs text-amber-700 mb-3 font-medium uppercase tracking-wide">Chờ Xử Lý</p>
+          <p className="text-2xl font-bold text-amber-900">{stats.pendingOrders}</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Đang Chuẩn Bị</p>
-              <p className="text-3xl font-bold text-slate-900 mb-1">{stats.preparingOrders}</p>
-            </div>
-            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-3 shadow-sm group-hover:shadow-md transition-shadow">
-              <CheckCircleIcon className="w-6 h-6 text-white" />
-            </div>
-          </div>
+        <div className="bg-gradient-to-br from-indigo-50 to-purple-100/50 rounded-lg border-l-4 border-indigo-500 p-5 hover:shadow-md transition-shadow">
+          <p className="text-xs text-indigo-700 mb-3 font-medium uppercase tracking-wide">Đang Chuẩn Bị</p>
+          <p className="text-2xl font-bold text-indigo-900">{stats.preparingOrders}</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Doanh Thu</p>
-              <p className="text-3xl font-bold text-slate-900 mb-1">
-                {new Intl.NumberFormat('vi-VN', {
-                  style: 'currency',
-                  currency: 'VND',
-                }).format(stats.totalRevenue)}
-              </p>
-            </div>
-            <div className="bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl p-3 shadow-sm group-hover:shadow-md transition-shadow">
-              <CurrencyDollarIcon className="w-6 h-6 text-white" />
-            </div>
-          </div>
+        <div className="bg-gradient-to-br from-emerald-50 to-green-100/50 rounded-lg border-l-4 border-emerald-500 p-5 hover:shadow-md transition-shadow">
+          <p className="text-xs text-emerald-700 mb-3 font-medium uppercase tracking-wide">Doanh Thu</p>
+          <p className="text-2xl font-bold text-emerald-900">
+            {formatPrice(stats.totalRevenue)}
+          </p>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm border border-blue-200 p-6">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-300 p-5">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-slate-900 mb-2 tracking-tight">
+            <h3 className="text-base font-semibold text-slate-900 mb-2">
               Trang Quản Lý Đơn Hàng Đầy Đủ
             </h3>
-            <p className="text-sm text-slate-600 mb-4 font-medium">
+            <p className="text-sm text-slate-600 mb-4">
               Mở trang quản lý đơn hàng với đầy đủ tính năng: xem tất cả đơn hàng, 
               cập nhật trạng thái, tìm kiếm và lọc đơn hàng theo nhiều tiêu chí.
             </p>
             <button
               onClick={handleOpenOrdersPage}
-              className="inline-flex items-center space-x-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 font-semibold shadow-sm hover:shadow-md text-sm"
+              className="inline-flex items-center space-x-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all font-semibold shadow-sm hover:shadow-md text-sm group"
             >
               <span>Mở Trang Đơn Hàng</span>
-              <ArrowRightIcon className="w-4 h-4" />
+              <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
         </div>
       </div>
 
       {/* Orders Display */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-        <div className="p-6 border-b border-slate-200">
+      <div className="bg-white rounded-lg border border-slate-200">
+        <div className="p-5 border-b border-slate-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-slate-900 tracking-tight">Đơn Hàng Hôm Nay</h3>
-            <div className="text-sm text-slate-500 font-medium">
+            <h3 className="text-base font-semibold text-slate-900">Đơn Hàng Hôm Nay</h3>
+            <div className="text-sm text-slate-500">
               {currentTime.toLocaleString('vi-VN', {
                 weekday: 'long',
                 year: 'numeric',
@@ -169,7 +134,7 @@ const OrderManagementTab: React.FC = () => {
         </div>
 
         {/* Orders List */}
-        <div className="p-6">
+        <div className="p-5">
           {filteredOrders.length === 0 ? (
             <EmptyState />
           ) : (

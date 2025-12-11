@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CubeIcon, TagIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import ProductManagementTab from '../../MenuManagementPage/components/ProductManagementTab';
 import CategoryManagementTab from '../../MenuManagementPage/components/CategoryManagementTab';
 import RecipeCheckTab from './RecipeCheckTab';
@@ -81,68 +80,36 @@ const MenuManagementTab: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Tổng Sản Phẩm</p>
-              <p className="text-3xl font-bold text-slate-900 mb-1">{stats.totalProducts}</p>
-            </div>
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-3 shadow-sm group-hover:shadow-md transition-shadow">
-              <CubeIcon className="w-6 h-6 text-white" />
-            </div>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-lg border-l-4 border-blue-500 p-5 hover:shadow-md transition-shadow">
+          <p className="text-xs text-blue-700 mb-3 font-medium uppercase tracking-wide">Tổng Sản Phẩm</p>
+          <p className="text-2xl font-bold text-blue-900">{stats.totalProducts}</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Đang Bán</p>
-              <p className="text-3xl font-bold text-slate-900 mb-1">{stats.availableProducts}</p>
-            </div>
-            <div className="bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl p-3 shadow-sm group-hover:shadow-md transition-shadow">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
+        <div className="bg-gradient-to-br from-emerald-50 to-green-100/50 rounded-lg border-l-4 border-emerald-500 p-5 hover:shadow-md transition-shadow">
+          <p className="text-xs text-emerald-700 mb-3 font-medium uppercase tracking-wide">Đang Bán</p>
+          <p className="text-2xl font-bold text-emerald-900">{stats.availableProducts}</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Ngừng Bán</p>
-              <p className="text-3xl font-bold text-slate-900 mb-1">{stats.unavailableProducts}</p>
-            </div>
-            <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-3 shadow-sm group-hover:shadow-md transition-shadow">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
+        <div className="bg-gradient-to-br from-red-50 to-rose-100/50 rounded-lg border-l-4 border-red-500 p-5 hover:shadow-md transition-shadow">
+          <p className="text-xs text-red-700 mb-3 font-medium uppercase tracking-wide">Ngừng Bán</p>
+          <p className="text-2xl font-bold text-red-900">{stats.unavailableProducts}</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Tổng Danh Mục</p>
-              <p className="text-3xl font-bold text-slate-900 mb-1">{stats.totalCategories}</p>
-            </div>
-            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-3 shadow-sm group-hover:shadow-md transition-shadow">
-              <TagIcon className="w-6 h-6 text-white" />
-            </div>
-          </div>
+        <div className="bg-gradient-to-br from-indigo-50 to-purple-100/50 rounded-lg border-l-4 border-indigo-500 p-5 hover:shadow-md transition-shadow">
+          <p className="text-xs text-indigo-700 mb-3 font-medium uppercase tracking-wide">Tổng Danh Mục</p>
+          <p className="text-2xl font-bold text-indigo-900">{stats.totalCategories}</p>
         </div>
       </div>
 
       {/* Sub Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-        <div className="border-b border-slate-200 px-6">
-          <nav className="-mb-px flex space-x-8" aria-label="Sub Tabs">
+      <div className="bg-white rounded-lg border border-slate-200">
+        <div className="border-b border-slate-200 px-5">
+          <nav className="-mb-px flex space-x-6" aria-label="Sub Tabs">
             <button
               onClick={() => setActiveSubTab('products')}
               className={`
-                whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-sm transition-colors flex items-center space-x-2
+                whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-sm transition-colors
                 ${
                   activeSubTab === 'products'
                     ? 'border-blue-600 text-blue-600'
@@ -150,13 +117,12 @@ const MenuManagementTab: React.FC = () => {
                 }
               `}
             >
-              <CubeIcon className="w-5 h-5" />
-              <span>Sản Phẩm ({stats.totalProducts})</span>
+              Sản Phẩm ({stats.totalProducts})
             </button>
             <button
               onClick={() => setActiveSubTab('categories')}
               className={`
-                whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-sm transition-colors flex items-center space-x-2
+                whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-sm transition-colors
                 ${
                   activeSubTab === 'categories'
                     ? 'border-blue-600 text-blue-600'
@@ -164,13 +130,12 @@ const MenuManagementTab: React.FC = () => {
                 }
               `}
             >
-              <TagIcon className="w-5 h-5" />
-              <span>Danh Mục ({stats.totalCategories})</span>
+              Danh Mục ({stats.totalCategories})
             </button>
             <button
               onClick={() => setActiveSubTab('recipes')}
               className={`
-                whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-sm transition-colors flex items-center space-x-2
+                whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-sm transition-colors
                 ${
                   activeSubTab === 'recipes'
                     ? 'border-blue-600 text-blue-600'
@@ -178,14 +143,13 @@ const MenuManagementTab: React.FC = () => {
                 }
               `}
             >
-              <DocumentTextIcon className="w-5 h-5" />
-              <span>Kiểm Tra Công Thức</span>
+              Kiểm Tra Công Thức
             </button>
           </nav>
         </div>
 
         {/* Sub Tab Content */}
-        <div className="p-6">
+        <div className="p-5">
           {activeSubTab === 'products' && <ProductManagementTab />}
           {activeSubTab === 'categories' && <CategoryManagementTab />}
           {activeSubTab === 'recipes' && <RecipeCheckTab />}

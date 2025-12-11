@@ -7,13 +7,11 @@ interface OrdersCardProps {
 
 export const OrdersCard: React.FC<OrdersCardProps> = ({ stats }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200">
-      <div>
-        <p className="text-sm text-slate-500 mb-2 font-medium uppercase tracking-wide">Tổng Đơn Hàng</p>
-        <p className="text-3xl font-bold text-slate-900 mb-1">
-          {stats?.overview.todayOrders ?? 0}
-        </p>
-      </div>
+    <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-lg border-l-4 border-blue-500 p-5 hover:shadow-md transition-shadow">
+      <p className="text-xs text-blue-700 mb-3 font-medium uppercase tracking-wide">Tổng Đơn Hàng</p>
+      <p className="text-2xl font-bold text-blue-900">
+        {stats?.overview.todayOrders ?? 0}
+      </p>
     </div>
   );
 };
