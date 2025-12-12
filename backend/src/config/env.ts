@@ -1,7 +1,16 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+// Load .env file với path rõ ràng để đảm bảo tìm thấy file
+// Thử load từ thư mục backend (nơi chạy server)
+const envPath = path.resolve(process.cwd(), '.env');
+const result = dotenv.config({ path: envPath });
+
+// Nếu không tìm thấy, thử load mặc định (dotenv sẽ tự tìm trong thư mục gốc)
+if (result.error) {
+  dotenv.config();
+}
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

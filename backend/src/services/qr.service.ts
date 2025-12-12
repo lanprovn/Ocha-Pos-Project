@@ -16,6 +16,13 @@ export interface QRPaymentData {
 
 export class QRService {
   /**
+   * Format số tiền theo định dạng đơn giản (ví dụ: 198000 -> "198000d")
+   */
+  private formatAmount(amount: number): string {
+    return Math.round(amount).toString() + 'd';
+  }
+
+  /**
    * Mapping mã ngân hàng sang mã NAPAS (dùng cho VietQR API)
    */
   private getNAPASCode(bankCode: string): string {
@@ -49,10 +56,17 @@ export class QRService {
     // Chuyển đổi mã ngân hàng sang mã NAPAS
     const napasCode = this.getNAPASCode(bankCode);
     
-    // Tạo nội dung chuyển khoản
-    let addInfo = orderNumber 
-      ? `${description} ${orderNumber}`.substring(0, 100)
-      : description.substring(0, 100);
+    // Tạo nội dung chuyển khoản với mã đơn hàng và giá tiền
+    let addInfo = description;
+    
+    // Thêm mã đơn hàng và giá tiền nếu có
+    if (orderNumber) {
+      const formattedAmount = this.formatAmount(amount);
+      addInfo = `${description} ${orderNumber} ${formattedAmount}`;
+    }
+    
+    // Giới hạn độ dài tối đa 100 ký tự
+    addInfo = addInfo.substring(0, 100);
     
     // Loại bỏ ký tự đặc biệt, chỉ giữ chữ, số, khoảng trắng
     addInfo = addInfo.replace(/[^\w\s]/g, '').trim();
@@ -61,7 +75,7 @@ export class QRService {
     const normalizedAccountName = accountName.replace(/\s+/g, '+').toUpperCase();
     
     // Tạo URL image từ VietQR API
-    // Format: https://img.vietqr.io/image/970415-0768562386-print.png?amount=100000&addInfo=Thanh+toan+don+hang+ORD001&accountName=LE+HOANG+NGOC+LAN
+    // Format: https://img.vietqr.io/image/970415-0768562386-print.png?amount=100000&addInfo=Thanh+toan+don+hang+ORD001+198000d&accountName=LE+HOANG+NGOC+LAN
     const qrImageUrl = `https://img.vietqr.io/image/${napasCode}-${accountNumber}-${template}.png?amount=${amount}&addInfo=${encodeURIComponent(addInfo)}&accountName=${normalizedAccountName}`;
     
     return qrImageUrl;
@@ -74,10 +88,17 @@ export class QRService {
   generateVietQR(data: QRPaymentData): string {
     const { bankCode, accountNumber, amount, description, orderNumber } = data;
     
-    // Tạo nội dung chuyển khoản
-    let addInfo = orderNumber 
-      ? `${description} ${orderNumber}`.substring(0, 100)
-      : description.substring(0, 100);
+    // Tạo nội dung chuyển khoản với mã đơn hàng và giá tiền
+    let addInfo = description;
+    
+    // Thêm mã đơn hàng và giá tiền nếu có
+    if (orderNumber) {
+      const formattedAmount = this.formatAmount(amount);
+      addInfo = `${description} ${orderNumber} ${formattedAmount}`;
+    }
+    
+    // Giới hạn độ dài tối đa 100 ký tự
+    addInfo = addInfo.substring(0, 100);
     
     // Loại bỏ ký tự đặc biệt không hợp lệ
     addInfo = addInfo.replace(/[^\w\s\-]/g, '');
@@ -96,7 +117,15 @@ export class QRService {
    */
   generateBankQR(data: QRPaymentData): string {
     const { accountNumber, amount, description, orderNumber } = data;
-    const content = orderNumber ? `${description} ${orderNumber}`.substring(0, 100) : description.substring(0, 100);
+    
+    // Tạo nội dung chuyển khoản với mã đơn hàng và giá tiền
+    let content = description;
+    if (orderNumber) {
+      const formattedAmount = this.formatAmount(amount);
+      content = `${description} ${orderNumber} ${formattedAmount}`;
+    }
+    
+    content = content.substring(0, 100);
     return `bank://transfer?account=${accountNumber}&amount=${amount}&content=${encodeURIComponent(content)}`;
   }
 
@@ -117,7 +146,7 @@ export class QRService {
       accountNumber: bankConfig.accountNumber,
       accountName: bankConfig.accountName,
       amount: Math.round(totalAmount),
-      description: `Thanh toan don hang ${orderNumber}`,
+      description: `Thanh toan don hang`, // Mã đơn hàng và giá tiền sẽ được thêm trong generateVietQRImage
       orderNumber,
     };
   }

@@ -44,10 +44,11 @@ app.use(
   })
 );
 
-// CORS
+// CORS - Support multiple frontend URLs (comma-separated)
+const allowedOrigins = env.FRONTEND_URL.split(',').map(url => url.trim()).filter(Boolean);
 app.use(
   cors({
-    origin: env.FRONTEND_URL,
+    origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
     credentials: true,
   })
 );

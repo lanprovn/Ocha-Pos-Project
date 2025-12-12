@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build output (sẽ được build trong Docker)
+dist/
+build/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Testing
+coverage/
+.nyc_output/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Temporary files
+*.tmp
+*.temp
+
+# Documentation (optional)
+*.md
+!README.md
+
+# Scripts không cần thiết
+*.bat
+*.ps1
+*.sh
+!scripts/*.ts
+
+# Test files
+test.http
+*.postman_collection.json
+

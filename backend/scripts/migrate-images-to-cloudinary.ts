@@ -15,7 +15,11 @@ interface UploadResult {
 /**
  * Upload image file to Cloudinary
  */
-async function uploadImageToCloudinary(filePath: string, productName: string): Promise<UploadResult> {
+async function uploadImageToCloudinary(
+  filePath: string, 
+  name: string, 
+  type: 'product' | 'category' = 'product'
+): Promise<UploadResult> {
   return new Promise((resolve, reject) => {
     // Read file
     const fileBuffer = fs.readFileSync(filePath);
@@ -25,8 +29,8 @@ async function uploadImageToCloudinary(filePath: string, productName: string): P
     bufferStream.push(fileBuffer);
     bufferStream.push(null);
 
-    // Generate a safe filename from product name
-    const safeProductName = productName
+    // Generate a safe filename from name
+    const safeName = name
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
@@ -35,11 +39,12 @@ async function uploadImageToCloudinary(filePath: string, productName: string): P
       .substring(0, 50);
 
     // Upload to Cloudinary
+    const folder = type === 'category' ? 'ocha-pos/categories' : 'ocha-pos/products';
     const uploadStream = cloudinary.uploader.upload_stream(
       {
-        folder: 'ocha-pos/products',
+        folder,
         resource_type: 'image',
-        public_id: `${safeProductName}-${Date.now()}`,
+        public_id: `${safeName}-${Date.now()}`,
         transformation: [
           { width: 800, height: 800, crop: 'limit', quality: 'auto' },
         ],
@@ -143,25 +148,40 @@ async function main() {
     },
   });
 
-  console.log(`📦 Tìm thấy ${products.length} products\n`);
+  // Get all categories
+  const categories = await prisma.category.findMany({
+    select: {
+      id: true,
+      name: true,
+      image: true,
+    },
+  });
 
-  let successCount = 0;
-  let skipCount = 0;
-  let errorCount = 0;
+  console.log(`📦 Tìm thấy ${products.length} products và ${categories.length} categories\n`);
 
+  let productSuccessCount = 0;
+  let productSkipCount = 0;
+  let productErrorCount = 0;
+
+  let categorySuccessCount = 0;
+  let categorySkipCount = 0;
+  let categoryErrorCount = 0;
+
+  // Migrate Products
+  console.log('🛍️  Bắt đầu migration hình ảnh Products...\n');
   for (const product of products) {
     try {
       // Skip if no image
       if (!product.image) {
-        console.log(`⏭️  [${product.name}] - Không có hình ảnh, bỏ qua`);
-        skipCount++;
+        console.log(`⏭️  [Product: ${product.name}] - Không có hình ảnh, bỏ qua`);
+        productSkipCount++;
         continue;
       }
 
       // Skip if already Cloudinary URL
       if (product.image.includes('cloudinary.com')) {
-        console.log(`⏭️  [${product.name}] - Đã có trên Cloudinary, bỏ qua`);
-        skipCount++;
+        console.log(`⏭️  [Product: ${product.name}] - Đã có trên Cloudinary, bỏ qua`);
+        productSkipCount++;
         continue;
       }
 
@@ -169,20 +189,20 @@ async function main() {
       const imagePath = resolveImagePath(product.image);
       
       if (!imagePath) {
-        console.log(`⚠️  [${product.name}] - Không tìm thấy file: ${product.image}`);
-        errorCount++;
+        console.log(`⚠️  [Product: ${product.name}] - Không tìm thấy file: ${product.image}`);
+        productErrorCount++;
         continue;
       }
 
       if (!fs.existsSync(imagePath)) {
-        console.log(`⚠️  [${product.name}] - File không tồn tại: ${imagePath}`);
-        errorCount++;
+        console.log(`⚠️  [Product: ${product.name}] - File không tồn tại: ${imagePath}`);
+        productErrorCount++;
         continue;
       }
 
       // Upload to Cloudinary
-      console.log(`📤 [${product.name}] - Đang upload...`);
-      const result = await uploadImageToCloudinary(imagePath, product.name);
+      console.log(`📤 [Product: ${product.name}] - Đang upload...`);
+      const result = await uploadImageToCloudinary(imagePath, product.name, 'product');
 
       // Update database
       await prisma.product.update({
@@ -190,23 +210,89 @@ async function main() {
         data: { image: result.url },
       });
 
-      console.log(`✅ [${product.name}] - Upload thành công: ${result.url}\n`);
-      successCount++;
+      console.log(`✅ [Product: ${product.name}] - Upload thành công: ${result.url}\n`);
+      productSuccessCount++;
 
       // Small delay to avoid rate limiting
       await new Promise(resolve => setTimeout(resolve, 500));
 
     } catch (error: any) {
-      console.error(`❌ [${product.name}] - Lỗi: ${error.message}\n`);
-      errorCount++;
+      console.error(`❌ [Product: ${product.name}] - Lỗi: ${error.message}\n`);
+      productErrorCount++;
     }
   }
 
-  console.log('\n📊 Kết quả migration:');
-  console.log(`   ✅ Thành công: ${successCount}`);
-  console.log(`   ⏭️  Bỏ qua: ${skipCount}`);
-  console.log(`   ❌ Lỗi: ${errorCount}`);
+  // Migrate Categories
+  console.log('\n📁 Bắt đầu migration hình ảnh Categories...\n');
+  for (const category of categories) {
+    try {
+      // Skip if no image
+      if (!category.image) {
+        console.log(`⏭️  [Category: ${category.name}] - Không có hình ảnh, bỏ qua`);
+        categorySkipCount++;
+        continue;
+      }
+
+      // Skip if already Cloudinary URL
+      if (category.image.includes('cloudinary.com')) {
+        console.log(`⏭️  [Category: ${category.name}] - Đã có trên Cloudinary, bỏ qua`);
+        categorySkipCount++;
+        continue;
+      }
+
+      // Resolve image path
+      const imagePath = resolveImagePath(category.image);
+      
+      if (!imagePath) {
+        console.log(`⚠️  [Category: ${category.name}] - Không tìm thấy file: ${category.image}`);
+        categoryErrorCount++;
+        continue;
+      }
+
+      if (!fs.existsSync(imagePath)) {
+        console.log(`⚠️  [Category: ${category.name}] - File không tồn tại: ${imagePath}`);
+        categoryErrorCount++;
+        continue;
+      }
+
+      // Upload to Cloudinary
+      console.log(`📤 [Category: ${category.name}] - Đang upload...`);
+      const result = await uploadImageToCloudinary(imagePath, category.name, 'category');
+
+      // Update database
+      await prisma.category.update({
+        where: { id: category.id },
+        data: { image: result.url },
+      });
+
+      console.log(`✅ [Category: ${category.name}] - Upload thành công: ${result.url}\n`);
+      categorySuccessCount++;
+
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+    } catch (error: any) {
+      console.error(`❌ [Category: ${category.name}] - Lỗi: ${error.message}\n`);
+      categoryErrorCount++;
+    }
+  }
+
+  console.log('\n📊 Kết quả migration Products:');
+  console.log(`   ✅ Thành công: ${productSuccessCount}`);
+  console.log(`   ⏭️  Bỏ qua: ${productSkipCount}`);
+  console.log(`   ❌ Lỗi: ${productErrorCount}`);
   console.log(`   📦 Tổng cộng: ${products.length}`);
+
+  console.log('\n📊 Kết quả migration Categories:');
+  console.log(`   ✅ Thành công: ${categorySuccessCount}`);
+  console.log(`   ⏭️  Bỏ qua: ${categorySkipCount}`);
+  console.log(`   ❌ Lỗi: ${categoryErrorCount}`);
+  console.log(`   📦 Tổng cộng: ${categories.length}`);
+
+  console.log('\n🎉 Migration hoàn tất!');
+  console.log(`   Tổng thành công: ${productSuccessCount + categorySuccessCount}`);
+  console.log(`   Tổng bỏ qua: ${productSkipCount + categorySkipCount}`);
+  console.log(`   Tổng lỗi: ${productErrorCount + categoryErrorCount}`);
 }
 
 main()

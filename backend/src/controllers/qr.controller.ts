@@ -38,7 +38,18 @@ export class QRController {
         accountName: process.env.BANK_ACCOUNT_NAME || 'OCHA POS',
       };
 
-      if (!bankConfig.accountNumber) {
+      // Debug logging để kiểm tra biến môi trường
+      logger.info('Bank config check', {
+        BANK_CODE: process.env.BANK_CODE,
+        BANK_ACCOUNT_NUMBER: process.env.BANK_ACCOUNT_NUMBER ? '***configured***' : 'NOT SET',
+        BANK_ACCOUNT_NAME: process.env.BANK_ACCOUNT_NAME,
+        accountNumberLength: bankConfig.accountNumber?.length || 0,
+      });
+
+      if (!bankConfig.accountNumber || bankConfig.accountNumber.trim() === '') {
+        logger.error('Bank account not configured', {
+          BANK_ACCOUNT_NUMBER: process.env.BANK_ACCOUNT_NUMBER || 'undefined',
+        });
         return res.status(500).json({ error: 'Bank account not configured' });
       }
 
