@@ -1,24 +1,19 @@
 # Backend Dockerfile
-# Railway sẽ build từ root project với Root Directory = backend
+# Railway sẽ build từ backend/ directory (Root Directory = backend)
 FROM node:18-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
 
-# Copy package files (từ root project)
+# Copy backend package files
 COPY package*.json ./
-COPY backend/package*.json ./backend/
-
-# Install root dependencies (nếu có)
-RUN if [ -f "package.json" ]; then npm ci --only=production --ignore-scripts; fi
 
 # Install backend dependencies
-WORKDIR /app/backend
 RUN npm ci --only=production && npm cache clean --force
 
 # Copy Prisma schema
-COPY backend/prisma ./prisma
+COPY prisma ./prisma
 
 # Generate Prisma Client
 RUN npx prisma generate
@@ -28,14 +23,12 @@ FROM base AS builder
 WORKDIR /app
 
 # Copy dependencies
-COPY --from=deps /app/backend/node_modules ./backend/node_modules
+COPY --from=deps /app/node_modules ./node_modules
 
 # Copy source code
-COPY backend ./backend
-COPY package*.json ./
+COPY . .
 
 # Build TypeScript
-WORKDIR /app/backend
 RUN npm run build
 
 # Production image
@@ -50,10 +43,10 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
 
 # Copy necessary files
-COPY --from=builder --chown=nodejs:nodejs /app/backend/dist ./dist
-COPY --from=builder --chown=nodejs:nodejs /app/backend/node_modules ./node_modules
-COPY --from=builder --chown=nodejs:nodejs /app/backend/package*.json ./
-COPY --from=builder --chown=nodejs:nodejs /app/backend/prisma ./prisma
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
+COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 
 # Create uploads directory
 RUN mkdir -p uploads/images && chown -R nodejs:nodejs uploads
@@ -68,4 +61,3 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
 
 # Start command - run migrations then start server
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
-
