@@ -79,6 +79,8 @@ export interface OrderFilters {
   endDate?: string;
   paymentMethod?: PaymentMethod | string;
   paymentStatus?: PaymentStatus | string;
+  page?: number;
+  limit?: number;
 }
 
 // ===== Order with Items (Internal) =====

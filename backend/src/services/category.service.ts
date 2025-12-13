@@ -1,8 +1,20 @@
 import prisma from '../config/database';
 import { CreateCategoryInput, UpdateCategoryInput } from '../types/product.types';
 
+// Simple in-memory cache for categories (TTL: 10 minutes - categories change less frequently)
+const categoryCache = new Map<string, { data: any; expires: number }>();
+const CATEGORY_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
 export class CategoryService {
   async getAll() {
+    const cacheKey = 'categories_all';
+    const cached = categoryCache.get(cacheKey);
+
+    // Check cache
+    if (cached && cached.expires > Date.now()) {
+      return cached.data;
+    }
+
     const categories = await prisma.category.findMany({
       include: {
         _count: {
@@ -16,10 +28,25 @@ export class CategoryService {
       },
     });
 
-    return categories.map((category) => ({
+    const result = categories.map((category) => ({
       ...category,
       productCount: category._count.products,
     }));
+
+    // Cache result
+    categoryCache.set(cacheKey, {
+      data: result,
+      expires: Date.now() + CATEGORY_CACHE_TTL,
+    });
+
+    return result;
+  }
+
+  /**
+   * Clear category cache (call after create/update/delete)
+   */
+  clearCache() {
+    categoryCache.clear();
   }
 
   async getById(id: string) {
@@ -51,9 +78,14 @@ export class CategoryService {
   }
 
   async create(data: CreateCategoryInput) {
-    return prisma.category.create({
+    const category = await prisma.category.create({
       data,
     });
+
+    // Clear cache after create
+    this.clearCache();
+
+    return category;
   }
 
   async update(id: string, data: UpdateCategoryInput) {
@@ -65,10 +97,15 @@ export class CategoryService {
       throw new Error('Category not found');
     }
 
-    return prisma.category.update({
+    const updated = await prisma.category.update({
       where: { id },
       data,
     });
+
+    // Clear cache after update
+    this.clearCache();
+
+    return updated;
   }
 
   async delete(id: string) {
@@ -83,6 +120,9 @@ export class CategoryService {
     await prisma.category.delete({
       where: { id },
     });
+
+    // Clear cache after delete
+    this.clearCache();
 
     return { message: 'Category deleted successfully' };
   }

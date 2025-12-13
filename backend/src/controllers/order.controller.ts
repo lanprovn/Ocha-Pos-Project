@@ -72,10 +72,10 @@ export class OrderController {
     try {
       const validated = createDraftOrderSchema.parse({ body: req.body });
       const order = await orderService.createOrUpdateDraft(validated.body);
-      
+
       // Emit Socket.io event for real-time updates
       emitOrderUpdated(order);
-      
+
       res.status(200).json(order);
     } catch (error) {
       // Log error for debugging
@@ -89,10 +89,10 @@ export class OrderController {
     try {
       const validated = createOrderSchema.parse({ body: req.body });
       const order = await orderService.create(validated.body);
-      
+
       // Emit Socket.io event for real-time updates
       emitOrderCreated(order);
-      
+
       res.status(201).json(order);
     } catch (error) {
       // Log error for debugging
@@ -110,10 +110,31 @@ export class OrderController {
         endDate: req.query.endDate as string | undefined,
         paymentMethod: req.query.paymentMethod as string | undefined,
         paymentStatus: req.query.paymentStatus as string | undefined,
+        page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
+        limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
       };
 
       const orders = await orderService.findAll(filters);
-      res.json(orders);
+
+      // Include pagination metadata if pagination is used
+      if (filters.page && filters.limit) {
+        const total = await orderService.getCount(filters);
+        const totalPages = Math.ceil(total / filters.limit);
+
+        res.json({
+          data: orders,
+          pagination: {
+            page: filters.page,
+            limit: filters.limit,
+            total,
+            totalPages,
+            hasNext: filters.page < totalPages,
+            hasPrev: filters.page > 1,
+          },
+        });
+      } else {
+        res.json(orders);
+      }
     } catch (error) {
       next(error);
     }
@@ -133,7 +154,7 @@ export class OrderController {
       const { date } = req.params;
       // Validate date format (YYYY-MM-DD)
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        res.status(400).json({ 
+        res.status(400).json({
           error: 'Invalid date format. Use YYYY-MM-DD',
           errorCode: 'VALIDATION_ERROR',
         });
@@ -164,12 +185,12 @@ export class OrderController {
         params: req.params,
       });
       const order = await orderService.updateStatus(validated.params.id, validated.body);
-      
+
       // Emit Socket.io events for real-time updates
       // Emit both order_updated (full order data) and order_status_changed (status only)
       emitOrderUpdated(order);
       emitOrderStatusChanged(order.id, order.status);
-      
+
       res.json(order);
     } catch (error) {
       // Pass error to error handler middleware

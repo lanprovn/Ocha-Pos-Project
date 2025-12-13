@@ -29,108 +29,108 @@ export class OrderService {
         return sum + item.subtotal;
       }, 0);
 
-    // Tìm draft order đang tạo (status = CREATING) của cùng một người tạo
-    const existingDraft = await prisma.order.findFirst({
-      where: {
-        status: 'CREATING',
-        orderCreator: data.orderCreator || 'STAFF',
-        orderCreatorName: data.orderCreatorName || null,
-      },
-      include: {
-        items: true,
-      },
-    });
-
-    if (existingDraft) {
-      // Update existing draft order
-      // Xóa items cũ và tạo items mới
-      await prisma.orderItem.deleteMany({
-        where: { orderId: existingDraft.id },
-      });
-
-      const updated = await prisma.order.update({
-        where: { id: existingDraft.id },
-        data: {
-          totalAmount: new Decimal(totalAmount),
-          customerName: data.customerName || null,
-          customerPhone: data.customerPhone || null,
-          customerTable: data.customerTable || null,
-          notes: data.notes || null,
-          items: {
-            create: data.items.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: new Decimal(item.price),
-              subtotal: new Decimal(item.subtotal),
-              selectedSize: item.selectedSize || null,
-              selectedToppings: item.selectedToppings || [],
-              note: item.note || null,
-            })),
-          },
-        },
-        include: {
-          items: {
-            include: {
-              product: true,
-            },
-          },
-        },
-      });
-
-      return this.transformOrder(updated);
-    } else {
-      // Create new draft order
-      let orderNumber = this.generateOrderNumber();
-      let attempts = 0;
-      
-      // Ensure unique order number
-      while (attempts < 10) {
-        const existing = await prisma.order.findUnique({
-          where: { orderNumber },
-        });
-        
-        if (!existing) break;
-        
-        orderNumber = this.generateOrderNumber();
-        attempts++;
-      }
-
-      const order = await prisma.order.create({
-        data: {
-          orderNumber,
+      // Tìm draft order đang tạo (status = CREATING) của cùng một người tạo
+      const existingDraft = await prisma.order.findFirst({
+        where: {
           status: 'CREATING',
-          totalAmount: new Decimal(totalAmount),
-          customerName: data.customerName || null,
-          customerPhone: data.customerPhone || null,
-          customerTable: data.customerTable || null,
-          notes: data.notes || null,
-          paymentMethod: null,
-          paymentStatus: 'PENDING',
           orderCreator: data.orderCreator || 'STAFF',
           orderCreatorName: data.orderCreatorName || null,
-          items: {
-            create: data.items.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: new Decimal(item.price),
-              subtotal: new Decimal(item.subtotal),
-              selectedSize: item.selectedSize || null,
-              selectedToppings: item.selectedToppings || [],
-              note: item.note || null,
-            })),
-          },
         },
         include: {
-          items: {
-            include: {
-              product: true,
-            },
-          },
+          items: true,
         },
       });
 
-      return this.transformOrder(order);
-    }
+      if (existingDraft) {
+        // Update existing draft order
+        // Xóa items cũ và tạo items mới
+        await prisma.orderItem.deleteMany({
+          where: { orderId: existingDraft.id },
+        });
+
+        const updated = await prisma.order.update({
+          where: { id: existingDraft.id },
+          data: {
+            totalAmount: new Decimal(totalAmount),
+            customerName: data.customerName || null,
+            customerPhone: data.customerPhone || null,
+            customerTable: data.customerTable || null,
+            notes: data.notes || null,
+            items: {
+              create: data.items.map((item) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                price: new Decimal(item.price),
+                subtotal: new Decimal(item.subtotal),
+                selectedSize: item.selectedSize || null,
+                selectedToppings: item.selectedToppings || [],
+                note: item.note || null,
+              })),
+            },
+          },
+          include: {
+            items: {
+              include: {
+                product: true,
+              },
+            },
+          },
+        });
+
+        return this.transformOrder(updated);
+      } else {
+        // Create new draft order
+        let orderNumber = this.generateOrderNumber();
+        let attempts = 0;
+
+        // Ensure unique order number
+        while (attempts < 10) {
+          const existing = await prisma.order.findUnique({
+            where: { orderNumber },
+          });
+
+          if (!existing) break;
+
+          orderNumber = this.generateOrderNumber();
+          attempts++;
+        }
+
+        const order = await prisma.order.create({
+          data: {
+            orderNumber,
+            status: 'CREATING',
+            totalAmount: new Decimal(totalAmount),
+            customerName: data.customerName || null,
+            customerPhone: data.customerPhone || null,
+            customerTable: data.customerTable || null,
+            notes: data.notes || null,
+            paymentMethod: null,
+            paymentStatus: 'PENDING',
+            orderCreator: data.orderCreator || 'STAFF',
+            orderCreatorName: data.orderCreatorName || null,
+            items: {
+              create: data.items.map((item) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                price: new Decimal(item.price),
+                subtotal: new Decimal(item.subtotal),
+                selectedSize: item.selectedSize || null,
+                selectedToppings: item.selectedToppings || [],
+                note: item.note || null,
+              })),
+            },
+          },
+          include: {
+            items: {
+              include: {
+                product: true,
+              },
+            },
+          },
+        });
+
+        return this.transformOrder(order);
+      }
     } catch (error) {
       logger.error('Error in createOrUpdateDraft', {
         error: error instanceof Error ? error.message : String(error),
@@ -173,12 +173,12 @@ export class OrderService {
    * @returns Array of stock updates để emit socket events và check alerts sau transaction commit
    */
   private async deductIngredientsFromOrder(
-    order: OrderWithItems, 
+    order: OrderWithItems,
     tx?: Prisma.TransactionClient
   ): Promise<Array<{ type: 'product' | 'ingredient'; id: string; productId?: string; ingredientId?: string; quantity: number }>> {
     const prismaClient = tx || prisma;
     const stockUpdates: Array<{ type: 'product' | 'ingredient'; id: string; productId?: string; ingredientId?: string; quantity: number }> = [];
-    
+
     try {
       if (!order.items || order.items.length === 0) {
         return stockUpdates;
@@ -247,26 +247,26 @@ export class OrderService {
 
       // 2. Trừ nguyên liệu theo recipe
       const productIds = order.items.map((item) => item.productId);
-      
+
       // Lấy tất cả recipes cho các sản phẩm này
       const recipes = await recipeService.getByProducts(productIds);
-      
+
       if (recipes.length === 0) {
         return stockUpdates; // Không có recipe, không cần trừ nguyên liệu
       }
 
       // Tính tổng nguyên liệu cần trừ (theo số lượng sản phẩm trong order)
       const ingredientDeductions: Record<string, number> = {};
-      
+
       order.items.forEach((item) => {
         const itemQuantity = item.quantity;
         const productRecipes = recipes.filter((r) => r.productId === item.productId);
-        
+
         productRecipes.forEach((recipe) => {
           const ingredientId = recipe.ingredientId;
           const recipeQuantity = parseFloat(recipe.quantity);
           const totalNeeded = recipeQuantity * itemQuantity;
-          
+
           if (!ingredientDeductions[ingredientId]) {
             ingredientDeductions[ingredientId] = 0;
           }
@@ -278,7 +278,7 @@ export class OrderService {
       for (const [ingredientId, totalQuantity] of Object.entries(ingredientDeductions)) {
         try {
           const quantityToDeduct = Math.ceil(totalQuantity);
-          
+
           if (tx) {
             // Trong transaction: tạo transaction record và update stock
             await prismaClient.stockTransaction.create({
@@ -364,7 +364,7 @@ export class OrderService {
         // Get current stock info sau khi đã update
         let stock: any;
         let oldQuantity: number | undefined;
-        
+
         if (update.type === 'product' && update.productId) {
           const stockData = await prisma.stock.findUnique({
             where: { id: update.id },
@@ -463,14 +463,14 @@ export class OrderService {
       // 4. Generate unique order number trong transaction
       let orderNumber = this.generateOrderNumber();
       let attempts = 0;
-      
+
       while (attempts < 10) {
         const existing = await tx.order.findUnique({
           where: { orderNumber },
         });
-        
+
         if (!existing) break;
-        
+
         orderNumber = this.generateOrderNumber();
         attempts++;
       }
@@ -521,7 +521,7 @@ export class OrderService {
   }
 
   /**
-   * Get all orders with filters
+   * Get all orders with filters and pagination
    */
   async findAll(filters?: OrderFilters) {
     const where: any = {};
@@ -550,21 +550,69 @@ export class OrderService {
       where.createdAt = { ...where.createdAt, lte: endDate };
     }
 
+    // Pagination
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 50; // Default 50 items per page
+    const skip = (page - 1) * limit;
+
+    // Optimize query - chỉ select fields cần thiết cho product
     const orders = await prisma.order.findMany({
       where,
       include: {
         items: {
           include: {
-            product: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+                price: true,
+              },
+            },
           },
         },
       },
       orderBy: {
         createdAt: 'desc',
       },
+      skip,
+      take: limit,
     });
 
     return orders.map((order) => this.transformOrder(order));
+  }
+
+  /**
+   * Get total count of orders matching filters (for pagination)
+   */
+  async getCount(filters?: OrderFilters): Promise<number> {
+    const where: any = {};
+
+    if (filters?.status) {
+      where.status = filters.status;
+    }
+
+    if (filters?.paymentMethod) {
+      where.paymentMethod = filters.paymentMethod;
+    }
+
+    if (filters?.paymentStatus) {
+      where.paymentStatus = filters.paymentStatus;
+    }
+
+    if (filters?.startDate) {
+      const startDate = new Date(filters.startDate);
+      startDate.setHours(0, 0, 0, 0);
+      where.createdAt = { ...where.createdAt, gte: startDate };
+    }
+
+    if (filters?.endDate) {
+      const endDate = new Date(filters.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      where.createdAt = { ...where.createdAt, lte: endDate };
+    }
+
+    return prisma.order.count({ where });
   }
 
   /**
@@ -576,7 +624,7 @@ export class OrderService {
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     // Thời gian 1 giờ trước (để filter draft orders cũ)
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
@@ -708,7 +756,7 @@ export class OrderService {
       // 1. Xóa draft orders của cùng orderCreator trong transaction
       // 2. Tự động trừ nguyên liệu theo recipe trong transaction
       let stockUpdates: Array<{ type: 'product' | 'ingredient'; id: string; productId?: string; ingredientId?: string; quantity: number }> = [];
-      
+
       if (data.status === 'COMPLETED') {
         if (order.orderCreator) {
           await tx.order.deleteMany({
@@ -719,7 +767,7 @@ export class OrderService {
             },
           });
         }
-        
+
         // Tự động trừ nguyên liệu theo recipe trong transaction
         // Lưu lại thông tin stock updates để emit events sau transaction commit
         stockUpdates = await this.deductIngredientsFromOrder(updated, tx);
@@ -735,7 +783,7 @@ export class OrderService {
       if (stockUpdates.length > 0) {
         await this.emitStockUpdatesAndCheckAlerts(stockUpdates);
       }
-      
+
       return order;
     });
   }

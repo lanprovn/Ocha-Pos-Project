@@ -1,6 +1,7 @@
 import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import swaggerUi from 'swagger-ui-express';
@@ -28,6 +29,18 @@ const app: Express = express();
 // This prevents rate limiting bypass while still working with proxies
 app.set('trust proxy', 1);
 
+// Compression middleware - giảm kích thước response để tăng tốc độ
+app.use(compression({
+  level: 6, // Compression level (0-9), 6 là cân bằng tốt giữa tốc độ và tỷ lệ nén
+  filter: (req, res) => {
+    // Không compress nếu client không hỗ trợ hoặc response đã được compress
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+}));
+
 // Security middleware - configure Helmet to allow images
 app.use(
   helmet({
@@ -51,17 +64,17 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, Postman, etc.)
       if (!origin) return callback(null, true);
-      
+
       // Check if origin is in allowed list
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      
+
       // In production, also allow Railway frontend domains as fallback
       if (env.NODE_ENV === 'production' && origin && origin.includes('railway.app')) {
         return callback(null, true);
       }
-      
+
       callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
@@ -200,7 +213,7 @@ app.use('/api/reporting', reportingRoutes);
 
 // 404 handler
 app.use((_req, res) => {
-  res.status(404).json({ 
+  res.status(404).json({
     error: 'Route not found',
     errorCode: 'NOT_FOUND',
   });

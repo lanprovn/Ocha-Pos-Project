@@ -55,11 +55,35 @@ const updateProductSchema = z.object({
 });
 
 export class ProductController {
-  async getAll(_req: Request, res: Response) {
+  async getAll(req: Request, res: Response) {
     try {
-      const products = await productService.getAll();
+      // Parse pagination params (optional - backward compatible)
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+      const includeAll = req.query.includeAll === 'true' || (!page && !limit);
+
+      const products = await productService.getAll(page, limit, includeAll);
       const transformed = products.map(transformProduct);
-      res.json(transformed);
+
+      // If pagination is used, include metadata
+      if (!includeAll && page && limit) {
+        const total = await productService.getCount();
+        const totalPages = Math.ceil(total / limit);
+
+        res.json({
+          data: transformed,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+          },
+        });
+      } else {
+        res.json(transformed);
+      }
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
