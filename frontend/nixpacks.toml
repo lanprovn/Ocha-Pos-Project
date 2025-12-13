@@ -1,0 +1,13 @@
+[phases.install]
+cmds = [
+  "cd frontend && npm install --omit=dev"
+]
+
+[phases.build]
+cmds = [
+  "cd frontend && npm run build"
+]
+
+[start]
+cmd = "cd frontend && npm run preview"
+
