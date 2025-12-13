@@ -24,17 +24,15 @@ export interface User {
   createdAt: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-
 export const authService = {
   // Login
   async login(data: LoginInput): Promise<LoginResponse> {
-    return apiClient.post<LoginResponse>(`${API_BASE_URL}/users/login`, data);
+    return apiClient.post<LoginResponse>('/users/login', data);
   },
 
   // Get current user
   async getMe(): Promise<User> {
-    return apiClient.get<User>(`${API_BASE_URL}/users/me`);
+    return apiClient.get<User>('/users/me');
   },
 
   // Logout (just clear token)
