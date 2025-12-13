@@ -1,5 +1,9 @@
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+// Use environment variable or fallback to production backend URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+  (import.meta.env.PROD 
+    ? 'https://ocha-pos-backend-production.up.railway.app/api' 
+    : 'http://localhost:8080/api');
 
 export const API_ENDPOINTS = {
   // Products
