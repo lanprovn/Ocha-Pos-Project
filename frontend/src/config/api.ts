@@ -26,8 +26,8 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
-// Debug log to verify API URL (only in browser)
-if (typeof window !== 'undefined') {
+// Debug log to verify API URL (only in development)
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
   console.log('🔗 API Base URL:', API_BASE_URL);
   console.log('🌐 Current hostname:', window.location.hostname);
   console.log('📦 VITE_API_BASE_URL env:', import.meta.env.VITE_API_BASE_URL);

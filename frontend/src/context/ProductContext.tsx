@@ -85,7 +85,9 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     try {
       if (USE_API) {
         // Load from API
-        console.log('Loading products from API...');
+        if (import.meta.env.DEV) {
+          console.log('Loading products from API...');
+        }
         let apiProducts, apiCategories;
         
         try {

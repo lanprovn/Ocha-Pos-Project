@@ -6,12 +6,34 @@ export class ProductService {
   async getAll() {
     return prisma.product.findMany({
       include: {
-        category: true,
-        sizes: true,
-        toppings: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+        sizes: {
+          select: {
+            id: true,
+            name: true,
+            extraPrice: true,
+          },
+        },
+        toppings: {
+          select: {
+            id: true,
+            name: true,
+            extraPrice: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
+      },
+      // Only load available products by default for better performance
+      where: {
+        isAvailable: true,
       },
     });
   }
