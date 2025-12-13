@@ -11,14 +11,14 @@ else
 fi
 
 echo "🔄 Running database migrations..."
-if npx prisma migrate deploy; then
+if NODE_ENV=production npx --yes prisma migrate deploy; then
   echo "✅ Migrations completed successfully"
 else
   echo "⚠️  Migration failed or already up to date, continuing..."
 fi
 
 echo "🔄 Generating Prisma Client..."
-if npx prisma generate; then
+if NODE_ENV=production npx --yes prisma generate; then
   echo "✅ Prisma Client generated successfully"
 else
   echo "❌ Failed to generate Prisma Client"
