@@ -1,4 +1,5 @@
 import apiClient from './api.service';
+import API_BASE_URL from '../config/api';
 
 export interface UploadImageResponse {
   message: string;
@@ -53,8 +54,8 @@ class UploadService {
    * Get image URL
    */
   getImageUrl(filename: string): string {
-    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-    const backendBase = baseURL.replace('/api', '');
+    // Use the same API_BASE_URL logic from api.ts to ensure consistency
+    const backendBase = API_BASE_URL.replace('/api', '');
     return `${backendBase}/uploads/images/${filename}`;
   }
 }

@@ -2,21 +2,25 @@
 // Use environment variable or fallback to production backend URL
 // In production (Railway), always use Railway backend URL
 const getApiBaseUrl = () => {
-  // Check if we're in production (Railway) by checking if we're not on localhost
-  const isProduction = typeof window !== 'undefined' && 
-    !window.location.hostname.includes('localhost') && 
-    !window.location.hostname.includes('127.0.0.1');
-  
+  // Priority 1: Use env var if explicitly set (for Railway build-time injection)
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
   }
   
-  // Production fallback
-  if (isProduction) {
-    return 'https://ocha-pos-backend-production.up.railway.app/api';
+  // Priority 2: Auto-detect production by checking hostname (runtime detection)
+  // This works even if VITE_API_BASE_URL wasn't set during build
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const isProduction = !hostname.includes('localhost') && 
+                        !hostname.includes('127.0.0.1') &&
+                        hostname.includes('railway.app');
+    
+    if (isProduction) {
+      return 'https://ocha-pos-backend-production.up.railway.app/api';
+    }
   }
   
-  // Development fallback
+  // Priority 3: Development fallback
   return 'http://localhost:8080/api';
 };
 
