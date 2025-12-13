@@ -1,6 +1,7 @@
 import prisma from '../config/database';
 import { comparePassword } from '../utils/bcrypt';
 import { generateToken } from '../utils/jwt';
+import { UnauthorizedError } from '../errors';
 
 export interface LoginInput {
   email: string;
@@ -28,17 +29,17 @@ export class UserService {
     });
 
     if (!user) {
-      throw new Error('Invalid email or password');
+      throw new UnauthorizedError('Invalid email or password');
     }
 
     if (!user.isActive) {
-      throw new Error('Account is deactivated');
+      throw new UnauthorizedError('Account is deactivated');
     }
 
     // Verify password
     const isPasswordValid = await comparePassword(data.password, user.password);
     if (!isPasswordValid) {
-      throw new Error('Invalid email or password');
+      throw new UnauthorizedError('Invalid email or password');
     }
 
     // Generate JWT token
