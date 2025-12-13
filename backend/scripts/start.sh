@@ -4,7 +4,7 @@ echo "📦 Environment check..."
 echo "PORT: ${PORT:-8080}"
 echo "NODE_ENV: ${NODE_ENV:-production}"
 if [ -n "$DATABASE_URL" ]; then
-  echo "DATABASE_URL: ${DATABASE_URL:0:30}..." # Show first 30 chars only
+  echo "DATABASE_URL: [SET]"
 else
   echo "❌ DATABASE_URL is not set!"
   exit 1
