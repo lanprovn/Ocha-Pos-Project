@@ -11,7 +11,8 @@ export default defineConfig({
   },
   preview: {
     port: Number(process.env.PORT) || 4173,
-    host: true
+    host: true,
+    allowedHosts: true  // Cho phép tất cả hosts cho production deployment
   },
   resolve: {
     alias: {
