@@ -7,7 +7,7 @@ RUN apk add --no-cache bash
 # Set working directory
 WORKDIR /app
 
-# Copy package files (works for both root and backend context)
+# Copy package files
 COPY package*.json ./
 
 # Install dependencies
