@@ -395,21 +395,6 @@ export class ReportingService {
     // ===== SHEET 6: CHI TIẾT ĐƠN HÀNG (Order Details) =====
     const ordersSheet = workbook.addWorksheet('Chi Tiết Đơn Hàng');
     
-    ordersSheet.addRow([
-      'Mã đơn',
-      'Ngày giờ',
-      'Khách hàng',
-      'SĐT',
-      'Bàn',
-      'Số món',
-      'Tổng tiền',
-      'Phương thức TT',
-      'Trạng thái',
-      'Người tạo',
-      'Ghi chú',
-    ]);
-    ordersSheet.getRow(1).font = { bold: true };
-    
     // Get detailed orders data
     const startDate = new Date(filters.startDate);
     startDate.setHours(0, 0, 0, 0);
@@ -434,35 +419,160 @@ export class ReportingService {
       },
     });
     
+    // Get all products map for quick lookup
+    const productIds = new Set<string>();
     orders.forEach((order) => {
-      ordersSheet.addRow([
-        order.orderNumber,
-        this.formatDateTime(order.createdAt),
-        order.customerName || 'Khách vãng lai',
-        order.customerPhone || '-',
-        order.customerTable || '-',
-        order.items.length,
-        parseFloat(order.totalAmount.toString()),
-        this.getPaymentMethodName(order.paymentMethod || 'CASH'),
-        this.getOrderStatusName(order.status),
-        order.orderCreatorName || (order.orderCreator === 'STAFF' ? 'Nhân viên' : 'Khách hàng'),
-        order.notes || '-',
-      ]);
+      order.items.forEach((item) => {
+        productIds.add(item.productId);
+      });
     });
     
-    // Style orders sheet
-    ordersSheet.getColumn(1).width = 15; // Mã đơn
-    ordersSheet.getColumn(2).width = 18; // Ngày giờ
-    ordersSheet.getColumn(3).width = 20; // Khách hàng
-    ordersSheet.getColumn(4).width = 12; // SĐT
-    ordersSheet.getColumn(5).width = 10; // Bàn
-    ordersSheet.getColumn(6).width = 10; // Số món
-    ordersSheet.getColumn(7).width = 15; // Tổng tiền
-    ordersSheet.getColumn(8).width = 15; // Phương thức TT
-    ordersSheet.getColumn(9).width = 15; // Trạng thái
-    ordersSheet.getColumn(10).width = 15; // Người tạo
-    ordersSheet.getColumn(11).width = 30; // Ghi chú
-    ordersSheet.getColumn(7).numFmt = '#,##0';
+    const products = await prisma.product.findMany({
+      where: {
+        id: { in: Array.from(productIds) },
+      },
+      include: {
+        category: true,
+      },
+    });
+    
+    const productMap = new Map(products.map((p) => [p.id, p]));
+    
+    let currentRow = 1;
+    
+    // Header for order summary
+    ordersSheet.mergeCells(`A${currentRow}:K${currentRow}`);
+    ordersSheet.getCell(`A${currentRow}`).value = 'CHI TIẾT ĐƠN HÀNG';
+    ordersSheet.getCell(`A${currentRow}`).font = { size: 14, bold: true };
+    ordersSheet.getCell(`A${currentRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+    currentRow++;
+    
+    // Empty row
+    currentRow++;
+    
+    // Process each order with detailed items
+    orders.forEach((order, orderIndex) => {
+      // Order header row
+      ordersSheet.mergeCells(`A${currentRow}:K${currentRow}`);
+      ordersSheet.getCell(`A${currentRow}`).value = `ĐƠN HÀNG #${orderIndex + 1}: ${order.orderNumber}`;
+      ordersSheet.getCell(`A${currentRow}`).font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+      ordersSheet.getCell(`A${currentRow}`).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF4472C4' },
+      };
+      ordersSheet.getCell(`A${currentRow}`).alignment = { horizontal: 'left', vertical: 'middle' };
+      currentRow++;
+      
+      // Order information
+      ordersSheet.addRow(['Mã đơn:', order.orderNumber, '', 'Ngày giờ:', this.formatDateTime(order.createdAt)]);
+      ordersSheet.addRow(['Khách hàng:', order.customerName || 'Khách vãng lai', '', 'SĐT:', order.customerPhone || '-']);
+      ordersSheet.addRow(['Bàn:', order.customerTable || '-', '', 'Phương thức TT:', this.getPaymentMethodName(order.paymentMethod || 'CASH')]);
+      ordersSheet.addRow(['Trạng thái:', this.getOrderStatusName(order.status), '', 'Người tạo:', order.orderCreatorName || (order.orderCreator === 'STAFF' ? 'Nhân viên' : 'Khách hàng')]);
+      if (order.notes) {
+        ordersSheet.addRow(['Ghi chú:', order.notes]);
+      }
+      
+      // Style order info rows
+      for (let i = 0; i < 5; i++) {
+        const row = ordersSheet.getRow(currentRow + i);
+        row.getCell(1).font = { bold: true };
+        row.getCell(4).font = { bold: true };
+      }
+      currentRow += 5;
+      
+      // Empty row
+      currentRow++;
+      
+      // Items header
+      ordersSheet.addRow([
+        'STT',
+        'Tên sản phẩm',
+        'Danh mục',
+        'Size',
+        'Topping',
+        'Số lượng',
+        'Đơn giá',
+        'Thành tiền',
+        'Ghi chú',
+      ]);
+      const itemsHeaderRow = ordersSheet.getRow(currentRow);
+      itemsHeaderRow.font = { bold: true };
+      itemsHeaderRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE7E6E6' },
+      };
+      currentRow++;
+      
+      // Order items
+      order.items.forEach((item, itemIndex) => {
+        const product = productMap.get(item.productId);
+        ordersSheet.addRow([
+          itemIndex + 1,
+          product?.name || 'Unknown',
+          product?.category?.name || '-',
+          item.selectedSize || '-',
+          item.selectedToppings.length > 0 ? item.selectedToppings.join(', ') : '-',
+          item.quantity,
+          parseFloat(item.price.toString()),
+          parseFloat(item.subtotal.toString()),
+          item.note || '-',
+        ]);
+        
+        // Style item row
+        const itemRow = ordersSheet.getRow(currentRow);
+        itemRow.getCell(7).numFmt = '#,##0'; // Đơn giá
+        itemRow.getCell(8).numFmt = '#,##0'; // Thành tiền
+        
+        // Alternate row colors for better readability
+        if (itemIndex % 2 === 0) {
+          itemRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF9F9F9' },
+          };
+        }
+        
+        currentRow++;
+      });
+      
+      // Order total row
+      ordersSheet.mergeCells(`A${currentRow}:E${currentRow}`);
+      ordersSheet.getCell(`A${currentRow}`).value = 'TỔNG CỘNG ĐƠN HÀNG:';
+      ordersSheet.getCell(`A${currentRow}`).font = { bold: true };
+      ordersSheet.getCell(`A${currentRow}`).alignment = { horizontal: 'right' };
+      ordersSheet.getCell(`F${currentRow}`).value = order.items.reduce((sum, item) => sum + item.quantity, 0);
+      ordersSheet.getCell(`F${currentRow}`).font = { bold: true };
+      ordersSheet.getCell(`G${currentRow}`).value = '-';
+      ordersSheet.getCell(`H${currentRow}`).value = parseFloat(order.totalAmount.toString());
+      ordersSheet.getCell(`H${currentRow}`).font = { bold: true };
+      ordersSheet.getCell(`H${currentRow}`).numFmt = '#,##0';
+      ordersSheet.getCell(`I${currentRow}`).value = '-';
+      
+      // Style total row
+      const totalRow = ordersSheet.getRow(currentRow);
+      totalRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFFE699' },
+      };
+      currentRow++;
+      
+      // Empty row between orders
+      currentRow++;
+    });
+    
+    // Style orders sheet columns
+    ordersSheet.getColumn(1).width = 12; // STT / Mã đơn
+    ordersSheet.getColumn(2).width = 30; // Tên sản phẩm / Khách hàng
+    ordersSheet.getColumn(3).width = 20; // Danh mục
+    ordersSheet.getColumn(4).width = 15; // Size / Bàn
+    ordersSheet.getColumn(5).width = 25; // Topping
+    ordersSheet.getColumn(6).width = 12; // Số lượng
+    ordersSheet.getColumn(7).width = 15; // Đơn giá
+    ordersSheet.getColumn(8).width = 15; // Thành tiền
+    ordersSheet.getColumn(9).width = 25; // Ghi chú
     
     // ===== SHEET 7: CHI TIẾT SẢN PHẨM TRONG ĐƠN (Order Items) =====
     const orderItemsSheet = workbook.addWorksheet('Chi Tiết Sản Phẩm');
