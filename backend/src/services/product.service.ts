@@ -31,10 +31,6 @@ export class ProductService {
       orderBy: {
         createdAt: 'desc',
       },
-      // Only load available products by default for better performance
-      where: {
-        isAvailable: true,
-      },
     });
   }
 
