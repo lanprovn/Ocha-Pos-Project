@@ -51,7 +51,7 @@ export class ReportingService {
   async getReport(filters: ReportFilters): Promise<ReportData> {
     const startDate = new Date(filters.startDate);
     startDate.setHours(0, 0, 0, 0);
-    
+
     const endDate = new Date(filters.endDate);
     endDate.setHours(23, 59, 59, 999);
 
@@ -90,7 +90,7 @@ export class ReportingService {
     orders.forEach((order) => {
       const orderTotal = parseFloat(order.totalAmount.toString());
       totalRevenue += orderTotal;
-      
+
       // Calculate discount if product has discount
       // For now, we'll check if order has any discount applied
       // In future, you can add a discount field to Order model
@@ -103,10 +103,10 @@ export class ReportingService {
 
     // Group by date for daily data
     const dailyDataMap: Record<string, DailyReportData> = {};
-    
+
     orders.forEach((order) => {
       const dateKey = order.createdAt.toISOString().split('T')[0];
-      
+
       if (!dailyDataMap[dateKey]) {
         dailyDataMap[dateKey] = {
           date: dateKey,
@@ -130,13 +130,13 @@ export class ReportingService {
       ).toString();
     });
 
-    const dailyData = Object.values(dailyDataMap).sort((a, b) => 
+    const dailyData = Object.values(dailyDataMap).sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
     // Calculate peak hours (hourly revenue)
     const hourlyData: Record<number, { revenue: number; orderCount: number }> = {};
-    
+
     for (let i = 0; i < 24; i++) {
       hourlyData[i] = { revenue: 0, orderCount: 0 };
     }
@@ -196,8 +196,8 @@ export class ReportingService {
       .map((item) => ({
         ...item,
         revenue: item.revenue.toString(),
-        percentage: totalProductRevenue > 0 
-          ? (item.revenue / totalProductRevenue) * 100 
+        percentage: totalProductRevenue > 0
+          ? (item.revenue / totalProductRevenue) * 100
           : 0,
       }))
       .sort((a, b) => parseFloat(b.revenue) - parseFloat(a.revenue))
@@ -205,7 +205,7 @@ export class ReportingService {
 
     // Payment method statistics
     const paymentMethodStats: Record<string, { count: number; revenue: string }> = {};
-    
+
     orders.forEach((order) => {
       const method = order.paymentMethod || 'CASH';
       const orderTotal = parseFloat(order.totalAmount.toString());
@@ -243,37 +243,37 @@ export class ReportingService {
    */
   async exportReport(filters: ReportFilters): Promise<ExcelJS.Buffer> {
     const reportData = await this.getReport(filters);
-    
+
     // Create a new workbook
     const workbook = new ExcelJS.Workbook();
-    
+
     // Add metadata
     workbook.creator = 'OCHA POS System';
     workbook.created = new Date();
     workbook.modified = new Date();
-    
+
     // ===== SHEET 1: TỔNG QUAN (Summary) =====
     const summarySheet = workbook.addWorksheet('Tổng Quan');
-    
+
     // Title
     summarySheet.mergeCells('A1:B1');
     summarySheet.getCell('A1').value = 'BÁO CÁO DOANH THU';
     summarySheet.getCell('A1').font = { size: 16, bold: true };
     summarySheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
-    
+
     // Period
     summarySheet.getCell('A2').value = 'Kỳ báo cáo:';
     summarySheet.getCell('B2').value = `${filters.startDate} đến ${filters.endDate}`;
     summarySheet.getCell('A2').font = { bold: true };
-    
+
     // Export date
     summarySheet.getCell('A3').value = 'Ngày xuất:';
     summarySheet.getCell('B3').value = new Date().toLocaleString('vi-VN');
     summarySheet.getCell('A3').font = { bold: true };
-    
+
     // Empty row
     summarySheet.getRow(4).height = 10;
-    
+
     // Summary data
     summarySheet.addRow(['Chỉ tiêu', 'Giá trị']);
     summarySheet.addRow(['Tổng số đơn hàng', reportData.summary.totalOrders]);
@@ -281,19 +281,19 @@ export class ReportingService {
     summarySheet.addRow(['Tổng giảm giá', parseFloat(reportData.summary.totalDiscount)]);
     summarySheet.addRow(['Doanh thu thực tế', parseFloat(reportData.summary.netRevenue)]);
     summarySheet.addRow(['Giá trị đơn hàng trung bình', parseFloat(reportData.summary.averageOrderValue)]);
-    
+
     // Style summary table
     summarySheet.getRow(5).font = { bold: true };
     summarySheet.getColumn(1).width = 30;
     summarySheet.getColumn(2).width = 20;
     summarySheet.getColumn(2).numFmt = '#,##0';
-    
+
     // ===== SHEET 2: DOANH THU THEO NGÀY (Daily Revenue) =====
     const dailySheet = workbook.addWorksheet('Doanh Thu Theo Ngày');
-    
+
     dailySheet.addRow(['Ngày', 'Số đơn hàng', 'Doanh thu', 'Giảm giá', 'Thực thu']);
     dailySheet.getRow(1).font = { bold: true };
-    
+
     reportData.dailyData.forEach((day) => {
       dailySheet.addRow([
         this.formatDate(day.date),
@@ -303,7 +303,7 @@ export class ReportingService {
         parseFloat(day.netRevenue),
       ]);
     });
-    
+
     // Add total row
     const totalRow = dailySheet.addRow([
       'TỔNG CỘNG',
@@ -313,7 +313,7 @@ export class ReportingService {
       parseFloat(reportData.summary.netRevenue),
     ]);
     totalRow.font = { bold: true };
-    
+
     // Style daily sheet
     dailySheet.getColumn(1).width = 15;
     dailySheet.getColumn(2).width = 15;
@@ -323,13 +323,13 @@ export class ReportingService {
     dailySheet.getColumn(3).numFmt = '#,##0';
     dailySheet.getColumn(4).numFmt = '#,##0';
     dailySheet.getColumn(5).numFmt = '#,##0';
-    
+
     // ===== SHEET 3: TOP SẢN PHẨM BÁN CHẠY (Best Sellers) =====
     const bestSellersSheet = workbook.addWorksheet('Sản Phẩm Bán Chạy');
-    
+
     bestSellersSheet.addRow(['STT', 'Tên sản phẩm', 'Danh mục', 'Số lượng', 'Doanh thu', 'Tỷ lệ (%)']);
     bestSellersSheet.getRow(1).font = { bold: true };
-    
+
     reportData.bestSellers.forEach((item, index) => {
       bestSellersSheet.addRow([
         index + 1,
@@ -340,7 +340,7 @@ export class ReportingService {
         item.percentage.toFixed(2),
       ]);
     });
-    
+
     // Style best sellers sheet
     bestSellersSheet.getColumn(1).width = 8;
     bestSellersSheet.getColumn(2).width = 30;
@@ -350,13 +350,13 @@ export class ReportingService {
     bestSellersSheet.getColumn(6).width = 15;
     bestSellersSheet.getColumn(5).numFmt = '#,##0';
     bestSellersSheet.getColumn(6).numFmt = '0.00';
-    
+
     // ===== SHEET 4: GIỜ CAO ĐIỂM (Peak Hours) =====
     const peakHoursSheet = workbook.addWorksheet('Giờ Cao Điểm');
-    
+
     peakHoursSheet.addRow(['Giờ', 'Số đơn hàng', 'Doanh thu']);
     peakHoursSheet.getRow(1).font = { bold: true };
-    
+
     reportData.peakHours.forEach((hour) => {
       peakHoursSheet.addRow([
         `${hour.hour}:00 - ${hour.hour + 1}:00`,
@@ -364,19 +364,19 @@ export class ReportingService {
         parseFloat(hour.revenue),
       ]);
     });
-    
+
     // Style peak hours sheet
     peakHoursSheet.getColumn(1).width = 20;
     peakHoursSheet.getColumn(2).width = 15;
     peakHoursSheet.getColumn(3).width = 18;
     peakHoursSheet.getColumn(3).numFmt = '#,##0';
-    
+
     // ===== SHEET 5: PHƯƠNG THỨC THANH TOÁN (Payment Methods) =====
     const paymentSheet = workbook.addWorksheet('Phương Thức Thanh Toán');
-    
+
     paymentSheet.addRow(['Phương thức', 'Số đơn', 'Doanh thu']);
     paymentSheet.getRow(1).font = { bold: true };
-    
+
     Object.entries(reportData.paymentMethodStats).forEach(([method, stats]) => {
       const methodName = this.getPaymentMethodName(method);
       paymentSheet.addRow([
@@ -385,22 +385,22 @@ export class ReportingService {
         parseFloat(stats.revenue),
       ]);
     });
-    
+
     // Style payment sheet
     paymentSheet.getColumn(1).width = 25;
     paymentSheet.getColumn(2).width = 15;
     paymentSheet.getColumn(3).width = 18;
     paymentSheet.getColumn(3).numFmt = '#,##0';
-    
+
     // ===== SHEET 6: CHI TIẾT ĐƠN HÀNG (Order Details) =====
     const ordersSheet = workbook.addWorksheet('Chi Tiết Đơn Hàng');
-    
+
     // Get detailed orders data
     const startDate = new Date(filters.startDate);
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(filters.endDate);
     endDate.setHours(23, 59, 59, 999);
-    
+
     const orders = await prisma.order.findMany({
       where: {
         createdAt: {
@@ -418,7 +418,7 @@ export class ReportingService {
         createdAt: 'desc',
       },
     });
-    
+
     // Get all products map for quick lookup
     const productIds = new Set<string>();
     orders.forEach((order) => {
@@ -426,7 +426,7 @@ export class ReportingService {
         productIds.add(item.productId);
       });
     });
-    
+
     const products = await prisma.product.findMany({
       where: {
         id: { in: Array.from(productIds) },
@@ -435,21 +435,21 @@ export class ReportingService {
         category: true,
       },
     });
-    
+
     const productMap = new Map(products.map((p) => [p.id, p]));
-    
+
     let currentRow = 1;
-    
+
     // Header for order summary
     ordersSheet.mergeCells(`A${currentRow}:K${currentRow}`);
     ordersSheet.getCell(`A${currentRow}`).value = 'CHI TIẾT ĐƠN HÀNG';
     ordersSheet.getCell(`A${currentRow}`).font = { size: 14, bold: true };
     ordersSheet.getCell(`A${currentRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
     currentRow++;
-    
+
     // Empty row
     currentRow++;
-    
+
     // Process each order with detailed items
     orders.forEach((order, orderIndex) => {
       // Order header row
@@ -463,7 +463,7 @@ export class ReportingService {
       };
       ordersSheet.getCell(`A${currentRow}`).alignment = { horizontal: 'left', vertical: 'middle' };
       currentRow++;
-      
+
       // Order information
       ordersSheet.addRow(['Mã đơn:', order.orderNumber, '', 'Ngày giờ:', this.formatDateTime(order.createdAt)]);
       ordersSheet.addRow(['Khách hàng:', order.customerName || 'Khách vãng lai', '', 'SĐT:', order.customerPhone || '-']);
@@ -472,7 +472,7 @@ export class ReportingService {
       if (order.notes) {
         ordersSheet.addRow(['Ghi chú:', order.notes]);
       }
-      
+
       // Style order info rows
       for (let i = 0; i < 5; i++) {
         const row = ordersSheet.getRow(currentRow + i);
@@ -480,10 +480,10 @@ export class ReportingService {
         row.getCell(4).font = { bold: true };
       }
       currentRow += 5;
-      
+
       // Empty row
       currentRow++;
-      
+
       // Items header
       ordersSheet.addRow([
         'STT',
@@ -504,7 +504,7 @@ export class ReportingService {
         fgColor: { argb: 'FFE7E6E6' },
       };
       currentRow++;
-      
+
       // Order items
       order.items.forEach((item, itemIndex) => {
         const product = productMap.get(item.productId);
@@ -519,12 +519,12 @@ export class ReportingService {
           parseFloat(item.subtotal.toString()),
           item.note || '-',
         ]);
-        
+
         // Style item row
         const itemRow = ordersSheet.getRow(currentRow);
         itemRow.getCell(7).numFmt = '#,##0'; // Đơn giá
         itemRow.getCell(8).numFmt = '#,##0'; // Thành tiền
-        
+
         // Alternate row colors for better readability
         if (itemIndex % 2 === 0) {
           itemRow.fill = {
@@ -533,10 +533,10 @@ export class ReportingService {
             fgColor: { argb: 'FFF9F9F9' },
           };
         }
-        
+
         currentRow++;
       });
-      
+
       // Order total row
       ordersSheet.mergeCells(`A${currentRow}:E${currentRow}`);
       ordersSheet.getCell(`A${currentRow}`).value = 'TỔNG CỘNG ĐƠN HÀNG:';
@@ -549,7 +549,7 @@ export class ReportingService {
       ordersSheet.getCell(`H${currentRow}`).font = { bold: true };
       ordersSheet.getCell(`H${currentRow}`).numFmt = '#,##0';
       ordersSheet.getCell(`I${currentRow}`).value = '-';
-      
+
       // Style total row
       const totalRow = ordersSheet.getRow(currentRow);
       totalRow.fill = {
@@ -558,11 +558,11 @@ export class ReportingService {
         fgColor: { argb: 'FFFFE699' },
       };
       currentRow++;
-      
+
       // Empty row between orders
       currentRow++;
     });
-    
+
     // Style orders sheet columns
     ordersSheet.getColumn(1).width = 12; // STT / Mã đơn
     ordersSheet.getColumn(2).width = 30; // Tên sản phẩm / Khách hàng
@@ -573,10 +573,10 @@ export class ReportingService {
     ordersSheet.getColumn(7).width = 15; // Đơn giá
     ordersSheet.getColumn(8).width = 15; // Thành tiền
     ordersSheet.getColumn(9).width = 25; // Ghi chú
-    
+
     // ===== SHEET 7: CHI TIẾT SẢN PHẨM TRONG ĐƠN (Order Items) =====
     const orderItemsSheet = workbook.addWorksheet('Chi Tiết Sản Phẩm');
-    
+
     orderItemsSheet.addRow([
       'Mã đơn',
       'Ngày',
@@ -590,7 +590,7 @@ export class ReportingService {
       'Ghi chú',
     ]);
     orderItemsSheet.getRow(1).font = { bold: true };
-    
+
     // Get all product IDs from order items
     const productIds = new Set<string>();
     orders.forEach((order) => {
@@ -598,7 +598,7 @@ export class ReportingService {
         productIds.add(item.productId);
       });
     });
-    
+
     // Load all products at once
     const products = await prisma.product.findMany({
       where: {
@@ -608,13 +608,13 @@ export class ReportingService {
         category: true,
       },
     });
-    
+
     const productMap = new Map(products.map((p) => [p.id, p]));
-    
+
     for (const order of orders) {
       for (const item of order.items) {
         const product = productMap.get(item.productId);
-        
+
         orderItemsSheet.addRow([
           order.orderNumber,
           this.formatDate(order.createdAt.toISOString().split('T')[0]),
@@ -629,7 +629,7 @@ export class ReportingService {
         ]);
       }
     }
-    
+
     // Style order items sheet
     orderItemsSheet.getColumn(1).width = 15; // Mã đơn
     orderItemsSheet.getColumn(2).width = 12; // Ngày
@@ -643,10 +643,10 @@ export class ReportingService {
     orderItemsSheet.getColumn(10).width = 25; // Ghi chú
     orderItemsSheet.getColumn(8).numFmt = '#,##0';
     orderItemsSheet.getColumn(9).numFmt = '#,##0';
-    
+
     // ===== SHEET 8: DANH SÁCH SẢN PHẨM ĐÃ BÁN (All Products Sold) =====
     const allProductsSheet = workbook.addWorksheet('Danh Sách Sản Phẩm');
-    
+
     allProductsSheet.addRow([
       'STT',
       'Tên sản phẩm',
@@ -657,7 +657,7 @@ export class ReportingService {
       'Số đơn có SP này',
     ]);
     allProductsSheet.getRow(1).font = { bold: true };
-    
+
     // Calculate product sales statistics
     const productSalesStats: Record<string, {
       productName: string;
@@ -666,12 +666,12 @@ export class ReportingService {
       totalRevenue: number;
       orderCount: Set<string>;
     }> = {};
-    
+
     for (const order of orders) {
       for (const item of order.items) {
         const product = productMap.get(item.productId);
         const productId = item.productId;
-        
+
         if (!productSalesStats[productId]) {
           productSalesStats[productId] = {
             productName: product?.name || 'Unknown',
@@ -681,13 +681,13 @@ export class ReportingService {
             orderCount: new Set(),
           };
         }
-        
+
         productSalesStats[productId].totalQuantity += item.quantity;
         productSalesStats[productId].totalRevenue += parseFloat(item.subtotal.toString());
         productSalesStats[productId].orderCount.add(order.id);
       }
     }
-    
+
     // Convert to array and sort by revenue
     const productSalesArray = Object.values(productSalesStats)
       .map((stat) => ({
@@ -696,7 +696,7 @@ export class ReportingService {
         orderCount: stat.orderCount.size,
       }))
       .sort((a, b) => b.totalRevenue - a.totalRevenue);
-    
+
     // Add rows
     productSalesArray.forEach((stat, index) => {
       allProductsSheet.addRow([
@@ -709,7 +709,7 @@ export class ReportingService {
         stat.orderCount,
       ]);
     });
-    
+
     // Add total row
     const allProductsTotalRow = allProductsSheet.addRow([
       'TỔNG',
@@ -721,7 +721,7 @@ export class ReportingService {
       orders.length,
     ]);
     allProductsTotalRow.font = { bold: true };
-    
+
     // Style all products sheet
     allProductsSheet.getColumn(1).width = 8; // STT
     allProductsSheet.getColumn(2).width = 35; // Tên sản phẩm
@@ -733,27 +733,27 @@ export class ReportingService {
     allProductsSheet.getColumn(4).numFmt = '#,##0';
     allProductsSheet.getColumn(5).numFmt = '#,##0';
     allProductsSheet.getColumn(6).numFmt = '#,##0';
-    
+
     // ===== SHEET 9: BÁO CÁO THEO DANH MỤC (Category Report) =====
     const categorySheet = workbook.addWorksheet('Báo Cáo Theo Danh Mục');
-    
+
     categorySheet.addRow(['Danh mục', 'Số đơn', 'Số lượng SP', 'Doanh thu', 'Tỷ lệ (%)']);
     categorySheet.getRow(1).font = { bold: true };
-    
+
     const categoryStats: Record<string, {
       orderCount: number;
       quantity: number;
       revenue: number;
     }> = {};
-    
+
     // Count unique orders per category
     const categoryOrderMap: Record<string, Set<string>> = {};
-    
+
     for (const order of orders) {
       for (const item of order.items) {
         const product = productMap.get(item.productId);
         const categoryName = product?.category?.name || 'Không phân loại';
-        
+
         if (!categoryStats[categoryName]) {
           categoryStats[categoryName] = {
             orderCount: 0,
@@ -761,28 +761,28 @@ export class ReportingService {
             revenue: 0,
           };
         }
-        
+
         if (!categoryOrderMap[categoryName]) {
           categoryOrderMap[categoryName] = new Set();
         }
-        
+
         categoryStats[categoryName].quantity += item.quantity;
         categoryStats[categoryName].revenue += parseFloat(item.subtotal.toString());
         categoryOrderMap[categoryName].add(order.id);
       }
     }
-    
+
     const totalCategoryRevenue = Object.values(categoryStats).reduce(
       (sum, stat) => sum + stat.revenue,
       0
     );
-    
+
     Object.entries(categoryStats).forEach(([categoryName, stats]) => {
       const orderCount = categoryOrderMap[categoryName]?.size || 0;
       const percentage = totalCategoryRevenue > 0
         ? (stats.revenue / totalCategoryRevenue) * 100
         : 0;
-      
+
       categorySheet.addRow([
         categoryName,
         orderCount,
@@ -791,7 +791,7 @@ export class ReportingService {
         percentage.toFixed(2),
       ]);
     });
-    
+
     // Add total row
     const categoryTotalRow = categorySheet.addRow([
       'TỔNG CỘNG',
@@ -801,7 +801,7 @@ export class ReportingService {
       '100.00',
     ]);
     categoryTotalRow.font = { bold: true };
-    
+
     // Style category sheet
     categorySheet.getColumn(1).width = 25; // Danh mục
     categorySheet.getColumn(2).width = 12; // Số đơn
@@ -810,7 +810,7 @@ export class ReportingService {
     categorySheet.getColumn(5).width = 15; // Tỷ lệ
     categorySheet.getColumn(4).numFmt = '#,##0';
     categorySheet.getColumn(5).numFmt = '0.00';
-    
+
     // Apply borders and styling to all sheets
     const sheets = [
       summarySheet,
@@ -823,7 +823,7 @@ export class ReportingService {
       allProductsSheet,
       categorySheet,
     ];
-    
+
     sheets.forEach((sheet) => {
       // Add borders to header row
       const headerRow = sheet.getRow(1);
@@ -840,7 +840,7 @@ export class ReportingService {
           fgColor: { argb: 'FFE0E0E0' },
         };
       });
-      
+
       // Add borders to data rows
       sheet.eachRow((row, rowNumber) => {
         if (rowNumber > 1) {
@@ -855,12 +855,12 @@ export class ReportingService {
         }
       });
     });
-    
+
     // Generate buffer
     const buffer = await workbook.xlsx.writeBuffer();
     return buffer as ExcelJS.Buffer;
   }
-  
+
   /**
    * Format date for display
    */
@@ -868,7 +868,7 @@ export class ReportingService {
     const date = new Date(dateString);
     return date.toLocaleDateString('vi-VN');
   }
-  
+
   /**
    * Get payment method name in Vietnamese
    */
@@ -881,7 +881,7 @@ export class ReportingService {
     };
     return methodMap[method] || method;
   }
-  
+
   /**
    * Get order status name in Vietnamese
    */
@@ -897,7 +897,7 @@ export class ReportingService {
     };
     return statusMap[status] || status;
   }
-  
+
   /**
    * Format date and time for display
    */
