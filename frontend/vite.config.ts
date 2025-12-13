@@ -4,6 +4,12 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Ensure VITE_API_BASE_URL is available during build
+  define: {
+    'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
+      process.env.VITE_API_BASE_URL || 'https://ocha-pos-backend-production.up.railway.app/api'
+    ),
+  },
   plugins: [react()],
   server: {
     port: 3000,
