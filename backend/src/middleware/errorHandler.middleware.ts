@@ -39,8 +39,21 @@ export function errorHandler(
   }
 
   // Handle Prisma errors
-  if (err.name === 'PrismaClientKnownRequestError') {
+  if (err.name === 'PrismaClientKnownRequestError' || err.name === 'PrismaClientInitializationError') {
     const prismaError = err as any;
+    
+    // Table does not exist
+    if (err.message && err.message.includes('does not exist in the current database')) {
+      logger.error('Database table missing - migrations may not have run', {
+        error: err.message,
+        path: req.path,
+      });
+      return res.status(500).json({
+        error: 'Database tables not found. Please run migrations.',
+        errorCode: 'DATABASE_NOT_INITIALIZED',
+        message: err.message,
+      });
+    }
     
     // Unique constraint violation
     if (prismaError.code === 'P2002') {
