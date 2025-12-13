@@ -5,16 +5,12 @@ FROM node:20-alpine
 RUN apk add --no-cache bash
 
 # Set working directory
-WORKDIR /app
-
-# Copy root package.json (for workspaces if needed)
-COPY package.json ./
+WORKDIR /app/backend
 
 # Copy backend package files
-COPY backend/package*.json ./backend/
+COPY backend/package*.json ./
 
 # Install backend dependencies
-WORKDIR /app/backend
 RUN npm install
 
 # Copy Prisma schema and migrations
@@ -23,9 +19,11 @@ COPY backend/prisma ./prisma/
 # Generate Prisma Client
 RUN npx prisma generate
 
-# Copy backend source code
+# Copy backend source code and config
 COPY backend/src ./src/
 COPY backend/tsconfig.json ./
+
+# Copy scripts directory
 COPY backend/scripts ./scripts/
 
 # Make setup script executable
