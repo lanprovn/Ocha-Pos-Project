@@ -24,6 +24,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Install OpenSSL for Prisma (required for database connections)
+RUN apk add --no-cache openssl1.1-compat
+
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
