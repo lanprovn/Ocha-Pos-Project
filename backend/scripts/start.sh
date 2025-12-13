@@ -25,6 +25,14 @@ else
   exit 1
 fi
 
+# Check if database needs seeding
+echo "🌱 Checking if database needs seeding..."
+if node scripts/check-and-seed.js; then
+  echo "✅ Seed check completed"
+else
+  echo "⚠️  Seed check had issues, but continuing..."
+fi
+
 echo "✅ Starting server on port ${PORT:-8080}..."
 exec node dist/server.js
 
