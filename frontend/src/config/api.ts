@@ -1,9 +1,26 @@
 // API Configuration
 // Use environment variable or fallback to production backend URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
-  (import.meta.env.PROD 
-    ? 'https://ocha-pos-backend-production.up.railway.app/api' 
-    : 'http://localhost:8080/api');
+// In production (Railway), always use Railway backend URL
+const getApiBaseUrl = () => {
+  // Check if we're in production (Railway) by checking if we're not on localhost
+  const isProduction = typeof window !== 'undefined' && 
+    !window.location.hostname.includes('localhost') && 
+    !window.location.hostname.includes('127.0.0.1');
+  
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  
+  // Production fallback
+  if (isProduction) {
+    return 'https://ocha-pos-backend-production.up.railway.app/api';
+  }
+  
+  // Development fallback
+  return 'http://localhost:8080/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export const API_ENDPOINTS = {
   // Products
