@@ -1,0 +1,8 @@
+# Force Railway to use Dockerfile instead of auto-detecting
+[phases.setup]
+nixpacksVersion = "1.0.0"
+
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+

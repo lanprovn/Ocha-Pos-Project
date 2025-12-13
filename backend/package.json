@@ -7,7 +7,7 @@
     "dev": "nodemon src/server.ts",
     "build": "tsc && tsc-alias -p tsconfig.json",
     "start": "node dist/server.js",
-    "start:prod": "node dist/server.js",
+    "start:prod": "sh scripts/start.sh",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",

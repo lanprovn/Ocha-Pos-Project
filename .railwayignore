@@ -1,0 +1,3 @@
+# Railway ignore file - prevent Railway from auto-detecting root package.json
+# This ensures Railway uses Dockerfile from backend/frontend directories
+
