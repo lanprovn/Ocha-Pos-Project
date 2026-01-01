@@ -32,7 +32,20 @@ export const ROUTES = {
   CATEGORY_MANAGEMENT: '/category-management', // Deprecated - use MENU_MANAGEMENT
   MENU_MANAGEMENT: '/menu-management', // Deprecated - use ADMIN_DASHBOARD
   ANALYTICS: '/analytics',
+  
+  // Admin routes - NEW STRUCTURE
   ADMIN_DASHBOARD: '/admin',
+  ADMIN_ORDERS: '/admin/orders',
+  ADMIN_MENU: '/admin/menu',
+  ADMIN_MENU_PRODUCTS: '/admin/menu/products',
+  ADMIN_MENU_CATEGORIES: '/admin/menu/categories',
+  ADMIN_MENU_RECIPES: '/admin/menu/recipes',
+  ADMIN_STOCK: '/admin/stock',
+  ADMIN_ANALYTICS: '/admin/analytics',
+  ADMIN_CUSTOMERS: '/admin/customers',
+  ADMIN_STAFF: '/admin/staff',
+  ADMIN_SHIFTS: '/admin/shifts',
+  
   PRODUCT: (id: string | number) => `/product/${id}`,
 } as const;
 

@@ -43,10 +43,15 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, currentTime, onStat
   const handleContinueCheckout = () => {
     // Navigate to checkout with order ID (UUID)
     // useCheckout sẽ load order và restore cart
+    // Clear customer flag when staff continues order (staff-only action)
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('checkout_from_customer');
+    }
     navigate('/checkout', {
       state: { 
         orderId: order.id, // Sử dụng UUID thay vì orderNumber
-        continueOrder: true 
+        continueOrder: true,
+        fromCustomer: false // Explicitly mark as staff checkout
       }
     });
   };

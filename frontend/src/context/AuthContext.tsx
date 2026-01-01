@@ -34,32 +34,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      // Get role context for this tab
+      // Get role context for this tab (from sessionStorage - tab-specific)
       const roleContext = authService.getRoleContext();
       
-      // If no role context, check localStorage user but don't auto-set
+      // Get user from sessionStorage (this tab's context)
       const savedUser = authService.getUser();
       
+      // CRITICAL: If this tab has no roleContext, it's a new tab
+      // Don't auto-login from localStorage to prevent multi-tab conflicts
+      if (!roleContext) {
+        // New tab detected - clear any stale sessionStorage data
+        // User must login again or explicitly choose role
+        console.log('🆕 New tab detected - requiring explicit login');
+        setIsLoading(false);
+        return; // Don't auto-set user, require login
+      }
+      
+      // This tab has a roleContext, verify it matches
       if (savedUser && roleContext) {
-        // This tab has its own context
-        setUser(savedUser);
-      } else {
-        // Verify token by getting user info
-        const userData = await authService.getMe();
-        if (userData) {
-          const userInfo = {
-            id: userData.id,
-            email: userData.email,
-            name: userData.name,
-            role: userData.role,
-          };
-          
-          // Only set if no role context exists (new tab, not from another tab)
-          if (!roleContext) {
-            setUser(userInfo);
-            authService.saveAuth(token, userInfo);
+        // Verify token is still valid
+        try {
+          const userData = await authService.getMe();
+          if (userData && userData.role === savedUser.role) {
+            // Token valid and role matches
+            setUser(savedUser);
+          } else {
+            // Role mismatch or token invalid - clear and require re-login
+            console.warn('⚠️ Role mismatch detected, clearing auth');
+            authService.logout();
+            setUser(null);
           }
+        } catch (error) {
+          // Token invalid
+          authService.logout();
+          setUser(null);
         }
+      } else {
+        // No saved user but has roleContext - shouldn't happen, but clear it
+        authService.logout();
+        setUser(null);
       }
     } catch (error) {
       // Token invalid, clear auth
@@ -89,12 +102,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       toast.success(`Đăng nhập thành công! Chào mừng ${response.user.name}`);
 
-      // Redirect based on role
+      // For STAFF: Don't navigate yet - LoginPage will handle shift modal
+      // For ADMIN: Navigate immediately
       if (response.user.role === 'ADMIN') {
-        navigate(`${ROUTES.ADMIN_DASHBOARD}?tab=overview`);
-      } else {
-        navigate(ROUTES.HOME);
+        navigate(ROUTES.ADMIN_DASHBOARD);
       }
+      // STAFF navigation will be handled by LoginPage after shift modal
     } catch (error: any) {
       toast.error(error.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
       throw error;

@@ -15,11 +15,13 @@ const CheckoutPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isCustomerDisplay = checkIsCustomerDisplay(location.pathname, location.state as any);
-  
+
   const {
     items,
     totalPrice,
     customerInfo,
+    foundCustomer,
+    membershipDiscount,
     paymentMethod,
     isProcessing,
     showQRModal,
@@ -37,7 +39,7 @@ const CheckoutPage: React.FC = () => {
 
   // Simplified validation for customer: only phone required
   // Staff: name + phone required
-  const isFormValid = isCustomerDisplay 
+  const isFormValid = isCustomerDisplay
     ? Boolean(customerInfo.phone)
     : Boolean(customerInfo.name && customerInfo.phone);
 
@@ -100,27 +102,31 @@ const CheckoutPage: React.FC = () => {
             <div className="order-2 lg:order-1 flex flex-col overflow-hidden min-h-0">
               <div className="flex-1 overflow-y-auto pr-2 -mr-2">
                 <div className="pr-2">
-                  <OrderSummary items={items} totalPrice={totalPrice} />
+                  <OrderSummary items={items} totalPrice={totalPrice} membershipDiscount={membershipDiscount} />
                 </div>
               </div>
             </div>
-            
+
             {/* Right Column: Customer Info, Payment Method, Complete Button - Scroll được */}
             <div className="order-1 lg:order-2 flex flex-col overflow-hidden min-h-0">
               <div className="flex-1 overflow-y-auto space-y-6 pr-2 -mr-2">
                 <div className="pr-2">
                   {isCustomerDisplay ? (
-                    <SimplifiedCustomerInfoForm 
+                    <SimplifiedCustomerInfoForm
                       customerInfo={customerInfo}
                       onInputChange={handleInputChange}
+                      foundCustomer={foundCustomer}
+                      membershipDiscount={membershipDiscount}
                     />
                   ) : (
-                    <CustomerInfoForm 
+                    <CustomerInfoForm
                       customerInfo={customerInfo}
                       onInputChange={handleInputChange}
+                      foundCustomer={foundCustomer}
+                      membershipDiscount={membershipDiscount}
                     />
                   )}
-                  
+
                   <PaymentMethodSelector
                     paymentMethod={paymentMethod}
                     onPaymentMethodChange={handlePaymentMethodChange}
@@ -128,11 +134,12 @@ const CheckoutPage: React.FC = () => {
                   />
                 </div>
               </div>
-              
+
               {/* Complete Button - Cố định ở dưới */}
               <div className="flex-shrink-0 pt-6">
                 <CompleteOrderButton
                   totalPrice={totalPrice}
+                  membershipDiscount={membershipDiscount}
                   itemsCount={items.length}
                   isProcessing={isProcessing}
                   isFormValid={isFormValid}

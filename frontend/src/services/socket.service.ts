@@ -6,6 +6,8 @@ import type {
 } from '../types/socket.types';
 
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
+let connectionAttempts = 0;
+const MAX_SILENT_ATTEMPTS = 3; // Only log errors after 3 failed attempts
 
 /**
  * Get or create Socket.io connection
@@ -26,20 +28,33 @@ export function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> 
         path: '/socket.io/',
         upgrade: true,
         rememberUpgrade: false,
+        autoConnect: true,
       });
 
       socket.on('connect', () => {
         console.log('✅ Socket.io connected:', socket?.id);
+        connectionAttempts = 0; // Reset on successful connection
         // Note: Don't auto-subscribe here - let each component subscribe explicitly
         // This prevents duplicate subscriptions and race conditions
       });
 
-      socket.on('disconnect', () => {
-        console.log('❌ Socket.io disconnected');
+      socket.on('disconnect', (reason) => {
+        // Only log if not a normal disconnect
+        if (reason !== 'io client disconnect') {
+          console.log('❌ Socket.io disconnected:', reason);
+        }
       });
 
       socket.on('connect_error', (error) => {
-        console.error('❌ Socket.io connection error:', error);
+        connectionAttempts++;
+        // Only log errors after multiple failed attempts to avoid console spam
+        if (connectionAttempts >= MAX_SILENT_ATTEMPTS) {
+          // Log every 5th attempt to reduce spam
+          if (connectionAttempts % 5 === 0) {
+            console.warn(`⚠️ Socket.io connection error (attempt ${connectionAttempts}):`, error.message);
+          }
+        }
+        // Silently handle errors - don't spam console
       });
     } catch (error) {
       console.error('❌ Failed to initialize Socket.io:', error);

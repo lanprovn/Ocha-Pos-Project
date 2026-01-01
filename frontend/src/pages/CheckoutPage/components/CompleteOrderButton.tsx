@@ -3,6 +3,7 @@ import { formatPrice } from '../../../utils/formatPrice';
 
 interface CompleteOrderButtonProps {
   totalPrice: number;
+  membershipDiscount?: number;
   itemsCount: number;
   isProcessing: boolean;
   isFormValid: boolean;
@@ -11,14 +12,16 @@ interface CompleteOrderButtonProps {
 
 export const CompleteOrderButton: React.FC<CompleteOrderButtonProps> = ({
   totalPrice,
+  membershipDiscount = 0,
   itemsCount,
   isProcessing,
   isFormValid,
   onComplete
 }) => {
-  // Tính VAT 10% và tổng cuối cùng
-  const vat = totalPrice * 0.1;
-  const finalTotal = totalPrice + vat;
+  // Tính VAT 10% và tổng cuối cùng (sau khi trừ giảm giá thành viên)
+  const priceAfterDiscount = totalPrice - membershipDiscount;
+  const vat = priceAfterDiscount * 0.1;
+  const finalTotal = priceAfterDiscount + vat;
 
   return (
     <div className="space-y-4">

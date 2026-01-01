@@ -13,7 +13,29 @@ export const isCustomerDisplay = (
   pathname: string,
   locationState?: { fromCustomer?: boolean } | null
 ): boolean => {
-  return pathname.startsWith('/customer') || locationState?.fromCustomer === true;
+  // Check pathname first (most reliable)
+  if (pathname.startsWith('/customer')) {
+    return true;
+  }
+  
+  // Check location state
+  if (locationState?.fromCustomer === true) {
+    // Save to sessionStorage to persist across page reloads
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('checkout_from_customer', 'true');
+    }
+    return true;
+  }
+  
+  // Check sessionStorage (for page reloads or direct navigation)
+  if (typeof window !== 'undefined') {
+    const savedFlag = sessionStorage.getItem('checkout_from_customer');
+    if (savedFlag === 'true') {
+      return true;
+    }
+  }
+  
+  return false;
 };
 
 export const validatePhone = (phone: string): boolean => {

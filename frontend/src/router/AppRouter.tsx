@@ -13,11 +13,13 @@ import { ProductProvider } from '../context/ProductContext.tsx';
 import { IngredientProvider } from '../context/IngredientContext';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { ROUTES } from '@constants';
+import AdminRouteRedirect from '../components/admin/AdminRouteRedirect';
 
 // ===== Lazy load layouts =====
 const MainLayout = lazy(() => import('../components/layout/MainLayout'));
 const POSLayoutNew = lazy(() => import('../components/layout/POSLayoutNew'));
 const CustomerDisplayLayout = lazy(() => import('../components/layout/CustomerDisplayLayout'));
+const AdminLayout = lazy(() => import('../components/layout/AdminLayout'));
 
 // ===== Lazy load pages =====
 const LoginPage = lazy(() => import('../pages/LoginPage/index'));
@@ -25,6 +27,21 @@ const CheckoutPage = lazy(() => import('../pages/CheckoutPage/index'));
 const OrderDisplayPage = lazy(() => import('../pages/OrderDisplayPage/index'));
 const PaymentCallbackPage = lazy(() => import('../pages/PaymentCallbackPage/index'));
 const AnalyticsPage = lazy(() => import('../pages/AnalyticsPage/index'));
+
+// ===== Admin Pages =====
+const AdminOverviewPage = lazy(() => import('../pages/AdminOverviewPage/index'));
+const AdminOrderManagementPage = lazy(() => import('../pages/AdminOrderManagementPage/index'));
+const AdminMenuManagementPage = lazy(() => import('../pages/AdminMenuManagementPage/index'));
+const AdminMenuProductsPage = lazy(() => import('../pages/AdminMenuManagementPage/ProductsPage'));
+const AdminMenuCategoriesPage = lazy(() => import('../pages/AdminMenuManagementPage/CategoriesPage'));
+const AdminMenuRecipesPage = lazy(() => import('../pages/AdminMenuManagementPage/RecipesPage'));
+const AdminStockManagementPage = lazy(() => import('../pages/AdminStockManagementPage/index'));
+const AdminAnalyticsPage = lazy(() => import('../pages/AdminAnalyticsPage/index'));
+const AdminCustomerManagementPage = lazy(() => import('../pages/AdminCustomerManagementPage/index'));
+const AdminStaffManagementPage = lazy(() => import('../pages/AdminStaffManagementPage/index'));
+const AdminShiftManagementPage = lazy(() => import('../pages/AdminShiftManagementPage/index'));
+
+// ===== Backward compatibility: Old AdminDashboardPage =====
 const AdminDashboardPage = lazy(() => import('../pages/AdminDashboardPage/index'));
 
 // ===== Loader Component =====
@@ -72,7 +89,7 @@ function AppRoutes() {
   const location = useLocation();
   const isDisplayPage = location.pathname.startsWith(ROUTES.CUSTOMER);
   const isLoginPage = location.pathname === ROUTES.LOGIN;
-  const isOrderSuccessFromCustomer = location.pathname === ROUTES.ORDER_SUCCESS && 
+  const isOrderSuccessFromCustomer = location.pathname === ROUTES.ORDER_SUCCESS &&
     (location.state as any)?.fromCustomer === true;
 
   // === CASE 1: Customer Display (with layout like POS) ===
@@ -127,12 +144,32 @@ function AppRoutes() {
             <Route index element={<CheckoutPage />} />
           </Route>
 
-          {/* Admin Dashboard - Tất cả chức năng admin */}
+          {/* Admin Routes - NEW STRUCTURE with nested routes */}
           <Route path={ROUTES.ADMIN_DASHBOARD} element={
             <ProtectedRoute requiredRole="ADMIN">
-              <AdminDashboardPage />
+              <AdminLayout />
             </ProtectedRoute>
-          } />
+          }>
+            {/* Handle query params redirect or show overview */}
+            <Route index element={<AdminRouteRedirect />} />
+            <Route path="orders" element={<AdminOrderManagementPage />} />
+            <Route path="menu" element={<AdminMenuManagementPage />}>
+              <Route index element={<Navigate to="products" replace />} />
+              <Route path="products" element={<AdminMenuProductsPage />} />
+              <Route path="categories" element={<AdminMenuCategoriesPage />} />
+              <Route path="recipes" element={<AdminMenuRecipesPage />} />
+            </Route>
+            <Route path="stock" element={<AdminStockManagementPage />} />
+            <Route path="analytics" element={<AdminAnalyticsPage />} />
+            <Route path="customers" element={<AdminCustomerManagementPage />} />
+            <Route path="staff" element={<AdminStaffManagementPage />} />
+            <Route path="shifts" element={<AdminShiftManagementPage />} />
+            {/* Fallback: redirect to overview */}
+            <Route path="*" element={<Navigate to={ROUTES.ADMIN_DASHBOARD} replace />} />
+          </Route>
+
+          {/* Backward compatibility: Old AdminDashboardPage with query params */}
+          {/* This will be handled by AdminRouteRedirect component */}
 
           {/* Analytics - Gộp Dashboard + Reporting (Staff Only) */}
           <Route path={ROUTES.ANALYTICS} element={
@@ -143,10 +180,10 @@ function AppRoutes() {
             <Route index element={<AnalyticsPage />} />
           </Route>
 
-          {/* Menu Management - Redirect to Admin Dashboard */}
+          {/* Menu Management - Redirect to Admin Menu */}
           <Route path={ROUTES.MENU_MANAGEMENT} element={
             <ProtectedRoute requiredRole="ADMIN">
-              <Navigate to={{ pathname: ROUTES.ADMIN_DASHBOARD, search: '?tab=menu' }} replace />
+              <Navigate to={ROUTES.ADMIN_MENU} replace />
             </ProtectedRoute>
           } />
 
@@ -169,24 +206,24 @@ function AppRoutes() {
             <Route index element={<Navigate to={{ pathname: ROUTES.ANALYTICS, search: '?tab=reports' }} replace />} />
           </Route>
 
-          {/* Product Management - Redirect directly to Admin Dashboard with subtab */}
+          {/* Product Management - Redirect to Admin Menu Products */}
           <Route path={ROUTES.PRODUCT_MANAGEMENT} element={
             <ProtectedRoute requiredRole="ADMIN">
-              <Navigate to={{ pathname: ROUTES.ADMIN_DASHBOARD, search: '?tab=menu&subtab=products' }} replace />
+              <Navigate to={ROUTES.ADMIN_MENU_PRODUCTS} replace />
             </ProtectedRoute>
           } />
 
-          {/* Category Management - Redirect directly to Admin Dashboard with subtab */}
+          {/* Category Management - Redirect to Admin Menu Categories */}
           <Route path={ROUTES.CATEGORY_MANAGEMENT} element={
             <ProtectedRoute requiredRole="ADMIN">
-              <Navigate to={{ pathname: ROUTES.ADMIN_DASHBOARD, search: '?tab=menu&subtab=categories' }} replace />
+              <Navigate to={ROUTES.ADMIN_MENU_CATEGORIES} replace />
             </ProtectedRoute>
           } />
 
-          {/* Stock Management - Redirect to Admin Dashboard with stock tab */}
+          {/* Stock Management - Redirect to Admin Stock */}
           <Route path={ROUTES.STOCK_MANAGEMENT} element={
             <ProtectedRoute requiredRole="ADMIN">
-              <Navigate to={{ pathname: ROUTES.ADMIN_DASHBOARD, search: '?tab=stock' }} replace />
+              <Navigate to={ROUTES.ADMIN_STOCK} replace />
             </ProtectedRoute>
           } />
 

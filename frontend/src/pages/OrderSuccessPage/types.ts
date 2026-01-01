@@ -4,6 +4,7 @@ export interface OrderDetails {
   orderNumber?: string; // Thêm orderNumber từ backend
   timestamp: number;
   total: number;
+  membershipDiscount?: number; // Giảm giá từ hạng thành viên
   items: number;
   customerName: string;
   products: Array<{

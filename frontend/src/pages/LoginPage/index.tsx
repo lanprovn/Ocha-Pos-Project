@@ -6,31 +6,37 @@ import toast from 'react-hot-toast';
 import PageWrapper from '@components/layout/PageWrapper';
 import PageContainer from '@components/layout/PageContainer';
 import { authService } from '@services/auth.service';
+import ShiftOpeningCashModal from '@components/shift/ShiftOpeningCashModal';
 
 const LoginPage: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<'STAFF' | 'ADMIN' | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showShiftModal, setShowShiftModal] = useState(false);
+  const [pendingUser, setPendingUser] = useState<{ name: string; role: string } | null>(null);
   const { login, isAuthenticated, user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already authenticated AND has role context
+  // But skip redirect for STAFF if shift modal is showing
   useEffect(() => {
-    if (!authLoading && isAuthenticated && user) {
+    if (!authLoading && isAuthenticated && user && !showShiftModal) {
       const roleContext = authService.getRoleContext();
       
       // Only redirect if this tab has its own role context
-      if (roleContext) {
-        if (user.role === 'ADMIN' && roleContext === 'ADMIN') {
-          navigate(`${ROUTES.ADMIN_DASHBOARD}?tab=overview`, { replace: true });
-        } else if (user.role === 'STAFF' && roleContext === 'STAFF') {
-          navigate(ROUTES.HOME, { replace: true });
+      // This ensures each tab has explicit authentication
+      if (roleContext && roleContext === user.role) {
+        if (user.role === 'ADMIN') {
+          navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+        } else if (user.role === 'STAFF') {
+          // STAFF navigation handled by handleSubmit after shift modal
+          // Only auto-redirect if shift modal is not showing
         }
       }
-      // If no role context, stay on login page (user can choose role)
+      // If no role context or mismatch, stay on login page (user must choose role)
     }
-  }, [isAuthenticated, user, authLoading, navigate]);
+  }, [isAuthenticated, user, authLoading, navigate, showShiftModal]);
 
   const handleRoleSelect = (role: 'STAFF' | 'ADMIN') => {
     setSelectedRole(role);
@@ -60,11 +66,81 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
     try {
       await login({ email, password }, selectedRole);
+      
+      // For STAFF: Check if shift needs to be opened and show modal
+      if (selectedRole === 'STAFF') {
+        // Wait a bit for auth to complete
+        setTimeout(async () => {
+          try {
+            const { shiftService } = await import('@services/shift.service');
+            const currentShift = await shiftService.getCurrentOpen();
+            
+            // If no shift open, show modal to input opening cash
+            if (!currentShift) {
+              const authUser = authService.getUser();
+              if (authUser && authUser.role === 'STAFF') {
+                setPendingUser({ name: authUser.name, role: authUser.role });
+                setShowShiftModal(true);
+                return; // Don't navigate yet, wait for modal
+              }
+            }
+          } catch (shiftError: any) {
+            // If error checking shift, still allow login but show modal
+            const authUser = authService.getUser();
+            if (authUser && authUser.role === 'STAFF') {
+              setPendingUser({ name: authUser.name, role: authUser.role });
+              setShowShiftModal(true);
+              return;
+            }
+          }
+          
+          // If shift already open or not STAFF, navigate normally
+          handleNavigation();
+        }, 100);
+      } else {
+        // For ADMIN, navigate immediately
+        handleNavigation();
+      }
     } catch {
       // Error already handled in login function
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleNavigation = () => {
+    if (!user) {
+      // Wait for user to be set
+      setTimeout(() => {
+        const authUser = authService.getUser();
+        if (authUser) {
+          const roleContext = authService.getRoleContext();
+          if (roleContext) {
+            if (authUser.role === 'ADMIN' && roleContext === 'ADMIN') {
+              navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+            } else if (authUser.role === 'STAFF' && roleContext === 'STAFF') {
+              navigate(ROUTES.HOME, { replace: true });
+            }
+          }
+        }
+      }, 100);
+      return;
+    }
+    
+    const roleContext = authService.getRoleContext();
+    if (roleContext) {
+      if (user.role === 'ADMIN' && roleContext === 'ADMIN') {
+        navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+      } else if (user.role === 'STAFF' && roleContext === 'STAFF') {
+        navigate(ROUTES.HOME, { replace: true });
+      }
+    }
+  };
+
+  const handleShiftModalSuccess = () => {
+    setShowShiftModal(false);
+    setPendingUser(null);
+    handleNavigation();
   };
 
   return (
@@ -264,6 +340,15 @@ const LoginPage: React.FC = () => {
           )}
         </div>
       </PageContainer>
+
+      {/* Shift Opening Cash Modal for STAFF */}
+      {showShiftModal && pendingUser && pendingUser.role === 'STAFF' && (
+        <ShiftOpeningCashModal
+          isOpen={showShiftModal}
+          userName={pendingUser.name}
+          onSuccess={handleShiftModalSuccess}
+        />
+      )}
     </PageWrapper>
   );
 };

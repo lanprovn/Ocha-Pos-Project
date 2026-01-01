@@ -25,6 +25,10 @@ export interface Order extends Timestamped {
   orderNumber: string;
   status: OrderStatus;
   totalAmount: number;
+  discountAmount?: number | null;
+  membershipDiscount?: number | null;
+  promotionCodeId?: string | null;
+  promotionDiscount?: number | null;
   customerName?: string | null;
   customerPhone?: string | null;
   customerTable?: string | null;
@@ -59,6 +63,7 @@ export interface CreateOrderInput {
   paymentStatus?: PaymentStatus;
   orderCreator?: OrderCreator;
   orderCreatorName?: string | null;
+  promotionCode?: string | null;
   items: CreateOrderItemInput[];
 }
 

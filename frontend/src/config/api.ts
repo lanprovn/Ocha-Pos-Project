@@ -65,6 +65,33 @@ export const API_ENDPOINTS = {
   REPORTING: `${API_BASE_URL}/reporting`,
   REPORTING_EXPORT: `${API_BASE_URL}/reporting/export`,
 
+  // Suppliers
+  SUPPLIERS: `${API_BASE_URL}/suppliers`,
+  SUPPLIER_BY_ID: (id: string) => `${API_BASE_URL}/suppliers/${id}`,
+
+  // Purchase Orders
+  PURCHASE_ORDERS: `${API_BASE_URL}/purchase-orders`,
+  PURCHASE_ORDER_BY_ID: (id: string) => `${API_BASE_URL}/purchase-orders/${id}`,
+  PURCHASE_ORDER_RECEIVE: (id: string) => `${API_BASE_URL}/purchase-orders/${id}/receive`,
+  PURCHASE_ORDER_MARK_PAID: (id: string) => `${API_BASE_URL}/purchase-orders/${id}/mark-paid`,
+  PURCHASE_ORDER_CANCEL: (id: string) => `${API_BASE_URL}/purchase-orders/${id}/cancel`,
+
+  // Expenses
+  EXPENSES: `${API_BASE_URL}/expenses`,
+  EXPENSE_BY_ID: (id: string) => `${API_BASE_URL}/expenses/${id}`,
+  EXPENSE_CATEGORIES: `${API_BASE_URL}/expenses/categories`,
+  EXPENSE_CATEGORY_BY_ID: (id: string) => `${API_BASE_URL}/expenses/categories/${id}`,
+  EXPENSE_SUMMARY: `${API_BASE_URL}/expenses/summary`,
+  EXPENSE_PROFIT_LOSS: `${API_BASE_URL}/expenses/profit-loss`,
+
+  // Shifts
+  SHIFTS: `${API_BASE_URL}/shifts`,
+  SHIFTS_CURRENT: `${API_BASE_URL}/shifts/current`,
+  SHIFTS_AUTO_OPEN: `${API_BASE_URL}/shifts/auto-open`,
+  SHIFT_BY_ID: (id: string) => `${API_BASE_URL}/shifts/${id}`,
+  SHIFT_SUMMARY: (id: string) => `${API_BASE_URL}/shifts/${id}/summary`,
+  SHIFT_CLOSE: (id: string) => `${API_BASE_URL}/shifts/${id}/close`,
+
   // Health
   HEALTH: `${API_BASE_URL.replace('/api', '')}/health`,
 };

@@ -24,7 +24,7 @@ const HomeButton: React.FC<HomeButtonProps> = ({
   const homeRoute = isCustomerPage 
     ? ROUTES.CUSTOMER 
     : isAdmin 
-      ? `${ROUTES.ADMIN_DASHBOARD}?tab=overview`
+      ? ROUTES.ADMIN_DASHBOARD
       : ROUTES.HOME;
 
   const sizeClasses = {

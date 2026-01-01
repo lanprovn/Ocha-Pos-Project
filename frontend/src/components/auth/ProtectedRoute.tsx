@@ -35,21 +35,39 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
   }
 
-  // Get role context for this tab
+  // Get role context for this tab (from sessionStorage - tab-specific)
   const roleContext = authService.getRoleContext();
+
+  // CRITICAL: If no roleContext, this is a new tab - require login
+  if (!roleContext) {
+    console.log('🆕 No roleContext - redirecting to login');
+    return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
+  }
 
   // Check if route requires specific role
   if (requiredRole && user?.role !== requiredRole) {
-    // Only redirect if role context matches required role
-    // This prevents redirect when user from another tab is detected
-    if (roleContext === requiredRole) {
-      if (user?.role === 'ADMIN') {
-        return <Navigate to={`${ROUTES.ADMIN_DASHBOARD}?tab=overview`} replace />;
-      }
-      return <Navigate to={ROUTES.HOME} replace />;
+    // Role mismatch - redirect based on actual user role
+    console.warn('⚠️ Role mismatch:', {
+      userRole: user?.role,
+      requiredRole,
+      roleContext,
+    });
+    
+    if (user?.role === 'ADMIN') {
+      return <Navigate to={ROUTES.ADMIN_DASHBOARD} replace />;
     }
-    // If role context doesn't match, redirect to login
-    return <Navigate to={ROUTES.LOGIN} replace />;
+    return <Navigate to={ROUTES.HOME} replace />;
+  }
+
+  // Verify roleContext matches user role (prevent conflicts)
+  if (roleContext && user && roleContext !== user.role) {
+    console.error('❌ RoleContext mismatch with user role:', {
+      roleContext,
+      userRole: user.role,
+    });
+    // Clear auth and require re-login
+    authService.logout();
+    return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
   }
 
   // Block admin from accessing staff-only routes (only if role context is ADMIN)
@@ -63,7 +81,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     ];
     
     if (staffOnlyRoutes.includes(location.pathname as any)) {
-      return <Navigate to={`${ROUTES.ADMIN_DASHBOARD}?tab=overview`} replace />;
+      return <Navigate to={ROUTES.ADMIN_DASHBOARD} replace />;
     }
   }
 

@@ -40,6 +40,7 @@ const OrderSuccessView: React.FC<OrderSuccessViewProps> = ({
       orderNumber: order.orderNumber,
       timestamp: new Date(order.createdAt).getTime(),
       total: parseFloat(order.totalAmount),
+      membershipDiscount: order.membershipDiscount ? parseFloat(order.membershipDiscount) : undefined,
       items: order.items.length,
       customerName: order.customerName || customerName || 'Khách hàng',
       products: order.items.map(item => ({

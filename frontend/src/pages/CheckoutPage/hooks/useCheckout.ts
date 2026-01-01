@@ -9,6 +9,9 @@ import { orderService } from '@services/order.service';
 import paymentService from '@services/payment.service';
 import qrService from '@services/qr.service';
 import { STORAGE_KEYS } from '@constants';
+import { formatPrice } from '../../../utils/formatPrice';
+import { customerService, type Customer } from '../../../services/customer.service';
+import { MEMBERSHIP_DISCOUNT_RATES } from '../../../constants/membership';
 import type { CustomerInfo, PaymentMethod } from '../types';
 import type { QRPaymentData } from '../../../components/features/payment/QRPaymentModal';
 import type { CartItem } from '../../../types/cart';
@@ -34,6 +37,10 @@ export const useCheckout = () => {
     table: initialTableNumber,
     notes: ''
   });
+  
+  // State for found customer and membership discount
+  const [foundCustomer, setFoundCustomer] = useState<Customer | null>(null);
+  const [membershipDiscount, setMembershipDiscount] = useState(0);
   
   // Flag to track if order has been restored
   const [orderRestored, setOrderRestored] = useState(false);
@@ -69,12 +76,30 @@ export const useCheckout = () => {
         const subtotalsIncludeVAT = Math.abs(sumOfSubtotals - orderTotalAmount) < 1; // Allow small rounding difference
         
         // Restore customer info first (before clearing cart)
-        setCustomerInfo({
+        const restoredCustomerInfo = {
           name: order.customerName || '',
           phone: order.customerPhone || '',
           table: order.customerTable || '',
           notes: order.notes || ''
-        });
+        };
+        setCustomerInfo(restoredCustomerInfo);
+        
+        // Lookup customer nếu có phone để hiển thị membership badge
+        if (restoredCustomerInfo.phone && restoredCustomerInfo.phone.length >= 10) {
+          try {
+            const customer = await customerService.getByPhone(restoredCustomerInfo.phone);
+            if (customer) {
+              setFoundCustomer(customer);
+              // Tính giảm giá dựa trên hạng
+              const discountRate = MEMBERSHIP_DISCOUNT_RATES[customer.membershipLevel] || 0;
+              // Tính discount từ totalPrice hiện tại (sẽ được tính lại sau khi restore cart)
+              const discount = Math.floor(sumOfSubtotals * (discountRate / 100));
+              setMembershipDiscount(discount);
+            }
+          } catch (error) {
+            // Ignore error
+          }
+        }
         
         // Restore payment method
         if (order.paymentMethod) {
@@ -218,6 +243,40 @@ export const useCheckout = () => {
       setOrderRestored(false);
     }
   }, [locationState?.orderId]);
+
+  // Lookup customer when phone number is entered (debounced)
+  useEffect(() => {
+    const timeoutId = setTimeout(async () => {
+      if (customerInfo.phone && customerInfo.phone.length >= 10) {
+        try {
+          const customer = await customerService.getByPhone(customerInfo.phone);
+          if (customer) {
+            setFoundCustomer(customer);
+            // Auto-fill name nếu chưa có hoặc name khác với customer.name
+            if (customer.name && (!customerInfo.name || customerInfo.name !== customer.name)) {
+              setCustomerInfo(prev => ({ ...prev, name: customer.name }));
+            }
+            // Tính giảm giá dựa trên hạng
+            const discountRate = MEMBERSHIP_DISCOUNT_RATES[customer.membershipLevel] || 0;
+            const discount = Math.floor(totalPrice * (discountRate / 100));
+            setMembershipDiscount(discount);
+          } else {
+            setFoundCustomer(null);
+            setMembershipDiscount(0);
+          }
+        } catch (error) {
+          // Customer không tồn tại - không phải lỗi
+          setFoundCustomer(null);
+          setMembershipDiscount(0);
+        }
+      } else {
+        setFoundCustomer(null);
+        setMembershipDiscount(0);
+      }
+    }, 500); // Debounce 500ms
+
+    return () => clearTimeout(timeoutId);
+  }, [customerInfo.phone, totalPrice, customerInfo.name]);
   // For customer display: default to QR code (preferred)
   // For staff: default to cash
   const isCustomerDisplay = checkIsCustomerDisplay(location.pathname, location.state as any);
@@ -376,10 +435,18 @@ export const useCheckout = () => {
         }
       }
       
-      toast.success(`Đơn hàng ${orderData.orderNumber} đã được tạo thành công!`, {
-        duration: 3000,
-        icon: '✅'
-      });
+      // Hiển thị thông báo về giảm giá thành viên nếu có
+      if (orderData.membershipDiscount && parseFloat(orderData.membershipDiscount) > 0) {
+        toast.success(
+          `Đơn hàng ${orderData.orderNumber} đã được tạo thành công! Bạn đã được giảm ${formatPrice(parseFloat(orderData.membershipDiscount))} nhờ hạng thành viên!`,
+          { duration: 4000, icon: '🎉' }
+        );
+      } else {
+        toast.success(`Đơn hàng ${orderData.orderNumber} đã được tạo thành công!`, {
+          duration: 3000,
+          icon: '✅'
+        });
+      }
       
       // Dispatch custom event for real-time updates (fallback nếu socket không hoạt động)
       window.dispatchEvent(new CustomEvent('orderCompleted', {
@@ -401,6 +468,26 @@ export const useCheckout = () => {
       await new Promise(resolve => setTimeout(resolve, 800));
       
       clearCart();
+      
+      // Lookup customer again after successful checkout to refresh customer info
+      // This ensures newly created customers are displayed correctly
+      if (customerInfo.phone && customerInfo.phone.length >= 10) {
+        try {
+          const refreshedCustomer = await customerService.getByPhone(customerInfo.phone);
+          if (refreshedCustomer) {
+            setFoundCustomer(refreshedCustomer);
+            // Update customer info with refreshed data
+            setCustomerInfo(prev => ({
+              ...prev,
+              name: refreshedCustomer.name || prev.name,
+            }));
+            console.log('✅ Customer refreshed after checkout:', refreshedCustomer);
+          }
+        } catch (error) {
+          // Customer lookup failed - not critical, continue
+          console.warn('⚠️ Could not refresh customer after checkout:', error);
+        }
+      }
       
       // Set success data instead of navigating
       setOrderSuccessData({
@@ -485,11 +572,19 @@ export const useCheckout = () => {
 
   const handleNewOrder = () => {
     setOrderSuccessData(null);
+    // Clear customer flag when leaving checkout
+    if (typeof window !== 'undefined' && isCustomerDisplay) {
+      sessionStorage.removeItem('checkout_from_customer');
+    }
     navigate(isCustomerDisplay ? '/customer' : '/');
   };
 
   const handleGoHome = () => {
     setOrderSuccessData(null);
+    // Clear customer flag when leaving checkout
+    if (typeof window !== 'undefined' && isCustomerDisplay) {
+      sessionStorage.removeItem('checkout_from_customer');
+    }
     navigate(isCustomerDisplay ? '/customer' : '/');
   };
 
@@ -497,6 +592,8 @@ export const useCheckout = () => {
     items,
     totalPrice,
     customerInfo,
+    foundCustomer,
+    membershipDiscount,
     paymentMethod,
     isProcessing,
     showQRModal,

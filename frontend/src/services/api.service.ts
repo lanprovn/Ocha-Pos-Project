@@ -18,6 +18,11 @@ axiosInstance.interceptors.request.use(
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      // Log warning if no token for protected routes
+      if (config.url && !config.url.includes('/login') && !config.url.includes('/health')) {
+        console.warn('⚠️ No token found for API request:', config.url);
+      }
     }
     // Không set Content-Type cho FormData, để browser tự set với boundary
     if (config.data instanceof FormData) {
@@ -42,8 +47,9 @@ axiosInstance.interceptors.response.use(
       const status = error.response.status;
       const message = (error.response.data as any)?.error || error.message;
       
-      // Don't log 404 errors as they're often expected
-      if (status !== 404) {
+      // Don't log 404 errors as they're often expected (e.g., no open shift)
+      // Don't log 403 errors if they're handled by the component
+      if (status !== 404 && status !== 403) {
         console.error(`API Error [${status}]:`, message);
       }
       

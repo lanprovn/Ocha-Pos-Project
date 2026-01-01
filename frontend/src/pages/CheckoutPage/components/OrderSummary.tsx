@@ -5,9 +5,10 @@ import type { CartItem } from '../../../types/cart';
 interface OrderSummaryProps {
   items: CartItem[];
   totalPrice: number;
+  membershipDiscount?: number;
 }
 
-export const OrderSummary: React.FC<OrderSummaryProps> = ({ items, totalPrice }) => {
+export const OrderSummary: React.FC<OrderSummaryProps> = ({ items, totalPrice, membershipDiscount = 0 }) => {
   if (items.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -69,18 +70,26 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({ items, totalPrice })
               {formatPrice(totalPrice)}
             </span>
           </div>
+          {membershipDiscount > 0 && (
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-green-600 font-medium">Giảm giá thành viên:</span>
+              <span className="text-green-600 font-semibold">
+                -{formatPrice(membershipDiscount)}
+              </span>
+            </div>
+          )}
           <div className="flex justify-between items-center mb-2">
             <span className="text-gray-600">Phí dịch vụ:</span>
             <span className="text-gray-600">0₫</span>
           </div>
           <div className="flex justify-between items-center mb-4">
             <span className="text-gray-600">VAT (10%):</span>
-            <span className="text-gray-600">{formatPrice(totalPrice * 0.1)}</span>
+            <span className="text-gray-600">{formatPrice((totalPrice - membershipDiscount) * 0.1)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-lg font-bold text-gray-800">Tổng cộng:</span>
             <span className="text-xl font-bold text-orange-500">
-              {formatPrice(totalPrice * 1.1)}
+              {formatPrice((totalPrice - membershipDiscount) * 1.1)}
             </span>
           </div>
         </div>

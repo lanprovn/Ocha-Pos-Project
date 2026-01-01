@@ -23,7 +23,17 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ onRefresh }) => {
           <span>Bán Hàng</span>
         </button>
         <button
-          onClick={() => navigate('/checkout')}
+          onClick={() => {
+            // Clear customer flag when staff navigates to checkout
+            if (typeof window !== 'undefined') {
+              sessionStorage.removeItem('checkout_from_customer');
+            }
+            navigate('/checkout', {
+              state: {
+                fromCustomer: false // Explicitly mark as staff checkout
+              }
+            });
+          }}
           className="p-4 bg-slate-700 hover:bg-slate-800 text-white rounded-md transition-colors flex items-center justify-center space-x-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -32,7 +42,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ onRefresh }) => {
           <span>Thanh Toán</span>
         </button>
         <button
-          onClick={() => navigate(`${ROUTES.ADMIN_DASHBOARD}?tab=stock`)}
+          onClick={() => navigate(ROUTES.ADMIN_STOCK)}
           className="p-4 bg-slate-700 hover:bg-slate-800 text-white rounded-md transition-colors flex items-center justify-center space-x-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

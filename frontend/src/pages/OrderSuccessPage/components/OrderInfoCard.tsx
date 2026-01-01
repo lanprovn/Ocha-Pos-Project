@@ -73,6 +73,13 @@ export const OrderInfoCard: React.FC<OrderInfoCardProps> = ({
           <span className="text-gray-800">{getPaymentMethodLabel(paymentMethod)}</span>
         </div>
         
+        {orderDetails.membershipDiscount && orderDetails.membershipDiscount > 0 && (
+          <div className="flex justify-between items-center py-2 border-b border-gray-200">
+            <span className="text-green-600 font-medium">Giảm giá thành viên:</span>
+            <span className="text-green-600 font-semibold">-{formatCurrency(orderDetails.membershipDiscount)}</span>
+          </div>
+        )}
+        
         <div className="flex justify-between items-center py-3 mt-4">
           <span className="text-xl font-bold text-gray-900">Tổng cộng:</span>
           <span className="text-2xl font-bold text-slate-700">{formatCurrency(orderDetails.total)}</span>

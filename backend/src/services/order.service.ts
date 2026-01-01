@@ -8,6 +8,9 @@ import logger from '../utils/logger';
 import { InsufficientStockError, OrderNotFoundError } from '../errors';
 import { emitStockUpdated } from '../socket/socket.io';
 import { StockTransactionType } from '../types/common.types';
+import { calculateMembershipDiscount, calculateLoyaltyPoints } from '../constants/membership.constants';
+import customerService from './customer.service';
+import promotionService from './promotion.service';
 
 export class OrderService {
   /**
@@ -19,15 +22,142 @@ export class OrderService {
   }
 
   /**
+   * Normalize phone number (remove spaces, dashes, etc.)
+   */
+  private normalizePhone(phone: string | null): string | null {
+    if (!phone) return null;
+    // Remove all non-digit characters
+    const normalized = phone.replace(/\D/g, '');
+    return normalized.length >= 10 ? normalized : null;
+  }
+
+  /**
+   * Tìm customer theo số điện thoại (đã normalize)
+   */
+  private async findCustomerByPhone(phone: string | null) {
+    if (!phone) return null;
+    
+    const normalizedPhone = this.normalizePhone(phone);
+    if (!normalizedPhone) return null;
+    
+    try {
+      const customers = await prisma.customers.findMany({
+        where: { 
+          phone: normalizedPhone,
+          isActive: true 
+        },
+        take: 1,
+      });
+      return customers[0] || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Tìm hoặc tạo customer từ phone và name
+   * Trả về customerId hoặc null
+   */
+  private async findOrCreateCustomer(phone: string | null, name: string | null, tx?: any): Promise<string | null> {
+    if (!phone) return null;
+
+    const normalizedPhone = this.normalizePhone(phone);
+    if (!normalizedPhone) return null;
+
+    const prismaClient = tx || prisma;
+
+    try {
+      // Tìm customer theo phone đã normalize
+      let customer = await prismaClient.customers.findFirst({
+        where: { 
+          phone: normalizedPhone,
+          isActive: true 
+        },
+      });
+
+      if (customer) {
+        // Customer đã tồn tại - cập nhật name nếu có và khác nhau
+        if (name && name.trim() && customer.name !== name.trim()) {
+          await prismaClient.customers.update({
+            where: { id: customer.id },
+            data: { name: name.trim(), updatedAt: new Date() },
+          });
+        }
+        return customer.id;
+      } else {
+        // Customer chưa tồn tại - tạo mới nếu có name
+        if (name && name.trim()) {
+          const customerId = `CUST-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          await prismaClient.customers.create({
+            data: {
+              id: customerId,
+              name: name.trim(),
+              phone: normalizedPhone, // Lưu phone đã normalize
+              loyaltyPoints: 0,
+              membershipLevel: 'BRONZE',
+              totalSpent: 0,
+              isActive: true,
+              updatedAt: new Date(),
+            },
+          });
+          return customerId;
+        }
+        return null;
+      }
+    } catch (error) {
+      logger.error('Error in findOrCreateCustomer', {
+        error: error instanceof Error ? error.message : String(error),
+        phone: normalizedPhone,
+        name,
+      });
+      return null;
+    }
+  }
+
+  /**
    * Create or update draft order (cart đang tạo)
    * Tìm draft order theo orderCreator và orderCreatorName, nếu có thì update, không thì tạo mới
    */
   async createOrUpdateDraft(data: CreateOrderInput) {
     try {
       // Calculate total amount from items
-      const totalAmount = data.items.reduce((sum, item) => {
+      let totalAmount = data.items.reduce((sum, item) => {
         return sum + item.subtotal;
       }, 0);
+
+      // Tìm customer nếu có số điện thoại
+      const customer = await this.findCustomerByPhone(data.customerPhone || null);
+      let membershipDiscount = 0;
+      let promotionDiscount = 0;
+      let promotionCodeId: string | null = null;
+      let finalAmount = totalAmount;
+
+      // Áp dụng giảm giá theo hạng thành viên
+      if (customer && customer.membershipLevel) {
+        membershipDiscount = calculateMembershipDiscount(totalAmount, customer.membershipLevel);
+        finalAmount = totalAmount - membershipDiscount;
+      }
+
+      // Validate và áp dụng promotion code nếu có
+      if (data.promotionCode) {
+        try {
+          const customerId = customer?.id || null;
+          const validationResult = await promotionService.validateCode({
+            code: data.promotionCode,
+            orderAmount: finalAmount,
+            customerId: customerId || null,
+            customerPhone: data.customerPhone || null,
+          });
+
+          if (validationResult.isValid && validationResult.promotionCode) {
+            promotionDiscount = validationResult.discountAmount;
+            promotionCodeId = validationResult.promotionCode.id;
+            finalAmount = finalAmount - promotionDiscount;
+          }
+        } catch (error: any) {
+          logger.warn('Promotion code validation failed in draft', { error: error.message, code: data.promotionCode });
+        }
+      }
 
       // Tìm draft order đang tạo (status = CREATING) của cùng một người tạo
       const existingDraft = await prisma.order.findFirst({
@@ -51,10 +181,15 @@ export class OrderService {
         const updated = await prisma.order.update({
           where: { id: existingDraft.id },
           data: {
-            totalAmount: new Decimal(totalAmount),
+            totalAmount: new Decimal(finalAmount),
+            discountAmount: (membershipDiscount + promotionDiscount) > 0 ? new Decimal(membershipDiscount + promotionDiscount) : null,
+            membershipDiscount: membershipDiscount > 0 ? new Decimal(membershipDiscount) : null,
+            promotionCodeId: promotionCodeId,
+            promotionDiscount: promotionDiscount > 0 ? new Decimal(promotionDiscount) : null,
             customerName: data.customerName || null,
             customerPhone: data.customerPhone || null,
             customerTable: data.customerTable || null,
+            customerId: customer?.id || null,
             notes: data.notes || null,
             items: {
               create: data.items.map((item) => ({
@@ -99,10 +234,15 @@ export class OrderService {
           data: {
             orderNumber,
             status: 'CREATING',
-            totalAmount: new Decimal(totalAmount),
+            totalAmount: new Decimal(finalAmount),
+            discountAmount: (membershipDiscount + promotionDiscount) > 0 ? new Decimal(membershipDiscount + promotionDiscount) : null,
+            membershipDiscount: membershipDiscount > 0 ? new Decimal(membershipDiscount) : null,
+            promotionCodeId: promotionCodeId,
+            promotionDiscount: promotionDiscount > 0 ? new Decimal(promotionDiscount) : null,
             customerName: data.customerName || null,
             customerPhone: data.customerPhone || null,
             customerTable: data.customerTable || null,
+            customerId: customer?.id || null,
             notes: data.notes || null,
             paymentMethod: null,
             paymentStatus: 'PENDING',
@@ -456,11 +596,56 @@ export class OrderService {
       }
 
       // 3. Calculate total amount from items
-      const totalAmount = data.items.reduce((sum, item) => {
+      let totalAmount = data.items.reduce((sum, item) => {
         return sum + item.subtotal;
       }, 0);
 
-      // 4. Generate unique order number trong transaction
+      // 4. Tìm hoặc tạo customer từ phone và name
+      const customerId = await this.findOrCreateCustomer(
+        data.customerPhone || null,
+        data.customerName || null,
+        tx
+      );
+
+      // 5. Áp dụng giảm giá theo hạng thành viên nếu có customer
+      let membershipDiscount = 0;
+      let promotionDiscount = 0;
+      let promotionCodeId: string | null = null;
+      let finalAmount = totalAmount;
+      
+      if (customerId) {
+        const customer = await tx.customers.findUnique({
+          where: { id: customerId },
+        });
+        
+        if (customer && customer.membershipLevel) {
+          membershipDiscount = calculateMembershipDiscount(totalAmount, customer.membershipLevel);
+          finalAmount = totalAmount - membershipDiscount;
+        }
+      }
+
+      // 5.1. Validate và áp dụng promotion code nếu có
+      if (data.promotionCode) {
+        try {
+          const validationResult = await promotionService.validateCode({
+            code: data.promotionCode,
+            orderAmount: finalAmount, // Use amount after membership discount
+            customerId: customerId || null,
+            customerPhone: data.customerPhone || null,
+          });
+
+          if (validationResult.isValid && validationResult.promotionCode) {
+            promotionDiscount = validationResult.discountAmount;
+            promotionCodeId = validationResult.promotionCode.id;
+            finalAmount = finalAmount - promotionDiscount;
+          }
+        } catch (error: any) {
+          logger.warn('Promotion code validation failed', { error: error.message, code: data.promotionCode });
+          // Continue without promotion code if validation fails
+        }
+      }
+
+      // 6. Generate unique order number trong transaction
       let orderNumber = this.generateOrderNumber();
       let attempts = 0;
 
@@ -479,12 +664,17 @@ export class OrderService {
         throw new Error('Không thể tạo order number duy nhất sau 10 lần thử');
       }
 
-      // 5. Create order with items trong transaction
+      // 7. Create order with items trong transaction
       const order = await tx.order.create({
         data: {
           orderNumber,
           status: 'PENDING',
-          totalAmount: new Decimal(totalAmount),
+          totalAmount: new Decimal(finalAmount),
+          discountAmount: (membershipDiscount + promotionDiscount) > 0 ? new Decimal(membershipDiscount + promotionDiscount) : null,
+          membershipDiscount: membershipDiscount > 0 ? new Decimal(membershipDiscount) : null,
+          promotionCodeId: promotionCodeId,
+          promotionDiscount: promotionDiscount > 0 ? new Decimal(promotionDiscount) : null,
+          customerId: customerId || null,
           customerName: data.customerName || null,
           customerPhone: data.customerPhone || null,
           customerTable: data.customerTable || null,
@@ -514,6 +704,22 @@ export class OrderService {
           },
         },
       });
+
+      // 8. Record promotion code usage if applied
+      if (promotionCodeId && promotionDiscount > 0) {
+        try {
+          await promotionService.recordUsage(
+            promotionCodeId,
+            promotionDiscount,
+            order.id,
+            customerId || undefined,
+            data.customerPhone || undefined
+          );
+        } catch (error: any) {
+          logger.error('Failed to record promotion code usage', { error: error.message, promotionCodeId, orderId: order.id });
+          // Don't fail the order if usage recording fails
+        }
+      }
 
       // ✅ Tất cả operations atomic - hoặc thành công hết hoặc rollback hết
       return this.transformOrder(order);
@@ -727,6 +933,7 @@ export class OrderService {
               product: true,
             },
           },
+          customers: true, // Include customer để lấy membership level
         },
       });
 
@@ -749,12 +956,14 @@ export class OrderService {
               product: true,
             },
           },
+          customers: true,
         },
       });
 
       // Nếu order chuyển sang COMPLETED:
       // 1. Xóa draft orders của cùng orderCreator trong transaction
       // 2. Tự động trừ nguyên liệu theo recipe trong transaction
+      // 3. Cập nhật totalSpent và tính điểm tích lũy cho customer
       let stockUpdates: Array<{ type: 'product' | 'ingredient'; id: string; productId?: string; ingredientId?: string; quantity: number }> = [];
 
       if (data.status === 'COMPLETED') {
@@ -771,17 +980,65 @@ export class OrderService {
         // Tự động trừ nguyên liệu theo recipe trong transaction
         // Lưu lại thông tin stock updates để emit events sau transaction commit
         stockUpdates = await this.deductIngredientsFromOrder(updated, tx);
+
+        // Cập nhật totalSpent và tính điểm tích lũy cho customer
+        if (updated.customers) {
+          const customer = updated.customers;
+          const orderAmount = Number(updated.totalAmount);
+          
+          // Tính điểm tích lũy dựa trên hạng thành viên hiện tại
+          const pointsEarned = calculateLoyaltyPoints(orderAmount, customer.membershipLevel);
+          
+          // Lưu thông tin để cập nhật sau khi transaction commit
+          // (Vì customerService sử dụng prisma instance riêng)
+          return {
+            order: this.transformOrder(updated),
+            stockUpdates,
+            customerUpdate: {
+              customerId: customer.id,
+              orderAmount,
+              pointsEarned,
+              orderId: updated.id,
+              orderNumber: updated.orderNumber,
+            },
+          };
+        }
       }
 
       // ✅ Tất cả operations atomic
       return {
         order: this.transformOrder(updated),
         stockUpdates,
+        customerUpdate: null,
       };
-    }).then(async ({ order, stockUpdates }) => {
+    }).then(async ({ order, stockUpdates, customerUpdate }) => {
       // ✅ Emit socket events và check alerts SAU KHI transaction commit thành công
       if (stockUpdates.length > 0) {
         await this.emitStockUpdatesAndCheckAlerts(stockUpdates);
+      }
+
+      // ✅ Cập nhật totalSpent và tính điểm tích lũy cho customer sau khi transaction commit
+      if (customerUpdate) {
+        try {
+          // Cập nhật totalSpent (sẽ tự động cập nhật membership level)
+          await customerService.updateTotalSpent(customerUpdate.customerId, customerUpdate.orderAmount);
+          
+          // Cộng điểm tích lũy nếu có
+          if (customerUpdate.pointsEarned > 0) {
+            await customerService.updateLoyaltyPoints(customerUpdate.customerId, {
+              type: 'EARN',
+              points: customerUpdate.pointsEarned,
+              orderId: customerUpdate.orderId,
+              reason: `Tích điểm từ đơn hàng ${customerUpdate.orderNumber}`,
+            });
+          }
+        } catch (error) {
+          logger.error('Error updating customer loyalty after order completion', {
+            error: error instanceof Error ? error.message : String(error),
+            customerUpdate,
+          });
+          // Không throw error để không block order completion
+        }
       }
 
       return order;
@@ -852,6 +1109,8 @@ export class OrderService {
       orderNumber: order.orderNumber,
       status: order.status,
       totalAmount: order.totalAmount.toString(),
+      discountAmount: order.discountAmount ? order.discountAmount.toString() : null,
+      membershipDiscount: order.membershipDiscount ? order.membershipDiscount.toString() : null,
       customerName: order.customerName,
       customerPhone: order.customerPhone,
       customerTable: order.customerTable,

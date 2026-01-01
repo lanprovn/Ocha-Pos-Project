@@ -15,6 +15,7 @@ const createDraftOrderSchema = z.object({
     paymentStatus: z.nativeEnum(PaymentStatus).optional(),
     orderCreator: z.nativeEnum(OrderCreator).optional(),
     orderCreatorName: z.string().optional().nullable(),
+    promotionCode: z.string().optional().nullable(),
     items: z.array(
       z.object({
         productId: z.string().uuid(),
@@ -40,6 +41,7 @@ const createOrderSchema = z.object({
     paymentStatus: z.nativeEnum(PaymentStatus).optional(),
     orderCreator: z.nativeEnum(OrderCreator).optional(),
     orderCreatorName: z.string().optional().nullable(),
+    promotionCode: z.string().optional().nullable(),
     items: z.array(
       z.object({
         productId: z.string().uuid(),

@@ -122,3 +122,202 @@ export class ForbiddenError extends AppError {
   }
 }
 
+/**
+ * Error khi promotion code không tồn tại
+ */
+export class PromotionCodeNotFoundError extends AppError {
+  statusCode = 404;
+  errorCode = 'PROMOTION_CODE_NOT_FOUND';
+
+  constructor(code: string) {
+    super(`Mã giảm giá "${code}" không tồn tại`, { code }, true);
+  }
+
+  serialize() {
+    return {
+      error: this.message,
+      errorCode: this.errorCode,
+      details: this.details,
+    };
+  }
+}
+
+/**
+ * Error khi promotion code không hợp lệ
+ */
+export class InvalidPromotionCodeError extends AppError {
+  statusCode = 400;
+  errorCode = 'INVALID_PROMOTION_CODE';
+
+  constructor(message: string, details?: any) {
+    super(message, details, true);
+  }
+
+  serialize() {
+    return {
+      error: this.message,
+      errorCode: this.errorCode,
+      details: this.details,
+    };
+  }
+}
+
+/**
+ * Error khi shift không tồn tại
+ */
+export class ShiftNotFoundError extends AppError {
+  statusCode = 404;
+  errorCode = 'SHIFT_NOT_FOUND';
+
+  constructor(shiftId: string) {
+    super(`Ca làm việc không tồn tại`, { shiftId }, true);
+  }
+
+  serialize() {
+    return {
+      error: this.message,
+      errorCode: this.errorCode,
+      details: this.details,
+    };
+  }
+}
+
+/**
+ * Error khi shift đã đóng
+ */
+export class ShiftAlreadyClosedError extends AppError {
+  statusCode = 400;
+  errorCode = 'SHIFT_ALREADY_CLOSED';
+
+  constructor(shiftNumber: string) {
+    super(`Ca làm việc "${shiftNumber}" đã được đóng`, { shiftNumber }, true);
+  }
+
+  serialize() {
+    return {
+      error: this.message,
+      errorCode: this.errorCode,
+      details: this.details,
+    };
+  }
+}
+
+/**
+ * Error khi có shift đang mở
+ */
+export class ShiftAlreadyOpenError extends AppError {
+  statusCode = 400;
+  errorCode = 'SHIFT_ALREADY_OPEN';
+
+  constructor(message = 'Đã có ca làm việc đang mở. Vui lòng đóng ca hiện tại trước khi mở ca mới') {
+    super(message, undefined, true);
+  }
+
+  serialize() {
+    return {
+      error: this.message,
+      errorCode: this.errorCode,
+    };
+  }
+}
+
+/**
+ * Error khi supplier không tồn tại
+ */
+export class SupplierNotFoundError extends AppError {
+  statusCode = 404;
+  errorCode = 'SUPPLIER_NOT_FOUND';
+
+  constructor(supplierId: string) {
+    super(`Nhà cung cấp không tồn tại`, { supplierId }, true);
+  }
+
+  serialize() {
+    return {
+      error: this.message,
+      errorCode: this.errorCode,
+      details: this.details,
+    };
+  }
+}
+
+/**
+ * Error khi purchase order không tồn tại
+ */
+export class PurchaseOrderNotFoundError extends AppError {
+  statusCode = 404;
+  errorCode = 'PURCHASE_ORDER_NOT_FOUND';
+
+  constructor(orderId: string) {
+    super(`Đơn nhập hàng không tồn tại`, { orderId }, true);
+  }
+
+  serialize() {
+    return {
+      error: this.message,
+      errorCode: this.errorCode,
+      details: this.details,
+    };
+  }
+}
+
+/**
+ * Error khi purchase order không thể nhận hàng
+ */
+export class InvalidPurchaseOrderStatusError extends AppError {
+  statusCode = 400;
+  errorCode = 'INVALID_PURCHASE_ORDER_STATUS';
+
+  constructor(message: string, details?: any) {
+    super(message, details, true);
+  }
+
+  serialize() {
+    return {
+      error: this.message,
+      errorCode: this.errorCode,
+      details: this.details,
+    };
+  }
+}
+
+/**
+ * Error khi expense không tồn tại
+ */
+export class ExpenseNotFoundError extends AppError {
+  statusCode = 404;
+  errorCode = 'EXPENSE_NOT_FOUND';
+
+  constructor(expenseId: string) {
+    super(`Chi phí không tồn tại`, { expenseId }, true);
+  }
+
+  serialize() {
+    return {
+      error: this.message,
+      errorCode: this.errorCode,
+      details: this.details,
+    };
+  }
+}
+
+/**
+ * Error khi expense category không tồn tại
+ */
+export class ExpenseCategoryNotFoundError extends AppError {
+  statusCode = 404;
+  errorCode = 'EXPENSE_CATEGORY_NOT_FOUND';
+
+  constructor(categoryId: string) {
+    super(`Danh mục chi phí không tồn tại`, { categoryId }, true);
+  }
+
+  serialize() {
+    return {
+      error: this.message,
+      errorCode: this.errorCode,
+      details: this.details,
+    };
+  }
+}
+

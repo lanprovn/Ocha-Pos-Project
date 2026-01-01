@@ -206,6 +206,8 @@ npm run prisma:seed
 
 ### 4. Configure Environment Variables
 
+> ⚠️ **SECURITY WARNING:** Never commit `.env` files to version control. The `.env` file is already included in `.gitignore`. The values shown below are **placeholders/examples only** - replace them with your actual values.
+
 #### Backend Configuration
 
 Create a `.env` file in the `backend/` directory:
@@ -215,7 +217,7 @@ cd backend
 cp .env.example .env  # If .env.example exists
 ```
 
-Edit `.env` with your configuration:
+Edit `.env` with your **actual** configuration (replace all placeholder values):
 
 ```env
 # Server Configuration
@@ -223,9 +225,12 @@ NODE_ENV=development
 PORT=8080
 
 # Database
+# ⚠️ Replace with your actual PostgreSQL credentials
 DATABASE_URL="postgresql://username:password@localhost:5432/ocha_pos?schema=public"
 
 # JWT Authentication
+# ⚠️ Generate a strong random secret (minimum 32 characters)
+# You can generate one using: openssl rand -base64 32
 JWT_SECRET="your-super-secret-jwt-key-minimum-32-characters-long"
 JWT_EXPIRES_IN="7d"
 
@@ -237,16 +242,24 @@ BACKEND_URL="http://localhost:8080"
 LOG_LEVEL="info"
 
 # Cloudinary (Optional - for image storage)
+# ⚠️ Replace with your actual Cloudinary credentials from dashboard
 CLOUDINARY_CLOUD_NAME="your-cloud-name"
 CLOUDINARY_API_KEY="your-api-key"
 CLOUDINARY_API_SECRET="your-api-secret"
 
 # Bank QR Code (Optional)
+# ⚠️ Replace with your actual bank account information
 BANK_CODE="970422"
 BANK_ACCOUNT_NUMBER="1234567890"
 BANK_ACCOUNT_NAME="Your Name"
 QR_TEMPLATE="print"
 ```
+
+**Important Security Notes:**
+- 🔒 **Never share your `.env` file** - It contains sensitive credentials
+- 🔒 **Use strong, unique values** for `JWT_SECRET` (generate with `openssl rand -base64 32`)
+- 🔒 **Never commit `.env`** - It's already in `.gitignore`
+- 🔒 **Use different values** for development and production environments
 
 #### Frontend Configuration
 
@@ -254,6 +267,7 @@ Create a `.env` file in the `frontend/` directory:
 
 ```env
 # API Base URL
+# ⚠️ Replace with your actual backend URL
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
@@ -291,6 +305,58 @@ npm run prisma:studio
 # Seed database
 npm run prisma:seed
 ```
+
+---
+
+## 🔒 Security Best Practices
+
+### Environment Variables Security
+
+⚠️ **CRITICAL:** The `.env` file contains sensitive information and must be protected:
+
+1. **Never commit `.env` files**
+   - ✅ **Already configured:** `.env` files are included in `.gitignore` (lines 6-8)
+   - ✅ **Verified safe:** The project's `.gitignore` already excludes:
+     - `.env`
+     - `.env.local`
+     - `.env.*.local`
+   - ✅ Never manually add `.env` to git tracking
+   - ✅ Use `.env.example` as a template (without real values)
+   - ✅ Double-check before committing: `git status` should NOT show `.env` files
+
+2. **Use strong secrets**
+   ```bash
+   # Generate a strong JWT_SECRET (32+ characters)
+   openssl rand -base64 32
+   ```
+
+3. **Different values for different environments**
+   - Use different `JWT_SECRET` for development and production
+   - Use different database URLs for each environment
+   - Never use production credentials in development
+
+4. **Protect sensitive data**
+   - 🔒 Database passwords
+   - 🔒 JWT secrets
+   - 🔒 API keys (Cloudinary, payment gateways)
+   - 🔒 Bank account information
+
+5. **Production deployment**
+   - Use your platform's secure environment variable management
+   - Never expose secrets in logs or error messages
+   - Rotate secrets regularly
+   - Use secret management services (AWS Secrets Manager, HashiCorp Vault, etc.)
+
+### Additional Security Measures
+
+- ✅ **Authentication:** JWT tokens with expiration
+- ✅ **Authorization:** Role-based access control (RBAC)
+- ✅ **Password Hashing:** bcrypt with salt rounds
+- ✅ **Input Validation:** Zod schemas for all inputs
+- ✅ **Rate Limiting:** Prevent brute force attacks
+- ✅ **CORS:** Configured for allowed origins only
+- ✅ **Security Headers:** Helmet.js middleware
+- ✅ **SQL Injection Protection:** Prisma ORM parameterized queries
 
 ---
 
@@ -559,16 +625,26 @@ This project is configured for Railway.app deployment.
 
 ### Environment Variables for Production
 
-Ensure these are set in your deployment platform:
+> ⚠️ **SECURITY:** Never expose production environment variables in code or documentation. Use your deployment platform's secure environment variable management.
+
+Ensure these are set in your deployment platform's **secure environment variable settings**:
 
 **Backend:**
-- `DATABASE_URL` - PostgreSQL connection string
-- `JWT_SECRET` - Secret key for JWT (min 32 characters)
-- `FRONTEND_URL` - Frontend URL for CORS
+- `DATABASE_URL` - PostgreSQL connection string (use production database)
+- `JWT_SECRET` - Strong secret key for JWT (min 32 characters, use different from development)
+- `FRONTEND_URL` - Production frontend URL for CORS
 - `NODE_ENV=production`
+- `CLOUDINARY_*` - Production Cloudinary credentials (if using)
 
 **Frontend:**
-- `VITE_API_BASE_URL` - Backend API URL
+- `VITE_API_BASE_URL` - Production backend API URL
+
+**Best Practices:**
+- 🔒 Use different `JWT_SECRET` for production
+- 🔒 Use environment-specific database URLs
+- 🔒 Never hardcode credentials in code
+- 🔒 Rotate secrets regularly
+- 🔒 Use secret management tools (Railway Secrets, AWS Secrets Manager, etc.)
 
 ### Database Migration in Production
 

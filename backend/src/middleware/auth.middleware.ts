@@ -36,7 +36,18 @@ export function requireRole(...roles: string[]) {
     }
 
     if (!roles.includes(req.user.role)) {
-      res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
+      // Log for debugging
+      console.log('Role check failed:', {
+        userRole: req.user.role,
+        requiredRoles: roles,
+        path: req.path,
+        method: req.method,
+      });
+      res.status(403).json({ 
+        error: 'Forbidden: Insufficient permissions',
+        userRole: req.user.role,
+        requiredRoles: roles,
+      });
       return;
     }
 

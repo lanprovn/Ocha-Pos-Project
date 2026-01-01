@@ -181,7 +181,7 @@ const StockAlertsPanel: React.FC = () => {
         {totalAlerts > 6 && (
           <div className="mt-3 text-center">
             <button
-              onClick={() => navigate(`${ROUTES.ADMIN_DASHBOARD}?tab=stock`)}
+              onClick={() => navigate(ROUTES.ADMIN_STOCK)}
               className="text-sm text-red-600 hover:text-red-800 underline"
             >
               Xem tất cả ({totalAlerts} cảnh báo)
