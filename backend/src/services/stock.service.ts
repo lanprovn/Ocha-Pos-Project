@@ -1,4 +1,4 @@
-import prisma from '../config/database';
+import prisma from '@config/database';
 import {
   UpdateStockProductInput,
   UpdateStockIngredientInput,
@@ -9,10 +9,10 @@ import {
   CreateProductStockInput,
   CreateIngredientInput,
   UpdateIngredientInput,
-} from '../types/stock.types';
-import { emitStockUpdated, emitStockAlert } from '../socket/socket.io';
-import logger from '../utils/logger';
-import { StockAlertType } from '../types/common.types';
+} from '@core/types/stock.types';
+import { emitStockUpdated, emitStockAlert } from '@core/socket/socket.io';
+import logger from '@utils/logger';
+import { StockAlertType } from '@core/types/common.types';
 
 export class StockService {
   // ========== Product Stock ==========

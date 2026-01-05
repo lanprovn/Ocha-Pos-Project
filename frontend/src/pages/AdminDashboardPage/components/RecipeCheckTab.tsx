@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { CheckCircleIcon, XCircleIcon, ClockIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { productService } from '../../../services/product.service';
-import recipeService, { type CreateRecipeInput } from '../../../services/recipe.service';
-import { useProducts } from '../../../hooks/useProducts';
-import { useIngredients } from '../../../context/IngredientContext';
+import { productService } from '@features/products/services/product.service';
+import recipeService, { type CreateRecipeInput } from '@features/stock/services/recipe.service';
+import { useProducts } from '@features/products/hooks/useProducts';
+import { useIngredients } from '@features/stock/context/IngredientContext';
 import toast from 'react-hot-toast';
-import type { Product } from '../../../types/product';
-import type { RecipeItem } from '../../../services/recipe.service';
+import type { Product } from '@/types/product';
+import type { RecipeItem } from '@features/stock/services/recipe.service';
 
 interface ProductWithRecipe extends Product {
   hasRecipe: boolean;

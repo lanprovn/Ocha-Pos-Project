@@ -2,16 +2,16 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingCartIcon, MagnifyingGlassIcon, UserCircleIcon, HeartIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
-import { useCart } from '../../hooks/useCart';
-import { useProducts } from '../../hooks/useProducts';
-import { useFavorites } from '../../hooks/useFavorites';
-import ProductGrid from '../features/pos/product/ProductGrid';
-import ProductModal from '../features/pos/product/ProductModal';
+import { useCart } from '@features/orders/hooks/useCart';
+import { useProducts } from '@features/products/hooks/useProducts';
+import { useFavorites } from '@/hooks/useFavorites';
+import ProductGrid from '@features/products/components/ProductGrid';
+import ProductModal from '@features/products/components/ProductModal';
 import OrderTrackingModal from './CustomerDisplayLayout/components/OrderTrackingModal';
-import HomeButton from '../common/HomeButton';
-import { formatPrice } from '../../utils/formatPrice';
+import HomeButton from '@components/ui/HomeButton';
+import { formatPrice } from '@/utils/formatPrice';
 import toast from 'react-hot-toast';
-import type { Product } from '../../types/product';
+import type { Product } from '@/types/product';
 
 /**
  * CustomerDisplayLayout - Professional POS-style layout for customers

@@ -1,6 +1,6 @@
 import React from 'react';
-import type { PeakHourData } from '@services/reporting.service';
-import { formatPrice } from '../../../utils/formatPrice';
+import type { PeakHourData } from '@features/reporting/services/reporting.service';
+import { formatPrice } from '@/utils/formatPrice';
 
 interface PeakHoursChartProps {
   peakHours: PeakHourData[];

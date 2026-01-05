@@ -33,14 +33,20 @@
       "@/*": [
         "./src/*"
       ],
+      "@features/*": [
+        "./src/features/*"
+      ],
       "@components/*": [
         "./src/components/*"
       ],
-      "@pages/*": [
-        "./src/pages/*"
-      ],
       "@hooks/*": [
         "./src/hooks/*"
+      ],
+      "@lib/*": [
+        "./src/lib/*"
+      ],
+      "@pages/*": [
+        "./src/pages/*"
       ],
       "@context/*": [
         "./src/context/*"

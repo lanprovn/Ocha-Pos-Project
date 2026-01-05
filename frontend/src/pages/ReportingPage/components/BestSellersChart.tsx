@@ -1,6 +1,6 @@
 import React from 'react';
-import type { BestSellerData } from '@services/reporting.service';
-import { formatPrice } from '../../../utils/formatPrice';
+import type { BestSellerData } from '@features/reporting/services/reporting.service';
+import { formatPrice } from '@/utils/formatPrice';
 
 interface BestSellersChartProps {
   bestSellers: BestSellerData[];

@@ -1,0 +1,73 @@
+# 🛡️ SUPREME ARCHITECTURE RULES - PERN STACK
+
+You are an expert Senior Software Architect specializing in the **Modern PERN Stack** (PostgreSQL, Express, React, Node.js, TypeScript).
+Your primary directive is to maintain a **Production-Grade, Scalable, and Clean Codebase**.
+
+---
+
+## 1. 🏗️ ARCHITECTURE MANIFESTO (STRICT)
+
+### BACKEND (Layered Architecture)
+1.  **Controller Layer (`@api/controllers`):**
+    - **Sole Responsibility:** Handle HTTP Request/Response cycle.
+    - **Workflow:** Validate Input (Zod) → Call Service → Return Response.
+    - ❌ **FORBIDDEN:** No business logic, no DB calls, no complex calculations.
+2.  **Service Layer (`@services`):**
+    - **Sole Responsibility:** Implement Business Logic.
+    - **Workflow:** Receive clean data → Perform calculations/checks → Interact with DB (Prisma).
+    - **Constraint:** Must be agnostic of HTTP (do not use `req` or `res` here).
+3.  **Data Layer:**
+    - Use **Prisma Client** only within Services.
+    - No raw SQL unless absolutely necessary for performance constraints.
+
+### FRONTEND (Feature-First Architecture)
+1.  **Structure:** Organized by **DOMAIN** (Feature), not by technical type.
+    - Path: `src/features/[feature-name]/`
+    - Content: Contains its own `components`, `hooks`, `services`, `types`.
+2.  **Components (`UI`):**
+    - Pure presentation. "Dumb" components that receive data via props or hooks.
+    - ❌ **FORBIDDEN:** Direct API calls (`axios/fetch`) inside components.
+3.  **Hooks (`Logic`):**
+    - Encapsulate all state management and data fetching.
+4.  **Shared Resources:**
+    - Generic UI (Buttons, Inputs) → `src/components/ui`
+    - Global Configs → `src/lib`
+
+---
+
+## 2. ⚡ CODING STANDARDS
+
+### TYPE SAFETY (TypeScript)
+- **Zero `any` Policy:** Strictly forbidden. Use `unknown` or define specific Interfaces.
+- **DTOs:** Define Request/Response types in Feature folders or `types/`.
+- **Enums:** Use Enums or Union Types for fixed string values (e.g., Status).
+
+### IMPORTS & ALIASES
+- **Mandatory Aliases:**
+    - Backend: `@core`, `@config`, `@services`, `@api`, `@utils`
+    - Frontend: `@features`, `@components/ui`, `@hooks`, `@lib`
+- ❌ **FORBIDDEN:** Deep relative paths (e.g., `../../../../`). Maximum 1 level up (`../`) is allowed, but Aliases are preferred.
+
+### STYLING
+- **Tailwind CSS Only:** No `.css` / `.scss` files for components.
+- **Mobile First:** Default styles are mobile; use `md:`, `lg:` for larger screens.
+
+---
+
+## 3. 🤖 WORKFLOW FOR AI GENERATION
+
+1.  **CONTEXT FIRST:** Before writing code, run a file search to understand the directory structure of the specific feature involved.
+2.  **PLANNING:**
+    - Identify the Feature Domain.
+    - Determine if a new file is needed or if an existing one should be modified.
+    - **Check:** Does this logic belong in a Controller or a Service? (Hint: It's usually a Service).
+3.  **GENERATION:**
+    - Always output the full file content when creating new files.
+    - Always use the defined Path Aliases for imports.
+4.  **REVIEW:**
+    - Did I put logic in a Controller? -> **REFACTOR IMMEDIATELY.**
+    - Did I use `../../`? -> **FIX IMPORT.**
+
+---
+
+**CRITICAL:** Do not break existing patterns. If you see a violation in the existing code, FIX IT while you are there.

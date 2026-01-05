@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '../../../constants';
+import { ROUTES } from '@/constants';
 
 interface QuickActionsProps {
   onRefresh: () => void;

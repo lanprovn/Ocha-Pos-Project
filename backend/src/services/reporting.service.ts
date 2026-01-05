@@ -1,4 +1,4 @@
-import prisma from '../config/database';
+import prisma from '@config/database';
 import ExcelJS from 'exceljs';
 
 export interface ReportFilters {
@@ -591,25 +591,9 @@ export class ReportingService {
     ]);
     orderItemsSheet.getRow(1).font = { bold: true };
 
-    // Get all product IDs from order items
-    const productIds = new Set<string>();
-    orders.forEach((order) => {
-      order.items.forEach((item) => {
-        productIds.add(item.productId);
-      });
-    });
-
-    // Load all products at once
-    const products = await prisma.product.findMany({
-      where: {
-        id: { in: Array.from(productIds) },
-      },
-      include: {
-        category: true,
-      },
-    });
-
-    const productMap = new Map(products.map((p) => [p.id, p]));
+    // Get all product IDs from order items (reuse same data from orders sheet)
+    // Note: productIds, products, and productMap are already defined above for orders sheet
+    // Reuse the same productMap from above instead of redeclaring
 
     for (const order of orders) {
       for (const item of order.items) {

@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import ProductManagementTab from '../../MenuManagementPage/components/ProductManagementTab';
-import CategoryManagementTab from '../../MenuManagementPage/components/CategoryManagementTab';
+import ProductManagementTab from '@features/stock/MenuManagementPage/components/ProductManagementTab';
+import CategoryManagementTab from '@features/stock/MenuManagementPage/components/CategoryManagementTab';
 import RecipeCheckTab from './RecipeCheckTab';
-import { useProducts } from '../../../hooks/useProducts';
+import { useProducts } from '@features/products/hooks/useProducts';
 
 const MenuManagementTab: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();

@@ -1,13 +1,13 @@
 import React, { useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useOrderDisplay } from '../../OrderDisplayPage/hooks/useOrderDisplay';
-import { useOrderFilters } from '../../OrderDisplayPage/hooks/useOrderFilters';
-import { OrderStatusSection } from '../../OrderDisplayPage/components/OrderStatusSection';
-import OrderFilters from '../../OrderDisplayPage/components/OrderFilters';
-import { EmptyState } from '../../../components/common/ui/EmptyState';
-import { getStatusSections } from '../../OrderDisplayPage/utils/orderDisplayUtils';
-import { ROUTES } from '../../../constants';
-import { formatPrice } from '../../../utils/formatPrice';
+import { useOrderDisplay } from '@features/orders/OrderDisplayPage/hooks/useOrderDisplay';
+import { useOrderFilters } from '@features/orders/OrderDisplayPage/hooks/useOrderFilters';
+import { OrderStatusSection } from '@features/orders/OrderDisplayPage/components/OrderStatusSection';
+import OrderFilters from '@features/orders/OrderDisplayPage/components/OrderFilters';
+import { EmptyState } from '@components/ui/EmptyState';
+import { getStatusSections } from '@features/orders/OrderDisplayPage/utils/orderDisplayUtils';
+import { ROUTES } from '@/constants';
+import { formatPrice } from '@/utils/formatPrice';
 
 const OrderManagementTab: React.FC = () => {
   const navigate = useNavigate();

@@ -1,10 +1,10 @@
 // Dashboard data hook
 import { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
-import dashboardService from '@services/dashboard.service';
-import stockService from '@services/stock.service.ts';
+import dashboardService from '@features/dashboard/services/dashboard.service';
+import stockService from '@features/stock/services/stock.service';
 import type { DashboardDailySales, DashboardStats } from '../types';
-import type { StockAlert } from '@services/stock.service.ts';
+import type { StockAlert } from '@features/stock/services/stock.service';
 
 export const useDashboardData = () => {
   const [dailySales, setDailySales] = useState<DashboardDailySales | null>(null);

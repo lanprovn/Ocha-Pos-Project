@@ -1,5 +1,5 @@
-import prisma from '../config/database';
-import { CreateCategoryInput, UpdateCategoryInput } from '../types/product.types';
+import prisma from '@config/database';
+import { CreateCategoryInput, UpdateCategoryInput } from '@core/types/product.types';
 
 // Simple in-memory cache for categories (TTL: 10 minutes - categories change less frequently)
 const categoryCache = new Map<string, { data: any; expires: number }>();

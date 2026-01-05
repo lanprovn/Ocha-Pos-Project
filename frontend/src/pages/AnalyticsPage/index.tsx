@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ChartBarIcon, DocumentChartBarIcon } from '@heroicons/react/24/outline';
-import HomeButton from '../../components/common/HomeButton';
+import HomeButton from '@components/ui/HomeButton';
 import DashboardTab from './components/DashboardTab';
 import ReportsTab from './components/ReportsTab';
 

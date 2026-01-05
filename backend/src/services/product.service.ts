@@ -1,19 +1,42 @@
-import prisma from '../config/database';
-import { CreateProductInput, UpdateProductInput } from '../types/product.types';
+import prisma from '@config/database';
+import { CreateProductInput, UpdateProductInput } from '@core/types/product.types';
 import { Decimal } from '@prisma/client/runtime/library';
 
 // Simple in-memory cache for products (TTL: 5 minutes)
 const productCache = new Map<string, { data: any; expires: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+export interface PaginationParams {
+  page?: string | number | undefined;
+  limit?: string | number | undefined;
+  includeAll?: string | boolean | undefined;
+}
+
+export interface PaginationResult<T> {
+  data: T[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
 export class ProductService {
   /**
    * Get all products with optional pagination
-   * @param page - Page number (1-indexed)
-   * @param limit - Items per page
-   * @param includeAll - If true, ignore pagination and return all (for backward compatibility)
+   * Handles all business logic: parsing params, calculating pagination, fetching data and count
+   * @param params - Raw query parameters from request
+   * @returns Paginated result with data and pagination metadata, or simple array if includeAll
    */
-  async getAll(page?: number, limit?: number, includeAll: boolean = false) {
+  async getAllWithPagination(params: PaginationParams): Promise<PaginationResult<any> | any[]> {
+    // Parse pagination params (optional - backward compatible)
+    const page = params.page ? parseInt(params.page as string, 10) : undefined;
+    const limit = params.limit ? parseInt(params.limit as string, 10) : undefined;
+    const includeAll = params.includeAll === 'true' || params.includeAll === true || (!page && !limit);
+
     const cacheKey = `products_${page}_${limit}_${includeAll}`;
     const cached = productCache.get(cacheKey);
 
@@ -51,31 +74,80 @@ export class ProductService {
       },
     };
 
-    // Add pagination if not including all
+    // If pagination is used, fetch data and count, then return structured result
     if (!includeAll && page && limit) {
       const skip = (page - 1) * limit;
       queryOptions.skip = skip;
       queryOptions.take = limit;
-    }
 
-    const products = await prisma.product.findMany(queryOptions);
+      // Fetch data and count in parallel
+      const [products, total] = await Promise.all([
+        prisma.product.findMany(queryOptions),
+        prisma.product.count(),
+      ]);
 
-    // Cache result
-    productCache.set(cacheKey, {
-      data: products,
-      expires: Date.now() + CACHE_TTL,
-    });
+      const totalPages = Math.ceil(total / limit);
 
-    // Clean expired cache entries periodically
-    if (productCache.size > 100) {
-      for (const [key, value] of productCache.entries()) {
-        if (value.expires <= Date.now()) {
-          productCache.delete(key);
+      const result: PaginationResult<any> = {
+        data: products,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+        },
+      };
+
+      // Cache result
+      productCache.set(cacheKey, {
+        data: result,
+        expires: Date.now() + CACHE_TTL,
+      });
+
+      // Clean expired cache entries periodically
+      if (productCache.size > 100) {
+        for (const [key, value] of productCache.entries()) {
+          if (value.expires <= Date.now()) {
+            productCache.delete(key);
+          }
         }
       }
-    }
 
-    return products;
+      return result;
+    } else {
+      // Return all products (no pagination)
+      const products = await prisma.product.findMany(queryOptions);
+
+      // Cache result
+      productCache.set(cacheKey, {
+        data: products,
+        expires: Date.now() + CACHE_TTL,
+      });
+
+      // Clean expired cache entries periodically
+      if (productCache.size > 100) {
+        for (const [key, value] of productCache.entries()) {
+          if (value.expires <= Date.now()) {
+            productCache.delete(key);
+          }
+        }
+      }
+
+      return products;
+    }
+  }
+
+  /**
+   * Get all products with optional pagination (legacy method for backward compatibility)
+   * @param page - Page number (1-indexed)
+   * @param limit - Items per page
+   * @param includeAll - If true, ignore pagination and return all (for backward compatibility)
+   * @deprecated Use getAllWithPagination instead
+   */
+  async getAll(page?: number, limit?: number, includeAll: boolean = false) {
+    return this.getAllWithPagination({ page, limit, includeAll });
   }
 
   /**

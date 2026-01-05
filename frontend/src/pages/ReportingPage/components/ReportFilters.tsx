@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ReportFilters } from '@services/reporting.service';
+import type { ReportFilters } from '@features/reporting/services/reporting.service';
 
 interface ReportFiltersProps {
   filters: ReportFilters;

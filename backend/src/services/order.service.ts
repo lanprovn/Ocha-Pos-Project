@@ -1,13 +1,13 @@
-import prisma from '../config/database';
-import { CreateOrderInput, OrderFilters, UpdateOrderStatusInput, UpdateOrderInput, OrderWithItems } from '../types/order.types';
+import prisma from '@config/database';
+import { CreateOrderInput, OrderFilters, UpdateOrderStatusInput, UpdateOrderInput, OrderWithItems, Order } from '@core/types/order.types';
 import { Decimal } from '@prisma/client/runtime/library';
 import { Prisma } from '@prisma/client';
 import recipeService from './recipe.service';
 import stockService from './stock.service';
-import logger from '../utils/logger';
-import { InsufficientStockError, OrderNotFoundError } from '../errors';
-import { emitStockUpdated } from '../socket/socket.io';
-import { StockTransactionType } from '../types/common.types';
+import logger from '@utils/logger';
+import { InsufficientStockError, OrderNotFoundError } from '@core/errors';
+import { emitStockUpdated } from '@core/socket/socket.io';
+import { StockTransactionType } from '@core/types/common.types';
 
 export class OrderService {
   /**
@@ -522,8 +522,19 @@ export class OrderService {
 
   /**
    * Get all orders with filters and pagination
+   * Handles all business logic: parsing params, calculating pagination, fetching data and count
+   * @param filters - Raw query parameters from request
+   * @returns Paginated result with data and pagination metadata, or simple array if no pagination
    */
-  async findAll(filters?: OrderFilters) {
+  async findAllWithPagination(filters?: {
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    paymentMethod?: string;
+    paymentStatus?: string;
+    page?: string | number;
+    limit?: string | number;
+  }): Promise<{ data: Order[]; pagination: { page: number; limit: number; total: number; totalPages: number; hasNext: boolean; hasPrev: boolean } } | Order[]> {
     const where: any = {};
 
     if (filters?.status) {
@@ -550,36 +561,87 @@ export class OrderService {
       where.createdAt = { ...where.createdAt, lte: endDate };
     }
 
-    // Pagination
-    const page = filters?.page || 1;
-    const limit = filters?.limit || 50; // Default 50 items per page
-    const skip = (page - 1) * limit;
+    // Parse pagination params
+    const page = filters?.page ? parseInt(filters.page as string, 10) : undefined;
+    const limit = filters?.limit ? parseInt(filters.limit as string, 10) : undefined;
 
-    // Optimize query - chỉ select fields cần thiết cho product
-    const orders = await prisma.order.findMany({
-      where,
-      include: {
-        items: {
+    // If pagination is used, fetch data and count, then return structured result
+    if (page && limit) {
+      const skip = (page - 1) * limit;
+
+      // Fetch data and count in parallel
+      const [orders, total] = await Promise.all([
+        prisma.order.findMany({
+          where,
           include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                image: true,
-                price: true,
+            items: {
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    image: true,
+                    price: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          skip,
+          take: limit,
+        }),
+        prisma.order.count({ where }),
+      ]);
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        data: orders.map((order) => this.transformOrder(order)),
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+        },
+      };
+    } else {
+      // Return all orders (no pagination)
+      const orders = await prisma.order.findMany({
+        where,
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  image: true,
+                  price: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip,
-      take: limit,
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
 
-    return orders.map((order) => this.transformOrder(order));
+      return orders.map((order) => this.transformOrder(order));
+    }
+  }
+
+  /**
+   * Get all orders with filters and pagination (legacy method for backward compatibility)
+   * @deprecated Use findAllWithPagination instead
+   */
+  async findAll(filters?: OrderFilters) {
+    return this.findAllWithPagination(filters);
   }
 
   /**

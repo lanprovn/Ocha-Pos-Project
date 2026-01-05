@@ -1,6 +1,6 @@
 import React from 'react';
-import type { DailyReportData, ReportSummary } from '@services/reporting.service';
-import { formatPrice } from '../../../utils/formatPrice';
+import type { DailyReportData, ReportSummary } from '@features/reporting/services/reporting.service';
+import { formatPrice } from '@/utils/formatPrice';
 
 interface ReportTableProps {
   dailyData: DailyReportData[];

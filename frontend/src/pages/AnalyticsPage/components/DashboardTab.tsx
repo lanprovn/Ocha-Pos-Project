@@ -1,11 +1,11 @@
 import React from 'react';
-import { useDashboardData } from '../../DashboardPage/hooks/useDashboardData';
-import { DashboardHeader } from '../../DashboardPage/components/DashboardHeader';
-import { StatsCards } from '../../DashboardPage/components/StatsCards';
-import { RevenueChart } from '../../DashboardPage/components/RevenueChart';
-import { TopProductsTable } from '../../DashboardPage/components/TopProductsTable';
-import { PaymentStats } from '../../DashboardPage/components/PaymentStats';
-import { RecentOrders } from '../../DashboardPage/components/RecentOrders';
+import { useDashboardData } from '@pages/DashboardPage/hooks/useDashboardData';
+import { DashboardHeader } from '@pages/DashboardPage/components/DashboardHeader';
+import { StatsCards } from '@pages/DashboardPage/components/StatsCards';
+import { RevenueChart } from '@pages/DashboardPage/components/RevenueChart';
+import { TopProductsTable } from '@pages/DashboardPage/components/TopProductsTable';
+import { PaymentStats } from '@pages/DashboardPage/components/PaymentStats';
+import { RecentOrders } from '@pages/DashboardPage/components/RecentOrders';
 
 const DashboardTab: React.FC = () => {
   const {

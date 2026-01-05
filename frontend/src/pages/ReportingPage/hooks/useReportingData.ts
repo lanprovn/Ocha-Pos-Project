@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import reportingService from '@services/reporting.service';
-import type { ReportData, ReportFilters } from '@services/reporting.service';
+import reportingService from '@features/reporting/services/reporting.service';
+import type { ReportData, ReportFilters } from '@features/reporting/services/reporting.service';
 
 export const useReportingData = () => {
   const [reportData, setReportData] = useState<ReportData | null>(null);

@@ -1,5 +1,5 @@
-import prisma from '../config/database';
-import { CreateRecipeInput, UpdateRecipeInput, RecipeItem } from '../types/recipe.types';
+import prisma from '@config/database';
+import { CreateRecipeInput, UpdateRecipeInput, RecipeItem } from '@core/types/recipe.types';
 import { Decimal } from '@prisma/client/runtime/library';
 
 export class RecipeService {

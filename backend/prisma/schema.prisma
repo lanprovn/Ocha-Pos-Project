@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Users - Staff, admin accounts
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -24,13 +20,6 @@ model User {
   @@map("users")
 }
 
-enum UserRole {
-  ADMIN
-  STAFF
-  CUSTOMER
-}
-
-// Categories - Danh mục sản phẩm
 model Category {
   id          String    @id @default(uuid())
   name        String
@@ -39,37 +28,34 @@ model Category {
   icon        String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-
   products    Product[]
 
   @@map("categories")
 }
 
-// Products - Sản phẩm
 model Product {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  price       Decimal  @db.Decimal(10, 2)
-  categoryId  String?
-  image       String?
-  rating      Decimal? @db.Decimal(3, 2)
-  discount    Decimal? @db.Decimal(5, 2)
-  stock       Int      @default(0)
-  isAvailable Boolean  @default(true)
-  isPopular   Boolean  @default(false)
-  tags        String[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  category    Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  sizes       ProductSize[]
-  toppings    ProductTopping[]
-  orderItems  OrderItem[]
-  stockData   Stock?
-  alerts      StockAlert[]
+  id           String             @id @default(uuid())
+  name         String
+  description  String?
+  price        Decimal            @db.Decimal(10, 2)
+  categoryId   String?
+  image        String?
+  rating       Decimal?           @db.Decimal(3, 2)
+  discount     Decimal?           @db.Decimal(5, 2)
+  stock        Int                @default(0)
+  isAvailable  Boolean            @default(true)
+  isPopular    Boolean            @default(false)
+  tags         String[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  orderItems   OrderItem[]
+  recipes      ProductRecipe[]
+  sizes        ProductSize[]
+  toppings     ProductTopping[]
+  category     Category?          @relation(fields: [categoryId], references: [id])
+  stockData    Stock?
+  alerts       StockAlert[]
   transactions StockTransaction[]
-  recipes     ProductRecipe[]
 
   @@index([categoryId])
   @@index([isAvailable])
@@ -79,55 +65,52 @@ model Product {
   @@map("products")
 }
 
-// Product Sizes - Kích thước sản phẩm
 model ProductSize {
-  id        String   @id @default(uuid())
-  productId String
-  name      String
-  extraPrice Decimal @db.Decimal(10, 2) @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  productId  String
+  name       String
+  extraPrice Decimal  @default(0) @db.Decimal(10, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("product_sizes")
 }
 
-// Product Toppings - Topping options
 model ProductTopping {
-  id        String   @id @default(uuid())
-  productId String
-  name      String
-  extraPrice Decimal @db.Decimal(10, 2) @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  productId  String
+  name       String
+  extraPrice Decimal  @default(0) @db.Decimal(10, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("product_toppings")
 }
 
-// Orders - Đơn hàng
 model Order {
-  id              String        @id @default(uuid())
-  orderNumber     String        @unique
-  status          OrderStatus   @default(PENDING)
-  totalAmount     Decimal       @db.Decimal(10, 2)
-  customerName    String?
-  customerPhone   String?
-  customerTable   String?
-  notes           String?
-  paymentMethod   PaymentMethod?
-  paymentStatus   PaymentStatus @default(PENDING)
+  id                   String                 @id @default(uuid())
+  orderNumber          String                 @unique
+  status               OrderStatus            @default(PENDING)
+  totalAmount          Decimal                @db.Decimal(10, 2)
+  customerName         String?
+  customerPhone        String?
+  customerTable        String?
+  notes                String?
+  paymentMethod        PaymentMethod?
+  paymentStatus        PaymentStatus          @default(PENDING)
+  orderCreator         OrderCreator?          @default(STAFF)
+  orderCreatorName     String?
+  paidAt               DateTime?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  paymentDate          DateTime?
   paymentTransactionId String?
-  orderCreator    OrderCreator? @default(STAFF)
-  orderCreatorName String?
-  paidAt          DateTime?
-  paymentDate     DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  items           OrderItem[]
+  customerId           String?
+  loyalty_transactions loyalty_transactions[]
+  items                OrderItem[]
+  customers            customers?             @relation(fields: [customerId], references: [id])
 
   @@index([status])
   @@index([createdAt])
@@ -135,7 +118,176 @@ model Order {
   @@index([status, createdAt])
   @@index([customerPhone])
   @@index([orderCreator])
+  @@index([customerId])
   @@map("orders")
+}
+
+model OrderItem {
+  id               String   @id @default(uuid())
+  orderId          String
+  productId        String
+  quantity         Int
+  price            Decimal  @db.Decimal(10, 2)
+  subtotal         Decimal  @db.Decimal(10, 2)
+  selectedSize     String?
+  selectedToppings String[]
+  note             String?
+  createdAt        DateTime @default(now())
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product          Product  @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([orderId, productId])
+  @@map("order_items")
+}
+
+model Ingredient {
+  id           String             @id @default(uuid())
+  name         String
+  unit         String
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  stock        IngredientStock?
+  recipes      ProductRecipe[]
+  alerts       StockAlert[]
+  transactions StockTransaction[]
+
+  @@map("ingredients")
+}
+
+model Stock {
+  id          String   @id @default(uuid())
+  productId   String   @unique
+  quantity    Int      @default(0)
+  minStock    Int      @default(0)
+  maxStock    Int      @default(0)
+  unit        String   @default("pcs")
+  isActive    Boolean  @default(true)
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("stock")
+}
+
+model IngredientStock {
+  id           String     @id @default(uuid())
+  ingredientId String     @unique
+  quantity     Int        @default(0)
+  minStock     Int        @default(0)
+  maxStock     Int        @default(0)
+  isActive     Boolean    @default(true)
+  lastUpdated  DateTime   @default(now())
+  createdAt    DateTime   @default(now())
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@map("ingredient_stocks")
+}
+
+model ProductRecipe {
+  id           String     @id @default(uuid())
+  productId    String
+  ingredientId String
+  quantity     Decimal    @db.Decimal(10, 3)
+  unit         String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, ingredientId])
+  @@map("product_recipes")
+}
+
+model StockTransaction {
+  id           String               @id @default(uuid())
+  productId    String?
+  ingredientId String?
+  type         StockTransactionType
+  quantity     Int
+  reason       String?
+  userId       String?
+  timestamp    DateTime             @default(now())
+  ingredient   Ingredient?          @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  product      Product?             @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([timestamp])
+  @@index([type])
+  @@index([productId, timestamp])
+  @@index([ingredientId, timestamp])
+  @@index([userId])
+  @@map("stock_transactions")
+}
+
+model StockAlert {
+  id           String         @id @default(uuid())
+  productId    String?
+  ingredientId String?
+  type         StockAlertType
+  message      String
+  isRead       Boolean        @default(false)
+  timestamp    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  ingredient   Ingredient?    @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  product      Product?       @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([isRead])
+  @@index([timestamp])
+  @@index([type])
+  @@index([productId, isRead])
+  @@index([ingredientId, isRead])
+  @@map("stock_alerts")
+}
+
+model customers {
+  id                   String                 @id
+  name                 String
+  phone                String                 @unique
+  email                String?                @unique
+  address              String?
+  dateOfBirth          DateTime?
+  gender               String?
+  avatar               String?
+  loyaltyPoints        Int                    @default(0)
+  membershipLevel      MembershipLevel        @default(BRONZE)
+  totalSpent           Decimal                @default(0) @db.Decimal(10, 2)
+  notes                String?
+  tags                 String[]
+  isActive             Boolean                @default(true)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime
+  lastVisitAt          DateTime?
+  loyalty_transactions loyalty_transactions[]
+  orders               Order[]
+
+  @@index([email])
+  @@index([isActive])
+  @@index([membershipLevel])
+  @@index([phone])
+}
+
+model loyalty_transactions {
+  id         String                 @id
+  customerId String
+  orderId    String?
+  type       LoyaltyTransactionType
+  points     Int
+  reason     String?
+  createdAt  DateTime               @default(now())
+  customers  customers              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orders     Order?                 @relation(fields: [orderId], references: [id])
+
+  @@index([createdAt])
+  @@index([customerId])
+  @@index([orderId])
+  @@index([type])
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+  CUSTOMER
 }
 
 enum OrderStatus {
@@ -165,143 +317,11 @@ enum OrderCreator {
   CUSTOMER
 }
 
-// Order Items - Chi tiết đơn hàng
-model OrderItem {
-  id              String   @id @default(uuid())
-  orderId         String
-  productId       String
-  quantity        Int
-  price           Decimal  @db.Decimal(10, 2)
-  subtotal        Decimal  @db.Decimal(10, 2)
-  selectedSize    String?
-  selectedToppings String[]
-  note            String?
-  createdAt       DateTime @default(now())
-
-  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product         Product  @relation(fields: [productId], references: [id])
-
-  @@index([orderId])
-  @@index([productId])
-  @@index([orderId, productId])
-  @@map("order_items")
-}
-
-// Ingredients - Nguyên liệu
-model Ingredient {
-  id        String   @id @default(uuid())
-  name      String
-  unit      String
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  stock     IngredientStock?
-  alerts    StockAlert[]
-  transactions StockTransaction[]
-  recipes   ProductRecipe[]
-
-  @@map("ingredients")
-}
-
-// Stock - Tồn kho sản phẩm
-model Stock {
-  id        String   @id @default(uuid())
-  productId String   @unique
-  quantity  Int      @default(0)
-  minStock  Int      @default(0)
-  maxStock  Int      @default(0)
-  unit      String   @default("pcs")
-  isActive  Boolean  @default(true)
-  lastUpdated DateTime @default(now())
-  createdAt DateTime   @default(now())
-
-  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@map("stock")
-}
-
-// Ingredient Stock - Tồn kho nguyên liệu
-model IngredientStock {
-  id          String   @id @default(uuid())
-  ingredientId String   @unique
-  quantity    Int      @default(0)
-  minStock    Int      @default(0)
-  maxStock    Int      @default(0)
-  isActive    Boolean  @default(true)
-  lastUpdated DateTime @default(now())
-  createdAt   DateTime @default(now())
-
-  ingredient  Ingredient? @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
-
-  @@map("ingredient_stocks")
-}
-
-// Product Recipe - Công thức sản phẩm (liên kết Product với Ingredient)
-model ProductRecipe {
-  id           String   @id @default(uuid())
-  productId    String
-  ingredientId String
-  quantity     Decimal  @db.Decimal(10, 3) // Số lượng nguyên liệu cần cho 1 sản phẩm
-  unit         String   // Đơn vị (có thể khác với unit của ingredient)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
-
-  @@unique([productId, ingredientId]) // Mỗi sản phẩm chỉ có 1 công thức cho mỗi nguyên liệu
-  @@map("product_recipes")
-}
-
-// Stock Transactions - Lịch sử nhập/xuất
-model StockTransaction {
-  id          String              @id @default(uuid())
-  productId   String?
-  ingredientId String?
-  type        StockTransactionType
-  quantity    Int
-  reason      String?
-  userId      String?
-  timestamp   DateTime            @default(now())
-
-  product     Product?            @relation(fields: [productId], references: [id], onDelete: Cascade)
-  ingredient  Ingredient?         @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
-
-  @@index([timestamp])
-  @@index([type])
-  @@index([productId, timestamp])
-  @@index([ingredientId, timestamp])
-  @@index([userId])
-  @@map("stock_transactions")
-}
-
 enum StockTransactionType {
   SALE
   PURCHASE
   ADJUSTMENT
   RETURN
-}
-
-// Stock Alerts - Cảnh báo tồn kho
-model StockAlert {
-  id          String        @id @default(uuid())
-  productId   String?
-  ingredientId String?
-  type        StockAlertType
-  message     String
-  isRead      Boolean       @default(false)
-  timestamp   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  product     Product?      @relation(fields: [productId], references: [id], onDelete: Cascade)
-  ingredient  Ingredient?   @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
-
-  @@index([isRead])
-  @@index([timestamp])
-  @@index([type])
-  @@index([productId, isRead])
-  @@index([ingredientId, isRead])
-  @@map("stock_alerts")
 }
 
 enum StockAlertType {
@@ -310,3 +330,16 @@ enum StockAlertType {
   OVERSTOCK
 }
 
+enum LoyaltyTransactionType {
+  EARN
+  REDEEM
+  EXPIRED
+  ADJUSTMENT
+}
+
+enum MembershipLevel {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}

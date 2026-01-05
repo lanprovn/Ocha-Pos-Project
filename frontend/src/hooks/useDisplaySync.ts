@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
-import type { CartItem } from '../types/cart';
-import type { DisplayData, DisplaySyncMessage, UseDisplaySyncReturn } from '../types/display';
+import type { CartItem } from '@/types/cart';
+import type { DisplayData, DisplaySyncMessage, UseDisplaySyncReturn } from '@/types/display';
 
 const DISPLAY_CHANNEL_NAME = 'ocha_display';
 const DISPLAY_STORAGE_KEY = 'ocha_display_data';

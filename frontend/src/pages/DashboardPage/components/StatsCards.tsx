@@ -5,7 +5,7 @@ import { AverageOrderCard } from './AverageOrderCard';
 import { TopProductCard } from './TopProductCard';
 import { StockAlertsCard } from './StockAlertsCard';
 import type { DailySales, DashboardStats } from '../types';
-import type { StockAlert } from '@services/stock.service.ts';
+import type { StockAlert } from '@features/stock/services/stock.service';
 
 interface StatsCardsProps {
   dailySales: DailySales | null;

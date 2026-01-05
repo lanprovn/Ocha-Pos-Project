@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import DashboardTab from '../../AnalyticsPage/components/DashboardTab';
-import ReportsTab from '../../AnalyticsPage/components/ReportsTab';
+import DashboardTab from '@pages/AnalyticsPage/components/DashboardTab';
+import ReportsTab from '@pages/AnalyticsPage/components/ReportsTab';
 
 const AnalyticsTab: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();

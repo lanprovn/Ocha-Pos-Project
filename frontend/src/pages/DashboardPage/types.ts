@@ -3,7 +3,7 @@ import type {
   DashboardStats as ServiceDashboardStats,
   DashboardTopProduct,
   DashboardHourlyRevenue,
-} from '@services/dashboard.service';
+} from '@features/dashboard/services/dashboard.service';
 
 export type DashboardDailySales = ServiceDashboardDailySales;
 export type DailySales = DashboardDailySales;

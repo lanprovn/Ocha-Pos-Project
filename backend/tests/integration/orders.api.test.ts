@@ -1,10 +1,10 @@
 import request from 'supertest';
-import app from '../../src/app';
+import app from '../../src/core/app';
 import prisma from '../../src/config/database';
 import { createMockOrderInput, createMockProduct, createMockStock } from '../utils/test-helpers';
 
 // Mock authentication middleware for testing
-jest.mock('../../src/middleware/auth.middleware', () => ({
+jest.mock('../../src/api/middlewares/auth.middleware', () => ({
   authenticate: (req: any, res: any, next: any) => {
     // Mock user for testing
     req.user = {

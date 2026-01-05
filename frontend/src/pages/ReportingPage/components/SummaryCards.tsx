@@ -1,6 +1,6 @@
 import React from 'react';
-import type { ReportSummary } from '@services/reporting.service';
-import { formatPrice } from '../../../utils/formatPrice';
+import type { ReportSummary } from '@features/reporting/services/reporting.service';
+import { formatPrice } from '@/utils/formatPrice';
 
 interface SummaryCardsProps {
   summary: ReportSummary;

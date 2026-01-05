@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingCartIcon, MagnifyingGlassIcon, UserCircleIcon, ChartBarIcon, CubeIcon, ArrowRightOnRectangleIcon, DocumentChartBarIcon } from '@heroicons/react/24/outline';
-import { useCart } from '../../hooks/useCart';
-import { useProducts } from '../../hooks/useProducts';
-import { useAuth } from '../../hooks/useAuth';
-import { usePOSDisplaySync } from '../../hooks/useDisplaySync';
-import ProductGrid from '../features/pos/product/ProductGrid';
-import ProductModal from '../features/pos/product/ProductModal';
-import StockAlertsPanel from '../features/stock/alerts/StockAlertsPanel';
-import { formatPrice } from '../../utils/formatPrice';
-import type { Product } from '../../types/product';
+import { useCart } from '@features/orders/hooks/useCart';
+import { useProducts } from '@features/products/hooks/useProducts';
+import { useAuth } from '@features/auth/hooks/useAuth';
+import { usePOSDisplaySync } from '@/hooks/useDisplaySync';
+import ProductGrid from '@features/products/components/ProductGrid';
+import ProductModal from '@features/products/components/ProductModal';
+import StockAlertsPanel from '@features/stock/components/StockAlertsPanel';
+import { formatPrice } from '@/utils/formatPrice';
+import type { Product } from '@/types/product';
 
 /**
  * POSLayoutNew - Professional POS-style layout for staff
@@ -76,7 +76,7 @@ export default function POSLayoutNew() {
   return (
     <div className="flex flex-col w-full h-screen overflow-hidden bg-gray-50">
       <StockAlertsPanel />
-      
+
       {/* Top Header Bar */}
       <header className="h-16 bg-white border-b border-gray-300 flex items-center justify-between px-6 flex-shrink-0 z-50 shadow-sm">
         {/* Left: User Info, Navigation & Management Buttons */}
@@ -151,7 +151,7 @@ export default function POSLayoutNew() {
                 <span className="text-sm font-medium">Admin</span>
               </button>
             )}
-            
+
             {/* Search Bar - Moved next to Doanh Thu button */}
             <div className="w-64 ml-3">
               <div className="relative">
@@ -196,11 +196,10 @@ export default function POSLayoutNew() {
                 <div
                   key={item.id}
                   onClick={() => setSelectedItemId(item.id)}
-                  className={`p-3 rounded-md border cursor-pointer transition-colors ${
-                    selectedItemId === item.id
+                  className={`p-3 rounded-md border cursor-pointer transition-colors ${selectedItemId === item.id
                       ? 'bg-blue-50 border-blue-400 shadow-sm'
                       : 'bg-white border-gray-300 hover:border-blue-400 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
@@ -319,7 +318,7 @@ export default function POSLayoutNew() {
                 </button>
               </div>
             )}
-            
+
             <button
               onClick={clearCart}
               className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium text-gray-700 transition-colors"
@@ -333,11 +332,10 @@ export default function POSLayoutNew() {
             <button
               onClick={handleCheckout}
               disabled={totalItems === 0}
-              className={`w-full py-3 rounded-md font-semibold text-white text-base transition-colors flex items-center justify-center space-x-2 ${
-                totalItems === 0
+              className={`w-full py-3 rounded-md font-semibold text-white text-base transition-colors flex items-center justify-center space-x-2 ${totalItems === 0
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-slate-700 hover:bg-slate-800'
-              }`}
+                }`}
             >
               <span>Thanh toán</span>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -358,11 +356,10 @@ export default function POSLayoutNew() {
                 <div className="flex overflow-x-auto space-x-2 pb-2 scrollbar-hide">
                   <button
                     onClick={() => handleCategorySelect('all')}
-                    className={`flex-shrink-0 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      selectedCategoryId === 'all'
+                    className={`flex-shrink-0 px-4 py-2 rounded-md text-sm font-medium transition-colors ${selectedCategoryId === 'all'
                         ? 'bg-slate-700 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                      }`}
                   >
                     Tất cả
                   </button>
@@ -370,11 +367,10 @@ export default function POSLayoutNew() {
                     <button
                       key={category.id}
                       onClick={() => handleCategorySelect(category.name)}
-                      className={`flex-shrink-0 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        selectedCategoryId === category.name
+                      className={`flex-shrink-0 px-4 py-2 rounded-md text-sm font-medium transition-colors ${selectedCategoryId === category.name
                           ? 'bg-slate-700 text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                        }`}
                     >
                       {category.name}
                     </button>

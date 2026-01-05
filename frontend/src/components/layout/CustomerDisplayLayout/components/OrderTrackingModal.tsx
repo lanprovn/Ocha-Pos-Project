@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { orderService } from '../../../../services/order.service';
-import { subscribeToOrders } from '../../../../services/socket.service';
-import type { Order } from '../../../../services/order.service';
-import { formatPrice } from '../../../../utils/formatPrice';
+import { orderService } from '@features/orders/services/order.service';
+import { subscribeToOrders } from '@lib/socket.service';
+import type { Order } from '@features/orders/services/order.service';
+import { formatPrice } from '@/utils/formatPrice';
 import toast from 'react-hot-toast';
 
 interface OrderTrackingModalProps {

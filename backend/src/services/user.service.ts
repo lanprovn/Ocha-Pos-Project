@@ -1,7 +1,7 @@
-import prisma from '../config/database';
-import { comparePassword } from '../utils/bcrypt';
-import { generateToken } from '../utils/jwt';
-import { UnauthorizedError } from '../errors';
+import prisma from '@config/database';
+import { comparePassword } from '@utils/bcrypt';
+import { generateToken } from '@utils/jwt';
+import { UnauthorizedError } from '@core/errors';
 
 export interface LoginInput {
   email: string;

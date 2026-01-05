@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@constants';
-import { useCart } from '@hooks/useCart';
+import { useCart } from '@features/orders/hooks/useCart';
 
 const PaymentCallbackPage: React.FC = () => {
   const [searchParams] = useSearchParams();

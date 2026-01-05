@@ -1,23 +1,23 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { useIngredients } from '../../../context/IngredientContext';
-import StockAdjustModal from '../../../components/features/stock/StockAdjustModal';
-import ProductFormModal, { type ProductFormValues } from '../../../components/features/stock/ProductFormModal';
-import IngredientFormModal, { type IngredientFormValues } from '../../../components/features/stock/IngredientFormModal';
-import { StatsCards } from '../../StockManagementPage/components/StatsCards';
-import { StockTabs } from '../../StockManagementPage/components/StockTabs';
-import { StocksTab } from '../../StockManagementPage/components/StocksTab';
-import { TransactionsTab } from '../../StockManagementPage/components/TransactionsTab';
-import { AlertsTab } from '../../StockManagementPage/components/AlertsTab';
-import { IngredientsTab } from '../../StockManagementPage/components/IngredientsTab';
-import { useStockManagement } from '../../StockManagementPage/hooks/useStockManagement';
-import { useStockModal } from '../../StockManagementPage/hooks/useStockModal';
-import { useStockFilters } from '../../StockManagementPage/hooks/useStockFilters';
-import stockService from '../../../services/stock.service.ts';
-import { productService } from '../../../services/product.service.ts';
-import type { StockProduct } from '../../../services/stock.service.ts';
-import type { IngredientStock } from '../../../utils/ingredientManagement';
-import { useProducts } from '../../../hooks/useProducts';
+import { useIngredients } from '@features/stock/context/IngredientContext';
+import StockAdjustModal from '@features/stock/components/StockAdjustModal';
+import ProductFormModal, { type ProductFormValues } from '@features/stock/components/ProductFormModal';
+import IngredientFormModal, { type IngredientFormValues } from '@features/stock/components/IngredientFormModal';
+import { StatsCards } from '@features/stock/StockManagementPage/components/StatsCards';
+import { StockTabs } from '@features/stock/StockManagementPage/components/StockTabs';
+import { StocksTab } from '@features/stock/StockManagementPage/components/StocksTab';
+import { TransactionsTab } from '@features/stock/StockManagementPage/components/TransactionsTab';
+import { AlertsTab } from '@features/stock/StockManagementPage/components/AlertsTab';
+import { IngredientsTab } from '@features/stock/StockManagementPage/components/IngredientsTab';
+import { useStockManagement } from '@features/stock/StockManagementPage/hooks/useStockManagement';
+import { useStockModal } from '@features/stock/StockManagementPage/hooks/useStockModal';
+import { useStockFilters } from '@features/stock/StockManagementPage/hooks/useStockFilters';
+import stockService from '@features/stock/services/stock.service';
+import { productService } from '@features/products/services/product.service';
+import type { StockProduct } from '@features/stock/services/stock.service';
+import type { IngredientStock } from '@/utils/ingredientManagement';
+import { useProducts } from '@features/products/hooks/useProducts';
 
 const StockManagementTab: React.FC = () => {
   const {

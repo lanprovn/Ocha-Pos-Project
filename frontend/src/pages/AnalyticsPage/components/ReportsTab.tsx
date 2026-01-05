@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useReportingData } from '../../ReportingPage/hooks/useReportingData';
-import { ReportingHeader } from '../../ReportingPage/components/ReportingHeader';
-import { ReportFiltersComponent } from '../../ReportingPage/components/ReportFilters';
-import { SummaryCards } from '../../ReportingPage/components/SummaryCards';
-import { ReportTable } from '../../ReportingPage/components/ReportTable';
-import { PeakHoursChart } from '../../ReportingPage/components/PeakHoursChart';
-import { BestSellersChart } from '../../ReportingPage/components/BestSellersChart';
+import { useReportingData } from '@pages/ReportingPage/hooks/useReportingData';
+import { ReportingHeader } from '@pages/ReportingPage/components/ReportingHeader';
+import { ReportFiltersComponent } from '@pages/ReportingPage/components/ReportFilters';
+import { SummaryCards } from '@pages/ReportingPage/components/SummaryCards';
+import { ReportTable } from '@pages/ReportingPage/components/ReportTable';
+import { PeakHoursChart } from '@pages/ReportingPage/components/PeakHoursChart';
+import { BestSellersChart } from '@pages/ReportingPage/components/BestSellersChart';
 
 const ReportsTab: React.FC = () => {
   const {

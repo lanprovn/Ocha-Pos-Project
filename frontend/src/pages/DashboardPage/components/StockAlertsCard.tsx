@@ -1,5 +1,5 @@
 import React from 'react';
-import type { StockAlert } from '@services/stock.service.ts';
+import type { StockAlert } from '@features/stock/services/stock.service';
 
 interface StockAlertsCardProps {
   alerts: StockAlert[];

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import AppRouter from './router/AppRouter';
 import ErrorBoundary from './components/common/feedback/ErrorBoundary';
-import { getSocket } from './services/socket.service';
+import { getSocket } from '@lib/socket.service';
 
 function App() {
   // Initialize Socket.io early when app starts

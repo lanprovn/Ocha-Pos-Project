@@ -1,6 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary';
 import env from './env';
-import logger from '../utils/logger';
+import logger from '@utils/logger';
 
 // Configure Cloudinary if credentials are provided
 if (env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET) {

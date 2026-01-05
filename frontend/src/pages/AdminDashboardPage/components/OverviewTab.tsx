@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '../../../constants';
-import { dashboardService, type DashboardStats } from '../../../services/dashboard.service';
-import { formatPrice } from '../../../utils/formatPrice';
+import { ROUTES } from '@/constants';
+import { dashboardService, type DashboardStats } from '@features/dashboard/services/dashboard.service';
+import { formatPrice } from '@/utils/formatPrice';
 
 const OverviewTab: React.FC = () => {
   const navigate = useNavigate();

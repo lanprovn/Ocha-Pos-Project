@@ -7,11 +7,11 @@ import {
   useLocation,
 } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from '../context/AuthContext';
-import { CartProvider } from '../context/CartContext.tsx';
-import { ProductProvider } from '../context/ProductContext.tsx';
-import { IngredientProvider } from '../context/IngredientContext';
-import { ProtectedRoute } from '../components/auth/ProtectedRoute';
+import { AuthProvider } from '@features/auth/context/AuthContext';
+import { CartProvider } from '@features/orders/context/CartContext';
+import { ProductProvider } from '@features/products/context/ProductContext';
+import { IngredientProvider } from '@features/stock/context/IngredientContext';
+import { ProtectedRoute } from '@features/auth/components/ProtectedRoute';
 import { ROUTES } from '@constants';
 
 // ===== Lazy load layouts =====
@@ -20,12 +20,12 @@ const POSLayoutNew = lazy(() => import('../components/layout/POSLayoutNew'));
 const CustomerDisplayLayout = lazy(() => import('../components/layout/CustomerDisplayLayout'));
 
 // ===== Lazy load pages =====
-const LoginPage = lazy(() => import('../pages/LoginPage/index'));
-const CheckoutPage = lazy(() => import('../pages/CheckoutPage/index'));
-const OrderDisplayPage = lazy(() => import('../pages/OrderDisplayPage/index'));
-const PaymentCallbackPage = lazy(() => import('../pages/PaymentCallbackPage/index'));
-const AnalyticsPage = lazy(() => import('../pages/AnalyticsPage/index'));
-const AdminDashboardPage = lazy(() => import('../pages/AdminDashboardPage/index'));
+const LoginPage = lazy(() => import('@features/auth/LoginPage/index'));
+const CheckoutPage = lazy(() => import('@features/orders/CheckoutPage/index'));
+const OrderDisplayPage = lazy(() => import('@features/orders/OrderDisplayPage/index'));
+const PaymentCallbackPage = lazy(() => import('@/pages/PaymentCallbackPage/index'));
+const AnalyticsPage = lazy(() => import('@/pages/AnalyticsPage/index'));
+const AdminDashboardPage = lazy(() => import('@/pages/AdminDashboardPage/index'));
 
 // ===== Loader Component =====
 const PageLoader = () => (
@@ -72,7 +72,7 @@ function AppRoutes() {
   const location = useLocation();
   const isDisplayPage = location.pathname.startsWith(ROUTES.CUSTOMER);
   const isLoginPage = location.pathname === ROUTES.LOGIN;
-  const isOrderSuccessFromCustomer = location.pathname === ROUTES.ORDER_SUCCESS && 
+  const isOrderSuccessFromCustomer = location.pathname === ROUTES.ORDER_SUCCESS &&
     (location.state as any)?.fromCustomer === true;
 
   // === CASE 1: Customer Display (with layout like POS) ===

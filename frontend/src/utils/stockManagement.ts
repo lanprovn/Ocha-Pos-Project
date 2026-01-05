@@ -1,4 +1,4 @@
-import type { StockProduct } from '@services/stock.service.ts';
+import type { StockProduct } from '@features/stock/services/stock.service';
 
 export const STOCK_UNITS = [
   'cái',

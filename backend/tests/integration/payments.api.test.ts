@@ -1,9 +1,9 @@
 import request from 'supertest';
-import app from '../../src/app';
+import app from '../../src/core/app';
 import crypto from 'crypto';
 
 // Mock authentication middleware
-jest.mock('../../src/middleware/auth.middleware', () => ({
+jest.mock('../../src/api/middlewares/auth.middleware', () => ({
   authenticate: (req: any, res: any, next: any) => {
     req.user = {
       userId: 'test-user-id',

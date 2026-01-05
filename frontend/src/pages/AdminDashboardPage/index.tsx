@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ROUTES } from '../../constants';
+import { ROUTES } from '@/constants';
 import {
   CubeIcon,
   Squares2X2Icon,
@@ -12,7 +12,7 @@ import {
   XMarkIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '@features/auth/hooks/useAuth';
 import MenuManagementTab from './components/MenuManagementTab';
 import StockManagementTab from './components/StockManagementTab';
 import AnalyticsTab from './components/AnalyticsTab';
