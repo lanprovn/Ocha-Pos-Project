@@ -21,6 +21,7 @@ import paymentRoutes from '@api/routes/v1/payment.routes';
 import recipeRoutes from '@api/routes/v1/recipe.routes';
 import uploadRoutes from '@api/routes/v1/upload.routes';
 import reportingRoutes from '@api/routes/v1/reporting.routes';
+import customerRoutes from '@api/routes/v1/customer.routes';
 
 const app: Express = express();
 
@@ -219,6 +220,7 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/recipes', recipeRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/reporting', reportingRoutes);
+app.use('/api/customers', customerRoutes);
 
 // 404 handler
 app.use((_req, res) => {

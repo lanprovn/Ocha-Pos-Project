@@ -176,7 +176,7 @@ const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4 overflow-y-auto">
         <form
           onSubmit={handleSubmit}
-          className="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl p-6 sm:p-8 lg:p-10 w-full max-w-5xl mx-auto border border-white/50 transform animate-scale-in space-y-5"
+          className="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl p-6 sm:p-8 lg:p-10 w-full md:w-[90%] lg:w-[80%] mx-auto border border-white/50 transform animate-scale-in space-y-5"
         >
           <div className="flex items-center justify-between">
             <h3 className="text-xl sm:text-2xl font-bold text-gray-900">

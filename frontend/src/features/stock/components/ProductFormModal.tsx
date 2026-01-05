@@ -207,7 +207,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <form
           onSubmit={handleSubmit}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] lg:h-[80vh] flex flex-col overflow-hidden transform animate-scale-in"
+          className="bg-white rounded-2xl shadow-2xl w-full md:w-[90%] lg:w-[80%] h-[85vh] lg:h-[80vh] flex flex-col overflow-hidden transform animate-scale-in"
         >
           <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100">
             <h3 className="text-xl sm:text-2xl font-bold text-gray-900">

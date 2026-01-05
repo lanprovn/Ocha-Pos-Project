@@ -19,6 +19,7 @@ const CheckoutPage: React.FC = () => {
   const {
     items,
     totalPrice,
+    discountRate,
     customerInfo,
     paymentMethod,
     isProcessing,
@@ -33,6 +34,7 @@ const CheckoutPage: React.FC = () => {
     handleCloseQRModal,
     handleNewOrder,
     handleGoHome,
+    handleDiscountRateChange,
   } = useCheckout();
 
   // Simplified validation for customer: only phone required
@@ -100,7 +102,7 @@ const CheckoutPage: React.FC = () => {
             <div className="order-2 lg:order-1 flex flex-col overflow-hidden min-h-0">
               <div className="flex-1 overflow-y-auto pr-2 -mr-2">
                 <div className="pr-2">
-                  <OrderSummary items={items} totalPrice={totalPrice} />
+                  <OrderSummary items={items} totalPrice={totalPrice} discountRate={discountRate} />
                 </div>
               </div>
             </div>
@@ -118,6 +120,7 @@ const CheckoutPage: React.FC = () => {
                     <CustomerInfoForm
                       customerInfo={customerInfo}
                       onInputChange={handleInputChange}
+                      onDiscountRateChange={handleDiscountRateChange}
                     />
                   )}
 
@@ -136,6 +139,7 @@ const CheckoutPage: React.FC = () => {
                   itemsCount={items.length}
                   isProcessing={isProcessing}
                   isFormValid={isFormValid}
+                  discountRate={discountRate}
                   onComplete={handleCompleteOrder}
                 />
               </div>

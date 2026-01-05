@@ -122,3 +122,23 @@ export class ForbiddenError extends AppError {
   }
 }
 
+/**
+ * Error khi user không tồn tại
+ */
+export class UserNotFoundError extends AppError {
+  statusCode = 404;
+  errorCode = 'USER_NOT_FOUND';
+
+  constructor(userId: string) {
+    super(`Người dùng không tồn tại`, { userId }, true);
+  }
+
+  serialize() {
+    return {
+      error: this.message,
+      errorCode: this.errorCode,
+      details: this.details,
+    };
+  }
+}
+

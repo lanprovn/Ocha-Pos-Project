@@ -65,6 +65,16 @@ export const API_ENDPOINTS = {
   REPORTING: `${API_BASE_URL}/reporting`,
   REPORTING_EXPORT: `${API_BASE_URL}/reporting/export`,
 
+  // Customers
+  CUSTOMERS: `${API_BASE_URL}/customers`,
+  CUSTOMER_BY_ID: (id: string) => `${API_BASE_URL}/customers/${id}`,
+  CUSTOMERS_TAGS: `${API_BASE_URL}/customers/tags`,
+  CUSTOMERS_STATISTICS: `${API_BASE_URL}/customers/statistics`,
+  CUSTOMER_BY_PHONE: (phone: string) => `${API_BASE_URL}/customers/phone/${phone}`,
+  CUSTOMER_ADJUST_POINTS: (id: string) => `${API_BASE_URL}/customers/${id}/loyalty-points`,
+  MEMBERSHIP_CONFIGS: `${API_BASE_URL}/customers/membership/configs`,
+  MEMBERSHIP_DISCOUNT: (level: string) => `${API_BASE_URL}/customers/membership/${level}/discount`,
+
   // Health
   HEALTH: `${API_BASE_URL.replace('/api', '')}/health`,
 };

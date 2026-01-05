@@ -5,9 +5,16 @@ import type { CartItem } from '@/types/cart';
 interface OrderSummaryProps {
   items: CartItem[];
   totalPrice: number;
+  discountRate?: number;
 }
 
-export const OrderSummary: React.FC<OrderSummaryProps> = ({ items, totalPrice }) => {
+export const OrderSummary: React.FC<OrderSummaryProps> = ({ items, totalPrice, discountRate = 0 }) => {
+  // Calculate prices with discount
+  const subtotal = totalPrice;
+  const discountAmount = discountRate > 0 ? subtotal * (discountRate / 100) : 0;
+  const priceAfterDiscount = subtotal - discountAmount;
+  const vat = priceAfterDiscount * 0.1;
+  const finalTotal = priceAfterDiscount + vat;
   if (items.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -66,21 +73,27 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({ items, totalPrice })
           <div className="flex justify-between items-center mb-2">
             <span className="font-semibold text-gray-800">Tạm tính:</span>
             <span className="font-semibold text-gray-800">
-              {formatPrice(totalPrice)}
+              {formatPrice(subtotal)}
             </span>
           </div>
+          {discountRate > 0 && (
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-green-600 font-medium">Giảm giá ({discountRate}%):</span>
+              <span className="text-green-600 font-medium">-{formatPrice(discountAmount)}</span>
+            </div>
+          )}
           <div className="flex justify-between items-center mb-2">
             <span className="text-gray-600">Phí dịch vụ:</span>
             <span className="text-gray-600">0₫</span>
           </div>
           <div className="flex justify-between items-center mb-4">
             <span className="text-gray-600">VAT (10%):</span>
-            <span className="text-gray-600">{formatPrice(totalPrice * 0.1)}</span>
+            <span className="text-gray-600">{formatPrice(vat)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-lg font-bold text-gray-800">Tổng cộng:</span>
             <span className="text-xl font-bold text-orange-500">
-              {formatPrice(totalPrice * 1.1)}
+              {formatPrice(finalTotal)}
             </span>
           </div>
         </div>

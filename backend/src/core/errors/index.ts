@@ -3,6 +3,7 @@ export {
   InsufficientStockError,
   OrderNotFoundError,
   ProductNotFoundError,
+  UserNotFoundError,
   ValidationError,
   UnauthorizedError,
   ForbiddenError,

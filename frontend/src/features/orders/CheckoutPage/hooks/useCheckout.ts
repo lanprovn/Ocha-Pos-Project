@@ -35,6 +35,8 @@ export const useCheckout = () => {
     notes: ''
   });
   
+  const [discountRate, setDiscountRate] = useState<number>(0);
+  
   // Flag to track if order has been restored
   const [orderRestored, setOrderRestored] = useState(false);
   
@@ -258,9 +260,12 @@ export const useCheckout = () => {
     setIsProcessing(true);
     
     try {
-      // Tính VAT 10% và tổng cuối cùng
-      const vat = totalPrice * 0.1;
-      const finalTotal = totalPrice + vat;
+      // Calculate discount and final total
+      const subtotal = totalPrice;
+      const discountAmount = discountRate > 0 ? subtotal * (discountRate / 100) : 0;
+      const priceAfterDiscount = subtotal - discountAmount;
+      const vat = priceAfterDiscount * 0.1;
+      const finalTotal = priceAfterDiscount + vat;
 
       // Prepare order data for API
       const orderItems = items.map(item => {
@@ -287,19 +292,23 @@ export const useCheckout = () => {
 
       // Create order via API
       // Payment status: cash = SUCCESS ngay, card/qr = PENDING (sẽ update sau khi thanh toán)
-      // VAT 10% được tính ở tổng, không tính vào từng item
-      // Backend sẽ tính totalAmount từ tổng các subtotal, nhưng chúng ta cần đảm bảo tổng cuối cùng có VAT
-      // Giải pháp: Thêm VAT vào subtotal của item cuối cùng để tổng = finalTotal
-      const orderItemsWithVAT = [...orderItems];
-      if (orderItemsWithVAT.length > 0) {
-        // Thêm VAT vào item cuối cùng để tổng = finalTotal
-        const lastItem = orderItemsWithVAT[orderItemsWithVAT.length - 1];
+      // Apply discount and VAT to order items
+      // Backend sẽ tính totalAmount từ tổng các subtotal
+      // Giải pháp: Áp dụng discount và VAT vào subtotal của các items để tổng = finalTotal
+      const orderItemsWithDiscountAndVAT = [...orderItems];
+      if (orderItemsWithDiscountAndVAT.length > 0) {
         const currentTotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
-        const vatToAdd = finalTotal - currentTotal;
-        orderItemsWithVAT[orderItemsWithVAT.length - 1] = {
-          ...lastItem,
-          subtotal: lastItem.subtotal + vatToAdd,
-        };
+        const totalToAdd = finalTotal - currentTotal;
+        
+        // Distribute discount and VAT proportionally across items
+        const distributionFactor = totalToAdd / currentTotal;
+        orderItemsWithDiscountAndVAT.forEach((item, index) => {
+          const adjustment = item.subtotal * distributionFactor;
+          orderItemsWithDiscountAndVAT[index] = {
+            ...item,
+            subtotal: item.subtotal + adjustment,
+          };
+        });
       }
 
       // Tạo order mới (status sẽ là PENDING, không phải CREATING)
@@ -313,7 +322,7 @@ export const useCheckout = () => {
         paymentStatus: paymentMethod === 'cash' ? 'SUCCESS' : 'PENDING',
         orderCreator: isCustomerDisplay ? 'CUSTOMER' : 'STAFF',
         orderCreatorName: isCustomerDisplay ? 'Khách Hàng' : 'Nhân viên',
-        items: orderItemsWithVAT, // Sử dụng items có VAT được thêm vào
+        items: orderItemsWithDiscountAndVAT, // Sử dụng items có discount và VAT được thêm vào
       });
 
       // Nếu là card, tạo payment URL và redirect đến payment gateway
@@ -495,6 +504,7 @@ export const useCheckout = () => {
   return {
     items,
     totalPrice,
+    discountRate,
     customerInfo,
     paymentMethod,
     isProcessing,
@@ -509,6 +519,7 @@ export const useCheckout = () => {
     handleCloseQRModal,
     handleNewOrder,
     handleGoHome,
+    handleDiscountRateChange: setDiscountRate,
   };
 };
 

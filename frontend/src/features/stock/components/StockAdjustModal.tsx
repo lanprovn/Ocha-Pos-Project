@@ -78,7 +78,7 @@ const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
 
       {/* Modal */}
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4 overflow-y-auto">
-        <div className="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 w-full max-w-4xl lg:max-w-5xl mx-auto my-auto border border-white/50 transform animate-scale-in">
+        <div className="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 w-full md:w-[90%] lg:w-[80%] mx-auto my-auto border border-white/50 transform animate-scale-in">
           <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">
             {currentStock === 0
               ? product

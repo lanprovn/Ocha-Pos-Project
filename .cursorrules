@@ -14,7 +14,7 @@ Your primary directive is to maintain a **Production-Grade, Scalable, and Clean 
     - ❌ **FORBIDDEN:** No business logic, no DB calls, no complex calculations.
 2.  **Service Layer (`@services`):**
     - **Sole Responsibility:** Implement Business Logic.
-    - **Workflow:** Receive clean data → Perform calculations/checks → Interact with DB (Prisma).
+    - **Workflow:** Receive clean data → Perform calculations/checks → Interact with DB (Prisma) → **Emit Socket Event (if needed)**.
     - **Constraint:** Must be agnostic of HTTP (do not use `req` or `res` here).
 3.  **Data Layer:**
     - Use **Prisma Client** only within Services.
@@ -28,7 +28,7 @@ Your primary directive is to maintain a **Production-Grade, Scalable, and Clean 
     - Pure presentation. "Dumb" components that receive data via props or hooks.
     - ❌ **FORBIDDEN:** Direct API calls (`axios/fetch`) inside components.
 3.  **Hooks (`Logic`):**
-    - Encapsulate all state management and data fetching.
+    - Encapsulate all state management, data fetching, and **Socket Listeners**.
 4.  **Shared Resources:**
     - Generic UI (Buttons, Inputs) → `src/components/ui`
     - Global Configs → `src/lib`
@@ -48,26 +48,62 @@ Your primary directive is to maintain a **Production-Grade, Scalable, and Clean 
     - Frontend: `@features`, `@components/ui`, `@hooks`, `@lib`
 - ❌ **FORBIDDEN:** Deep relative paths (e.g., `../../../../`). Maximum 1 level up (`../`) is allowed, but Aliases are preferred.
 
-### STYLING
+### STYLING (Tailwind CSS)
 - **Tailwind CSS Only:** No `.css` / `.scss` files for components.
 - **Mobile First:** Default styles are mobile; use `md:`, `lg:` for larger screens.
 
----
+### UI PATTERNS (STRICT)
+- **Modals / Dialogs:**
+    - **Overlay:** Must utilize `fixed inset-0 z-50 flex items-center justify-center bg-black/50`.
+    - **Container:** MUST HAVE EXPLICIT WIDTH (e.g., `w-full max-w-lg`).
+    - ❌ **FORBIDDEN:** Narrow/Squashed modals.
 
-## 3. 🤖 WORKFLOW FOR AI GENERATION
-
-1.  **CONTEXT FIRST:** Before writing code, run a file search to understand the directory structure of the specific feature involved.
-2.  **PLANNING:**
-    - Identify the Feature Domain.
-    - Determine if a new file is needed or if an existing one should be modified.
-    - **Check:** Does this logic belong in a Controller or a Service? (Hint: It's usually a Service).
-3.  **GENERATION:**
-    - Always output the full file content when creating new files.
-    - Always use the defined Path Aliases for imports.
-4.  **REVIEW:**
-    - Did I put logic in a Controller? -> **REFACTOR IMMEDIATELY.**
-    - Did I use `../../`? -> **FIX IMPORT.**
+### STATE MANAGEMENT & SYNC (STRICT - NO RELOAD POLICY)
+- **Instant Feedback:** When a user creates/updates/deletes an item, the UI MUST reflect the change IMMEDIATELY without a page reload.
+    - **Method A (Optimistic):** Update the local state list instantly (e.g., `setItems([...items, newItem])`).
+    - **Method B (Re-fetch):** Trigger a data re-fetch (`refetch()`) immediately after success.
+- **Real-Time Sync:** Critical features (Orders, Stock, Notifications) MUST use **Socket.io** to sync data across devices.
 
 ---
 
-**CRITICAL:** Do not break existing patterns. If you see a violation in the existing code, FIX IT while you are there.
+## 3. 🛠️ TOOLING & RUNTIME (STRICT)
+
+To prevent runtime crashes with Path Aliases (`@core`, `@services`):
+1.  **Backend Runtime:** MUST use **`tsx`** (not `ts-node`).
+    - Reason: Native support for Alias resolution without configuration hell.
+2.  **Start Command:** `"nodemon --exec tsx src/core/server.ts"` (Adjust path if entry file moves).
+3.  **Environment:** Ensure `.env` is loaded via `dotenv` or `config` at the very entry point.
+
+---
+
+## 4. 🤖 WORKFLOW FOR AI GENERATION (THE "FULL STACK" PROTOCOL)
+
+When the user requests a new feature (e.g., "Create Voucher System"), you MUST follow this **Vertical Slice** execution path:
+
+1.  **READ & PLAN:**
+    - Consult these rules first.
+    - Scan `@Codebase` to identify the correct domain folder.
+
+2.  **STEP 1: DATABASE (The Foundation):**
+    - Check `prisma/schema.prisma`. Does a model exist for this feature?
+    - **IF NO:** You MUST create/update the Prisma Model first.
+
+3.  **STEP 2: BACKEND (The Logic & Sync):**
+    - Create **Service** (`@services`) logic.
+    - **CRITICAL:** If this data is shared (e.g., new order), the Service MUST emit a Socket.io event (e.g., `io.emit('voucher:created', data)`).
+    - Create **Controller** (`@api/controllers`) and **Routes**.
+
+4.  **STEP 3: FRONTEND (The Interface & Sync):**
+    - Create UI (Modal/Form) following UI Patterns.
+    - Create **Hooks** that:
+        - Call the API.
+        - **On Success:** Automatically update the list (setList or refetch) -> **NO RELOAD**.
+        - **On Socket Event:** Listen for updates to sync with other users.
+
+5.  **REVIEW:**
+    - Did I require a page reload to see the new item? -> **FAIL. FIX IT.**
+    - Did I skip the Database? -> **STOP & FIX.**
+
+---
+
+**CRITICAL:** A feature is defined as **DONE** only when data is SAVED, and the UI updates INSTANTLY without pressing F5.

@@ -6,6 +6,7 @@ interface CompleteOrderButtonProps {
   itemsCount: number;
   isProcessing: boolean;
   isFormValid: boolean;
+  discountRate?: number;
   onComplete: () => void;
 }
 
@@ -14,11 +15,15 @@ export const CompleteOrderButton: React.FC<CompleteOrderButtonProps> = ({
   itemsCount,
   isProcessing,
   isFormValid,
+  discountRate = 0,
   onComplete
 }) => {
-  // Tính VAT 10% và tổng cuối cùng
-  const vat = totalPrice * 0.1;
-  const finalTotal = totalPrice + vat;
+  // Calculate discount and final total
+  const subtotal = totalPrice;
+  const discountAmount = discountRate > 0 ? subtotal * (discountRate / 100) : 0;
+  const priceAfterDiscount = subtotal - discountAmount;
+  const vat = priceAfterDiscount * 0.1;
+  const finalTotal = priceAfterDiscount + vat;
 
   return (
     <div className="space-y-4">

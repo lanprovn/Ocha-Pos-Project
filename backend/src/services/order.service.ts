@@ -4,10 +4,12 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { Prisma } from '@prisma/client';
 import recipeService from './recipe.service';
 import stockService from './stock.service';
+import customerService from './customer.service';
 import logger from '@utils/logger';
 import { InsufficientStockError, OrderNotFoundError } from '@core/errors';
 import { emitStockUpdated } from '@core/socket/socket.io';
 import { StockTransactionType } from '@core/types/common.types';
+import { calculateMembershipLevel } from '@config/membership.config';
 
 export class OrderService {
   /**
@@ -460,6 +462,16 @@ export class OrderService {
         return sum + item.subtotal;
       }, 0);
 
+      // 3.5. Find or create customer by phone number (within transaction)
+      let customerId: string | null = null;
+      if (data.customerPhone) {
+        customerId = await customerService.findOrCreateByPhone(
+          data.customerPhone,
+          data.customerName || undefined,
+          tx // Pass transaction client
+        );
+      }
+
       // 4. Generate unique order number trong transaction
       let orderNumber = this.generateOrderNumber();
       let attempts = 0;
@@ -487,6 +499,7 @@ export class OrderService {
           totalAmount: new Decimal(totalAmount),
           customerName: data.customerName || null,
           customerPhone: data.customerPhone || null,
+          customerId: customerId, // Link to customer if found/created
           customerTable: data.customerTable || null,
           notes: data.notes || null,
           paymentMethod: data.paymentMethod || null,
@@ -514,6 +527,60 @@ export class OrderService {
           },
         },
       });
+
+      // 6. Process loyalty points and update customer totalSpent if payment is successful
+      if (order.paymentStatus === 'SUCCESS' && order.customerId) {
+        const orderTotal = parseFloat(order.totalAmount.toString());
+        const pointsToEarn = Math.floor(orderTotal / 1000);
+        
+        if (pointsToEarn > 0) {
+          // Get current customer to calculate new points
+          const currentCustomer = await tx.customers.findUnique({
+            where: { id: order.customerId },
+          });
+          
+          if (currentCustomer) {
+            const newLoyaltyPoints = currentCustomer.loyaltyPoints + pointsToEarn;
+            const newMembershipLevel = calculateMembershipLevel(newLoyaltyPoints);
+            
+            // Update customer totalSpent, loyaltyPoints, and membership level
+            await tx.customers.update({
+              where: { id: order.customerId },
+              data: {
+                totalSpent: {
+                  increment: new Decimal(orderTotal),
+                },
+                loyaltyPoints: newLoyaltyPoints,
+                membershipLevel: newMembershipLevel,
+                lastVisitAt: new Date(),
+              },
+            });
+          }
+
+          // Create loyalty transaction record
+          await tx.loyalty_transactions.create({
+            data: {
+              id: `lt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              customerId: order.customerId,
+              orderId: order.id,
+              type: 'EARN',
+              points: pointsToEarn,
+              reason: `Tích điểm từ đơn hàng ${order.orderNumber}`,
+            },
+          });
+        } else {
+          // Still update totalSpent and lastVisitAt even if no points earned
+          await tx.customers.update({
+            where: { id: order.customerId },
+            data: {
+              totalSpent: {
+                increment: new Decimal(orderTotal),
+              },
+              lastVisitAt: new Date(),
+            },
+          });
+        }
+      }
 
       // ✅ Tất cả operations atomic - hoặc thành công hết hoặc rollback hết
       return this.transformOrder(order);
@@ -814,12 +881,68 @@ export class OrderService {
         },
       });
 
-      // Nếu order chuyển sang COMPLETED:
+      // Nếu order chuyển sang COMPLETED và chưa xử lý loyalty:
       // 1. Xóa draft orders của cùng orderCreator trong transaction
       // 2. Tự động trừ nguyên liệu theo recipe trong transaction
+      // 3. Tự động tích điểm và cập nhật totalSpent cho customer
       let stockUpdates: Array<{ type: 'product' | 'ingredient'; id: string; productId?: string; ingredientId?: string; quantity: number }> = [];
 
       if (data.status === 'COMPLETED') {
+        // Process loyalty points if order is paid and has customer
+        if (updated.paymentStatus === 'SUCCESS' && updated.customerId && !order.paidAt) {
+          const orderTotal = parseFloat(updated.totalAmount.toString());
+          
+          // Calculate loyalty points (1 point per 1000 VND, rounded down)
+          const pointsToEarn = Math.floor(orderTotal / 1000);
+          
+          // Get current customer to calculate new points and membership level
+          const currentCustomer = await tx.customers.findUnique({
+            where: { id: updated.customerId },
+          });
+          
+          if (currentCustomer) {
+            const newLoyaltyPoints = currentCustomer.loyaltyPoints + (pointsToEarn > 0 ? pointsToEarn : 0);
+            const newMembershipLevel = calculateMembershipLevel(newLoyaltyPoints);
+            
+            if (pointsToEarn > 0) {
+              // Update customer totalSpent, loyaltyPoints, and membership level
+              await tx.customers.update({
+                where: { id: updated.customerId },
+                data: {
+                  totalSpent: {
+                    increment: new Decimal(orderTotal),
+                  },
+                  loyaltyPoints: newLoyaltyPoints,
+                  membershipLevel: newMembershipLevel,
+                  lastVisitAt: new Date(),
+                },
+              });
+
+              // Create loyalty transaction record
+              await tx.loyalty_transactions.create({
+                data: {
+                  id: `lt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                  customerId: updated.customerId,
+                  orderId: updated.id,
+                  type: 'EARN',
+                  points: pointsToEarn,
+                  reason: `Tích điểm từ đơn hàng ${updated.orderNumber}`,
+                },
+              });
+            } else {
+              // Still update totalSpent and lastVisitAt even if no points earned
+              await tx.customers.update({
+                where: { id: updated.customerId },
+                data: {
+                  totalSpent: {
+                    increment: new Decimal(orderTotal),
+                  },
+                  lastVisitAt: new Date(),
+                },
+              });
+            }
+          }
+        }
         if (order.orderCreator) {
           await tx.order.deleteMany({
             where: {
@@ -854,33 +977,87 @@ export class OrderService {
    * Update order (general update)
    */
   async update(id: string, data: UpdateOrderInput) {
-    const order = await prisma.order.findUnique({
-      where: { id },
-    });
+    return await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+      });
 
-    if (!order) {
-      throw new Error('Order not found');
-    }
+      if (!order) {
+        throw new Error('Order not found');
+      }
 
-    const updateData: any = {};
-    if (data.paymentStatus !== undefined) updateData.paymentStatus = data.paymentStatus;
-    if (data.paymentTransactionId !== undefined) updateData.paymentTransactionId = data.paymentTransactionId;
-    if (data.paymentDate !== undefined) updateData.paymentDate = data.paymentDate;
-    if (data.status !== undefined) updateData.status = data.status;
+      const updateData: any = {};
+      if (data.paymentStatus !== undefined) updateData.paymentStatus = data.paymentStatus;
+      if (data.paymentTransactionId !== undefined) updateData.paymentTransactionId = data.paymentTransactionId;
+      if (data.paymentDate !== undefined) updateData.paymentDate = data.paymentDate;
+      if (data.status !== undefined) updateData.status = data.status;
 
-    const updated = await prisma.order.update({
-      where: { id },
-      data: updateData,
-      include: {
-        items: {
-          include: {
-            product: true,
+      // If payment status changes to SUCCESS and order has customer, process loyalty
+      if (data.paymentStatus === 'SUCCESS' && order.paymentStatus !== 'SUCCESS' && order.customerId) {
+        const orderTotal = parseFloat(order.totalAmount.toString());
+        const pointsToEarn = Math.floor(orderTotal / 1000);
+        
+        // Get current customer to calculate new points and membership level
+        const currentCustomer = await tx.customers.findUnique({
+          where: { id: order.customerId },
+        });
+        
+        if (currentCustomer) {
+          const newLoyaltyPoints = currentCustomer.loyaltyPoints + (pointsToEarn > 0 ? pointsToEarn : 0);
+          const newMembershipLevel = calculateMembershipLevel(newLoyaltyPoints);
+          
+          if (pointsToEarn > 0) {
+            await tx.customers.update({
+              where: { id: order.customerId },
+              data: {
+                totalSpent: {
+                  increment: new Decimal(orderTotal),
+                },
+                loyaltyPoints: newLoyaltyPoints,
+                membershipLevel: newMembershipLevel,
+                lastVisitAt: new Date(),
+              },
+            });
+
+            await tx.loyalty_transactions.create({
+              data: {
+                id: `lt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                customerId: order.customerId,
+                orderId: order.id,
+                type: 'EARN',
+                points: pointsToEarn,
+                reason: `Tích điểm từ đơn hàng ${order.orderNumber}`,
+              },
+            });
+          } else {
+            // Still update totalSpent and lastVisitAt
+            await tx.customers.update({
+              where: { id: order.customerId },
+              data: {
+                totalSpent: {
+                  increment: new Decimal(orderTotal),
+                },
+                lastVisitAt: new Date(),
+              },
+            });
+          }
+        }
+      }
+
+      const updated = await tx.order.update({
+        where: { id },
+        data: updateData,
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    return this.transformOrder(updated);
+      return this.transformOrder(updated);
+    });
   }
 
   /**
