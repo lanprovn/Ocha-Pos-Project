@@ -80,6 +80,7 @@ export const API_ENDPOINTS = {
   CUSTOMERS_TAGS: `${API_BASE_URL}/customers/tags`,
   CUSTOMERS_STATISTICS: `${API_BASE_URL}/customers/statistics`,
   CUSTOMER_BY_PHONE: (phone: string) => `${API_BASE_URL}/customers/phone/${phone}`,
+  CUSTOMER_FIND_OR_CREATE: `${API_BASE_URL}/customers/find-or-create`,
   CUSTOMER_ADJUST_POINTS: (id: string) => `${API_BASE_URL}/customers/${id}/loyalty-points`,
   MEMBERSHIP_CONFIGS: `${API_BASE_URL}/customers/membership/configs`,
   MEMBERSHIP_DISCOUNT: (level: string) => `${API_BASE_URL}/customers/membership/${level}/discount`,

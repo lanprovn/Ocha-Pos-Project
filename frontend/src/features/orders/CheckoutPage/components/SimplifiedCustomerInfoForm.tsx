@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
+import customerService from '@features/customers/services/customer.service';
 import type { CustomerInfo } from '../types';
 
 interface SimplifiedCustomerInfoFormProps {
@@ -14,6 +15,58 @@ export const SimplifiedCustomerInfoForm: React.FC<SimplifiedCustomerInfoFormProp
   customerInfo,
   onInputChange
 }) => {
+  const [checkTimeout, setCheckTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Auto-save customer when both phone and name are provided
+  const autoSaveCustomer = useCallback(async (phone: string, name: string) => {
+    if (!phone || phone.length < 10 || !name || name.trim().length === 0) {
+      return;
+    }
+
+    try {
+      await customerService.findOrCreateByPhone(phone, name.trim());
+      // Silently save - no UI feedback needed
+    } catch (error) {
+      console.error('Error auto-saving customer:', error);
+      // Silently fail - don't show error to user
+    }
+  }, []);
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onInputChange(e);
+    const phone = e.target.value;
+
+    // Clear previous timeout
+    if (checkTimeout) {
+      clearTimeout(checkTimeout);
+    }
+
+    // Auto-save if both phone and name are provided
+    if (phone.length >= 10 && customerInfo.name && customerInfo.name.trim().length > 0) {
+      const timeout = setTimeout(() => {
+        autoSaveCustomer(phone, customerInfo.name);
+      }, 500);
+      setCheckTimeout(timeout);
+    }
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onInputChange(e);
+    const name = e.target.value;
+
+    // Auto-save if both phone and name are provided
+    if (customerInfo.phone && customerInfo.phone.length >= 10 && name && name.trim().length > 0) {
+      // Clear previous timeout
+      if (checkTimeout) {
+        clearTimeout(checkTimeout);
+      }
+      const timeout = setTimeout(() => {
+        autoSaveCustomer(customerInfo.phone, name);
+      }, 500);
+      setCheckTimeout(timeout);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
@@ -33,7 +86,7 @@ export const SimplifiedCustomerInfoForm: React.FC<SimplifiedCustomerInfoFormProp
             id="phone"
             name="phone"
             value={customerInfo.phone}
-            onChange={onInputChange}
+            onChange={handlePhoneChange}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors text-lg"
             placeholder="Nhập số điện thoại (VD: 0912345678)"
             required
@@ -54,7 +107,7 @@ export const SimplifiedCustomerInfoForm: React.FC<SimplifiedCustomerInfoFormProp
             id="name"
             name="name"
             value={customerInfo.name}
-            onChange={onInputChange}
+            onChange={handleNameChange}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors text-lg"
             placeholder="Nhập tên (tùy chọn)"
           />

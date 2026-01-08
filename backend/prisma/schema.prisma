@@ -318,7 +318,6 @@ enum OrderStatus {
 
 enum PaymentMethod {
   CASH
-  CARD
   QR
 }
 

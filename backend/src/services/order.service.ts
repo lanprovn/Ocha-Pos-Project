@@ -6,7 +6,7 @@ import recipeService from './recipe.service';
 import stockService from './stock.service';
 import customerService from './customer.service';
 import logger from '@utils/logger';
-import { InsufficientStockError, OrderNotFoundError } from '@core/errors';
+import { InsufficientStockError, OrderNotFoundError, ValidationError } from '@core/errors';
 import { emitStockUpdated, emitOrderCreated, emitOrderUpdated, emitOrderStatusChanged, emitOrderVerified } from '@core/socket/socket.io';
 import { StockTransactionType, OrderStatus } from '@core/types/common.types';
 import { calculateMembershipLevel } from '@config/membership.config';
@@ -1116,12 +1116,18 @@ export class OrderService {
 
       // Only PENDING orders can be verified
       if (order.status !== 'PENDING') {
-        throw new Error(`Order ${order.orderNumber} cannot be verified. Current status: ${order.status}`);
+        throw new ValidationError(
+          `Đơn hàng ${order.orderNumber} không thể xác nhận. Trạng thái hiện tại: ${order.status}`,
+          { orderId: id, orderNumber: order.orderNumber, currentStatus: order.status }
+        );
       }
 
       // Only CUSTOMER orders can be verified
       if (order.orderCreator !== 'CUSTOMER') {
-        throw new Error(`Only Customer orders can be verified. This order was created by ${order.orderCreator}`);
+        throw new ValidationError(
+          `Chỉ có thể xác nhận đơn hàng từ khách hàng. Đơn hàng này được tạo bởi ${order.orderCreator}`,
+          { orderId: id, orderNumber: order.orderNumber, orderCreator: order.orderCreator }
+        );
       }
 
       const updated = await tx.order.update({
@@ -1176,12 +1182,18 @@ export class OrderService {
 
       // Only PENDING orders can be rejected
       if (order.status !== 'PENDING') {
-        throw new Error(`Order ${order.orderNumber} cannot be rejected. Current status: ${order.status}`);
+        throw new ValidationError(
+          `Đơn hàng ${order.orderNumber} không thể từ chối. Trạng thái hiện tại: ${order.status}`,
+          { orderId: id, orderNumber: order.orderNumber, currentStatus: order.status }
+        );
       }
 
       // Only CUSTOMER orders can be rejected
       if (order.orderCreator !== 'CUSTOMER') {
-        throw new Error(`Only Customer orders can be rejected. This order was created by ${order.orderCreator}`);
+        throw new ValidationError(
+          `Chỉ có thể từ chối đơn hàng từ khách hàng. Đơn hàng này được tạo bởi ${order.orderCreator}`,
+          { orderId: id, orderNumber: order.orderNumber, orderCreator: order.orderCreator }
+        );
       }
 
       // Update notes with rejection reason if provided

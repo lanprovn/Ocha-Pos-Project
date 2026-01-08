@@ -91,6 +91,20 @@ export const customerService = {
   },
 
   /**
+   * Find customer by phone number or create new one
+   * Automatically saves customer when phone and name are provided
+   */
+  async findOrCreateByPhone(
+    phone: string,
+    name?: string
+  ): Promise<{ customer: Customer | null; exists: boolean; created: boolean }> {
+    return apiClient.post<{ customer: Customer | null; exists: boolean; created: boolean }>(
+      API_ENDPOINTS.CUSTOMER_FIND_OR_CREATE,
+      { phone, name }
+    );
+  },
+
+  /**
    * Get membership levels configuration
    */
   async getMembershipConfigs(): Promise<MembershipConfig[]> {

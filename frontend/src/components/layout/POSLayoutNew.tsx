@@ -50,6 +50,9 @@ export default function POSLayoutNew() {
 
   const handleCheckout = () => {
     if (totalItems > 0) {
+      // Reset discount rate when going to checkout
+      localStorage.removeItem('checkout_discount_rate');
+      window.dispatchEvent(new CustomEvent('discountRateChanged'));
       navigate('/checkout');
     }
   };
@@ -70,11 +73,50 @@ export default function POSLayoutNew() {
     setSelectedProduct(null);
   };
 
+  // Get discount rate from localStorage (set by checkout page)
+  const [discountRate, setDiscountRate] = useState<number>(0);
+  
+  useEffect(() => {
+    const savedDiscountRate = localStorage.getItem('checkout_discount_rate');
+    if (savedDiscountRate) {
+      setDiscountRate(parseFloat(savedDiscountRate) || 0);
+    }
+    
+    // Listen for storage changes (when discountRate changes in checkout)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'checkout_discount_rate') {
+        setDiscountRate(parseFloat(e.newValue || '0') || 0);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for custom event (same-tab updates)
+    const handleDiscountChange = () => {
+      const saved = localStorage.getItem('checkout_discount_rate');
+      if (saved) {
+        setDiscountRate(parseFloat(saved) || 0);
+      }
+    };
+    
+    window.addEventListener('discountRateChanged', handleDiscountChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('discountRateChanged', handleDiscountChange);
+    };
+  }, []);
+
+  // Calculate prices with discount
+  const subtotal = totalPrice;
+  const discountAmount = discountRate > 0 ? subtotal * (discountRate / 100) : 0;
+  const priceAfterDiscount = subtotal - discountAmount;
+  
   const calculateTax = () => {
-    return totalPrice * 0.1; // 10% VAT
+    return priceAfterDiscount * 0.1; // 10% VAT on price after discount
   };
 
-  const finalTotal = totalPrice + calculateTax();
+  const finalTotal = priceAfterDiscount + calculateTax();
 
   const selectedItem = items.find(item => item.id === selectedItemId);
 
@@ -278,8 +320,14 @@ export default function POSLayoutNew() {
           <div className="p-4 border-t border-gray-300 bg-blue-50 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Tạm tính:</span>
-              <span className="font-semibold text-gray-800">{formatPrice(totalPrice)}</span>
+              <span className="font-semibold text-gray-800">{formatPrice(subtotal)}</span>
             </div>
+            {discountRate > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-green-600 font-medium">Giảm giá ({discountRate}%):</span>
+                <span className="text-green-600 font-medium">-{formatPrice(discountAmount)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">VAT (10%):</span>
               <span className="font-semibold text-gray-800">{formatPrice(calculateTax())}</span>

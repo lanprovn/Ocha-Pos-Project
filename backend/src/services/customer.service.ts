@@ -565,6 +565,112 @@ export class CustomerService {
   }
 
   /**
+   * Find customer by phone number or create new one (public API version)
+   * Returns Customer object instead of just ID
+   * Used during checkout to automatically save customer info
+   * @param phone - Phone number
+   * @param name - Customer name (required for creation)
+   */
+  async findOrCreateByPhonePublic(
+    phone: string,
+    name?: string
+  ): Promise<{
+    customer: {
+      id: string;
+      name: string;
+      phone: string;
+      email: string | null;
+      membershipLevel: string;
+      loyaltyPoints: number;
+      totalSpent: number;
+    } | null;
+    created: boolean;
+  }> {
+    if (!phone || phone.trim() === '') {
+      return { customer: null, created: false };
+    }
+
+    // Safety check: ensure prisma is available
+    if (!prisma || !prisma.customers) {
+      throw new Error('Prisma client is not available or does not have customers property.');
+    }
+
+    // Normalize phone number (remove spaces, dashes, etc.)
+    const normalizedPhone = phone.trim().replace(/[\s\-\(\)]/g, '');
+
+    // Try to find existing customer
+    let customer = await prisma.customers.findUnique({
+      where: { phone: normalizedPhone },
+    });
+
+    if (customer) {
+      // Update last visit time and name if provided
+      const updateData: any = {
+        lastVisitAt: new Date(),
+        updatedAt: new Date(),
+      };
+      
+      // Update name if provided and different
+      if (name && name.trim() !== '' && name.trim() !== customer.name) {
+        updateData.name = name.trim();
+      }
+
+      customer = await prisma.customers.update({
+        where: { id: customer.id },
+        data: updateData,
+      });
+
+      return {
+        customer: {
+          id: customer.id,
+          name: customer.name,
+          phone: customer.phone,
+          email: customer.email,
+          membershipLevel: customer.membershipLevel,
+          loyaltyPoints: customer.loyaltyPoints,
+          totalSpent: parseFloat(customer.totalSpent.toString()),
+        },
+        created: false,
+      };
+    }
+
+    // Create new customer if not found and name is provided
+    if (name && name.trim() !== '') {
+      const now = new Date();
+      const newCustomer = await prisma.customers.create({
+        data: {
+          id: `cust_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name: name.trim(),
+          phone: normalizedPhone,
+          membershipLevel: 'BRONZE',
+          loyaltyPoints: 0,
+          totalSpent: new Decimal(0),
+          isActive: true,
+          createdAt: now,
+          updatedAt: now,
+          lastVisitAt: now,
+        },
+      });
+
+      return {
+        customer: {
+          id: newCustomer.id,
+          name: newCustomer.name,
+          phone: newCustomer.phone,
+          email: newCustomer.email,
+          membershipLevel: newCustomer.membershipLevel,
+          loyaltyPoints: newCustomer.loyaltyPoints,
+          totalSpent: parseFloat(newCustomer.totalSpent.toString()),
+        },
+        created: true,
+      };
+    }
+
+    // If no name provided, don't create customer
+    return { customer: null, created: false };
+  }
+
+  /**
    * Get customer statistics (VIP customers, frequent customers, membership distribution)
    */
   async getStatistics() {

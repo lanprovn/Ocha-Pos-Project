@@ -156,6 +156,38 @@ export class CustomerController {
   }
 
   /**
+   * Find customer by phone number or create new one
+   * Public endpoint for checkout - automatically saves customer when phone and name are provided
+   */
+  async findOrCreateByPhone(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { phone, name } = req.body;
+      
+      if (!phone) {
+        return res.status(400).json({ error: 'Số điện thoại là bắt buộc' });
+      }
+
+      const result = await customerService.findOrCreateByPhonePublic(phone, name);
+      
+      if (!result.customer) {
+        return res.json({ 
+          customer: null, 
+          exists: false, 
+          created: false 
+        });
+      }
+
+      res.json({
+        customer: result.customer,
+        exists: !result.created,
+        created: result.created,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get membership levels configuration
    */
   async getMembershipConfigs(req: Request, res: Response, next: NextFunction) {

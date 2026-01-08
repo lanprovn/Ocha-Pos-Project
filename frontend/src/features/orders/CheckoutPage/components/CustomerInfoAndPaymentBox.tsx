@@ -91,6 +91,32 @@ export const CustomerInfoAndPaymentBox: React.FC<CustomerInfoAndPaymentBoxProps>
     }
   }, [onCustomerFound, onInputChange, onDiscountRateChange]);
 
+  // Auto-save customer when both phone and name are provided
+  const autoSaveCustomer = useCallback(async (phone: string, name: string) => {
+    if (!phone || phone.length < 10 || !name || name.trim().length === 0) {
+      return;
+    }
+
+    try {
+      const result = await customerService.findOrCreateByPhone(phone, name.trim());
+      if (result.customer) {
+        setFoundCustomer(result.customer);
+        // Get discount rate for customer's membership level
+        const discountInfo = await customerService.getDiscountRate(result.customer.membershipLevel);
+        setDiscountRate(discountInfo.discountRate);
+        if (onDiscountRateChange) {
+          onDiscountRateChange(discountInfo.discountRate);
+        }
+        if (onCustomerFound) {
+          onCustomerFound(result.customer);
+        }
+      }
+    } catch (error) {
+      console.error('Error auto-saving customer:', error);
+      // Silently fail - don't show error to user
+    }
+  }, [onCustomerFound, onDiscountRateChange]);
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onInputChange(e);
     const phone = e.target.value;
@@ -103,9 +129,30 @@ export const CustomerInfoAndPaymentBox: React.FC<CustomerInfoAndPaymentBoxProps>
     // Debounce: Check customer after 500ms of no typing
     const timeout = setTimeout(() => {
       checkCustomer(phone);
+      // Auto-save if both phone and name are provided
+      if (phone.length >= 10 && customerInfo.name && customerInfo.name.trim().length > 0) {
+        autoSaveCustomer(phone, customerInfo.name);
+      }
     }, 500);
 
     setCheckTimeout(timeout);
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onInputChange(e);
+    const name = e.target.value;
+
+    // Auto-save if both phone and name are provided
+    if (customerInfo.phone && customerInfo.phone.length >= 10 && name && name.trim().length > 0) {
+      // Debounce auto-save
+      if (checkTimeout) {
+        clearTimeout(checkTimeout);
+      }
+      const timeout = setTimeout(() => {
+        autoSaveCustomer(customerInfo.phone, name);
+      }, 500);
+      setCheckTimeout(timeout);
+    }
   };
 
   useEffect(() => {
@@ -126,15 +173,6 @@ export const CustomerInfoAndPaymentBox: React.FC<CustomerInfoAndPaymentBoxProps>
         </svg>
       ), 
       description: 'QR Code ngân hàng'
-    },
-    { 
-      key: 'card', 
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-        </svg>
-      ), 
-      description: 'Thẻ ngân hàng (VNPay)'
     },
     { 
       key: 'cash', 
@@ -173,7 +211,7 @@ export const CustomerInfoAndPaymentBox: React.FC<CustomerInfoAndPaymentBoxProps>
                   id="name"
                   name="name"
                   value={customerInfo.name}
-                  onChange={onInputChange}
+                  onChange={handleNameChange}
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors text-lg ${
                     foundCustomer ? 'border-green-300 bg-green-50' : 'border-gray-300'
                   }`}

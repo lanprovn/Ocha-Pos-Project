@@ -6,11 +6,10 @@ export interface CustomerInfo {
   notes: string;
 }
 
-export type PaymentMethod = 'cash' | 'card' | 'qr';
+export type PaymentMethod = 'cash' | 'qr';
 
 export const PAYMENT_METHODS: Record<PaymentMethod, string> = {
   'cash': 'Tiền mặt',
-  'card': 'Thẻ ngân hàng',
   'qr': 'Quét mã QR'
 };
 

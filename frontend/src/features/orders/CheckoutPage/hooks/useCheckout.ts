@@ -6,7 +6,6 @@ import { useCart } from '@features/orders/hooks/useCart';
 import { useProducts } from '@features/products/hooks/useProducts';
 import { validatePhone, isCustomerDisplay as checkIsCustomerDisplay } from '../utils/checkoutUtils';
 import { orderService } from '@features/orders/services/order.service';
-import paymentService from '@features/orders/services/payment.service';
 import qrService from '@features/orders/services/qr.service';
 import { STORAGE_KEYS } from '@constants';
 import type { CustomerInfo, PaymentMethod } from '../types';
@@ -36,6 +35,13 @@ export const useCheckout = () => {
   });
   
   const [discountRate, setDiscountRate] = useState<number>(0);
+  
+  // Save discountRate to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('checkout_discount_rate', discountRate.toString());
+    // Dispatch custom event for same-tab updates
+    window.dispatchEvent(new CustomEvent('discountRateChanged'));
+  }, [discountRate]);
   
   // Flag to track if order has been restored
   const [orderRestored, setOrderRestored] = useState(false);
@@ -81,7 +87,7 @@ export const useCheckout = () => {
         // Restore payment method
         if (order.paymentMethod) {
           const method = order.paymentMethod.toLowerCase() as PaymentMethod;
-          if (['cash', 'card', 'qr'].includes(method)) {
+          if (['cash', 'qr'].includes(method)) {
             setPaymentMethod(method);
           }
         }
@@ -318,34 +324,12 @@ export const useCheckout = () => {
         customerPhone: customerInfo.phone || null,
         customerTable: customerInfo.table || null,
         notes: customerInfo.notes || null,
-        paymentMethod: paymentMethod.toUpperCase() as 'CASH' | 'CARD' | 'QR',
+        paymentMethod: paymentMethod.toUpperCase() as 'CASH' | 'QR',
         paymentStatus: paymentMethod === 'cash' ? 'SUCCESS' : 'PENDING',
         orderCreator: isCustomerDisplay ? 'CUSTOMER' : 'STAFF',
         orderCreatorName: isCustomerDisplay ? 'Khách Hàng' : 'Nhân viên',
         items: orderItemsWithDiscountAndVAT, // Sử dụng items có discount và VAT được thêm vào
       });
-
-      // Nếu là card, tạo payment URL và redirect đến payment gateway
-      if (paymentMethod === 'card') {
-        try {
-          const paymentResponse = await paymentService.createPayment({
-            orderId: orderData.id,
-            paymentMethod: 'VNPAY',
-          });
-
-          // Không cần lưu vào localStorage nữa vì đã có trong backend
-
-          // Redirect đến payment gateway
-          toast.loading('Đang chuyển đến trang thanh toán...', { id: 'payment-redirect' });
-          window.location.href = paymentResponse.paymentUrl;
-          return; // Không clear cart hay navigate ở đây, sẽ làm ở callback
-        } catch (paymentError: any) {
-          console.error('Payment creation error:', paymentError);
-          toast.error(paymentError?.message || 'Không thể tạo thanh toán. Vui lòng thử lại.');
-          setIsProcessing(false);
-          return;
-        }
-      }
 
       // Nếu là qr, tạo QR code và hiển thị modal
       if (paymentMethod === 'qr') {
@@ -412,6 +396,10 @@ export const useCheckout = () => {
       
       clearCart();
       
+      // Clear discount rate from localStorage
+      localStorage.removeItem('checkout_discount_rate');
+      window.dispatchEvent(new CustomEvent('discountRateChanged'));
+      
       // Set success data instead of navigating
       setOrderSuccessData({
         orderId: orderData.id,
@@ -469,6 +457,10 @@ export const useCheckout = () => {
 
       clearCart();
       setShowQRModal(false);
+      
+      // Clear discount rate from localStorage
+      localStorage.removeItem('checkout_discount_rate');
+      window.dispatchEvent(new CustomEvent('discountRateChanged'));
       
       // Set success data instead of navigating
       setOrderSuccessData({

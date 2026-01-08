@@ -240,7 +240,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   };
 
   // Function to update order status and sync to display
-  const updateOrderStatus = (status: 'creating' | 'confirmed' | 'paid' | 'completed', customerInfo?: { name?: string; table?: string }, paymentMethod?: 'cash' | 'card' | 'qr', paymentStatus?: 'success' | 'pending' | 'failed') => {
+  const updateOrderStatus = (status: 'creating' | 'confirmed' | 'paid' | 'completed', customerInfo?: { name?: string; table?: string }, paymentMethod?: 'cash' | 'qr', paymentStatus?: 'success' | 'pending' | 'failed') => {
     const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
     const totalPrice = items.reduce((sum, item) => sum + item.totalPrice, 0);
     

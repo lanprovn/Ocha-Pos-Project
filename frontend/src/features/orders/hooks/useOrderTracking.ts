@@ -111,7 +111,7 @@ export function useOrderTracking() {
     orderId: string,
     status: OrderTracking['status'],
     orderSystemId?: string,
-    paymentMethod?: 'cash' | 'card' | 'qr',
+    paymentMethod?: 'cash' | 'qr',
     paymentStatus?: 'success' | 'pending' | 'failed',
     customerInfo?: { name?: string; table?: string; phone?: string }
   ) => {

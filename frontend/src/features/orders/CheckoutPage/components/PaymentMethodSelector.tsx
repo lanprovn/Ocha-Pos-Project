@@ -13,8 +13,8 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   onPaymentMethodChange,
   isCustomerDisplay = false
 }) => {
-  // For customer display: prioritize QR code, show all methods
-  // For staff: show all methods in default order
+  // For customer display: prioritize QR code
+  // For staff: show cash first, then QR
   const paymentMethods: Array<{ key: PaymentMethod; icon: React.ReactNode; description?: string; priority?: number }> = isCustomerDisplay
     ? [
         { 
@@ -28,16 +28,6 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
           priority: 1 
         },
         { 
-          key: 'card', 
-          icon: (
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-            </svg>
-          ), 
-          description: 'Thẻ ngân hàng (VNPay)', 
-          priority: 2 
-        },
-        { 
           key: 'cash', 
           icon: (
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -45,7 +35,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
             </svg>
           ), 
           description: 'Tiền mặt', 
-          priority: 3 
+          priority: 2 
         }
       ]
     : [
@@ -57,15 +47,6 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
             </svg>
           ), 
           description: 'Tiền mặt' 
-        },
-        { 
-          key: 'card', 
-          icon: (
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-            </svg>
-          ), 
-          description: 'Thẻ ngân hàng (VNPay)' 
         },
         { 
           key: 'qr', 
@@ -89,7 +70,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
         Phương thức thanh toán
       </h3>
       
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {paymentMethods.map((method) => (
           <button
             key={method.key}

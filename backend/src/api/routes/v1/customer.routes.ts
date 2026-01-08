@@ -119,6 +119,36 @@ router.get('/phone/:phone', customerController.findByPhone.bind(customerControll
 
 /**
  * @swagger
+ * /api/customers/find-or-create:
+ *   post:
+ *     summary: Find customer by phone or create new one
+ *     description: Automatically save customer when phone and name are provided (Public endpoint for checkout)
+ *     tags: [Customers]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phone
+ *             properties:
+ *               phone:
+ *                 type: string
+ *                 description: Phone number
+ *               name:
+ *                 type: string
+ *                 description: Customer name (optional, but required for creation)
+ *     responses:
+ *       200:
+ *         description: Customer found or created
+ *       400:
+ *         description: Phone number is required
+ */
+router.post('/find-or-create', customerController.findOrCreateByPhone.bind(customerController));
+
+/**
+ * @swagger
  * /api/customers/membership/configs:
  *   get:
  *     summary: Get membership levels configuration

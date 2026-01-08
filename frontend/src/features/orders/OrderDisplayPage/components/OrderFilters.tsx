@@ -79,7 +79,6 @@ const OrderFilters: React.FC<OrderFiltersProps> = ({
         >
           <option value="all">Tất cả phương thức</option>
           <option value="CASH">Tiền mặt</option>
-          <option value="CARD">Thẻ</option>
           <option value="QR">QR Code</option>
         </select>
       </div>

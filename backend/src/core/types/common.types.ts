@@ -17,7 +17,6 @@ export enum OrderStatus {
 // ===== Payment Types =====
 export enum PaymentMethod {
   CASH = 'CASH',
-  CARD = 'CARD',
   QR = 'QR',
 }
 

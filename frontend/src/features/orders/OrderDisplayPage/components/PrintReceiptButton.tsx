@@ -410,7 +410,7 @@ const PrintReceiptButton: React.FC<PrintReceiptButtonProps> = ({ order }) => {
           <div class="payment-info">
             <div class="payment-row method">
               <span>Phương thức:</span>
-              <span>${order.paymentMethod === 'card' ? 'Thẻ' : order.paymentMethod === 'qr' ? 'QR Code' : 'Khác'}</span>
+              <span>${order.paymentMethod === 'qr' ? 'QR Code' : order.paymentMethod === 'cash' ? 'Tiền mặt' : 'Khác'}</span>
             </div>
             <div class="payment-row">
               <span>Đã thanh toán:</span>

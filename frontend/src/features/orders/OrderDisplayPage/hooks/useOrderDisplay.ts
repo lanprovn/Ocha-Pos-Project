@@ -89,7 +89,7 @@ export const useOrderDisplay = () => {
         table: order.customerTable || undefined,
         phone: order.customerPhone || undefined,
       },
-      paymentMethod: order.paymentMethod?.toLowerCase() as 'cash' | 'card' | 'qr' | undefined,
+      paymentMethod: order.paymentMethod?.toLowerCase() as 'cash' | 'qr' | undefined,
       paymentStatus: order.paymentStatus?.toLowerCase() as 'success' | 'pending' | 'failed' | undefined,
       timestamp: new Date(order.createdAt).getTime(),
       lastUpdated: new Date(order.updatedAt || order.createdAt).getTime(),

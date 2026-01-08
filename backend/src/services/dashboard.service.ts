@@ -300,7 +300,7 @@ export class DashboardService {
         total: parseFloat(order.totalAmount.toString()),
         items: order.items.length,
         customerName: order.customerName || 'Khách hàng',
-        paymentMethod: (order.paymentMethod?.toLowerCase() || 'cash') as 'cash' | 'card' | 'qr',
+        paymentMethod: (order.paymentMethod?.toLowerCase() || 'cash') as 'cash' | 'qr',
         products: order.items.map((item) => ({
           name: item.product.name,
           quantity: item.quantity,

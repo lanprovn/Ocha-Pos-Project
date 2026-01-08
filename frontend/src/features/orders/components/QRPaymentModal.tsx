@@ -176,7 +176,9 @@ const QRPaymentModal: React.FC<QRPaymentModalProps> = ({
                   <div className="space-y-1.5 sm:space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600 text-sm sm:text-base">Ngân hàng:</span>
-                      <span className="font-semibold text-gray-900 text-sm sm:text-base">{qrData.qrData.bankCode}</span>
+                      <span className="font-semibold text-gray-900 text-sm sm:text-base">
+                        {qrData.qrData.bankCode === 'CTG' ? 'VietinBank (CTG)' : qrData.qrData.bankCode}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600 text-sm sm:text-base">Số tài khoản:</span>
@@ -190,11 +192,30 @@ const QRPaymentModal: React.FC<QRPaymentModalProps> = ({
                         {qrData.qrData.accountName}
                       </span>
                     </div>
-                    <div className="flex justify-between items-start">
-                      <span className="text-gray-600 text-sm sm:text-base">Nội dung:</span>
-                      <span className="font-semibold text-gray-900 text-right max-w-[200px] sm:max-w-[250px] break-words text-xs sm:text-sm">
-                        {qrData.qrData.description}
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 text-sm sm:text-base">Số tiền:</span>
+                      <span className="font-bold text-orange-500 text-base sm:text-lg">
+                        {formatPrice(qrData.totalAmount)}
                       </span>
+                    </div>
+                    {/* ✅ THÊM: Hiển thị mã đơn hàng nổi bật trong nội dung chuyển khoản */}
+                    <div className="bg-white rounded-md p-2 sm:p-3 border-2 border-orange-300 mt-3">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-gray-700 text-xs sm:text-sm font-medium">
+                          Nội dung chuyển khoản:
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-orange-600 text-sm sm:text-base font-mono">
+                          {qrData.orderNumber}
+                        </span>
+                        <span className="text-gray-600 text-xs sm:text-sm">
+                          ({formatPrice(qrData.totalAmount)})
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1.5">
+                        ⚠️ Vui lòng nhập đúng nội dung này khi chuyển khoản
+                      </p>
                     </div>
                   </div>
                 </div>

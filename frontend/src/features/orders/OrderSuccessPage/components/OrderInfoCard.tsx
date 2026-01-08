@@ -32,8 +32,6 @@ export const OrderInfoCard: React.FC<OrderInfoCardProps> = ({
     switch (method) {
       case 'cash':
         return 'Tiền mặt';
-      case 'card':
-        return 'Thẻ ngân hàng';
       case 'qr':
         return 'Quét mã QR';
       default:

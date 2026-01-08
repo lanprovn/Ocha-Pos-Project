@@ -7,6 +7,8 @@ import { orderService } from '@features/orders/services/order.service';
 import { useAuth } from '@features/auth/hooks/useAuth';
 import PrintReceiptButton from './PrintReceiptButton';
 import PrintPreviewButton from './PrintPreviewButton';
+import PrintItemTicketButton from './PrintItemTicketButton';
+import PrintAllItemTicketsButton from './PrintAllItemTicketsButton';
 import { HoldOrderModal } from './HoldOrderModal';
 import { CancelOrderModal } from './CancelOrderModal';
 import toast from 'react-hot-toast';
@@ -29,6 +31,8 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, currentTime, onStat
   const isPaidOrAfter = ['paid', 'preparing', 'completed'].includes(order.status);
   const isStaff = user?.role === 'STAFF' || user?.role === 'ADMIN';
   const isPendingVerification = order.status === 'pending_verification';
+  const isCustomerOrder = order.createdBy === 'customer'; // Only CUSTOMER orders can be verified
+  const canVerify = isPendingVerification && isStaff && isCustomerOrder; // Show verify button only for CUSTOMER orders
   const canHold = order.backendStatus === 'PENDING' || order.backendStatus === 'CREATING' || (!order.backendStatus && (order.status === 'creating'));
   const canCancel = order.backendStatus !== 'COMPLETED' && order.backendStatus !== 'CANCELLED' && order.status !== 'completed';
   const isHold = order.backendStatus === 'HOLD' || order.status === 'hold';
@@ -218,34 +222,42 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, currentTime, onStat
           {order.items.map((item) => (
             <div
               key={item.id}
-              className="flex items-start justify-between p-3 bg-gray-50 rounded-md border border-gray-200"
+              className="flex flex-col p-3 bg-gray-50 rounded-md border border-gray-200"
             >
-              <div className="flex-1">
-                <div className="font-semibold text-gray-800">{item.name}</div>
-                {item.selectedSize && (
-                  <div className="text-sm text-gray-600 mt-1">
-                    Size: {item.selectedSize.name}
-                  </div>
-                )}
-                {item.selectedToppings.length > 0 && (
-                  <div className="text-sm text-gray-600 mt-1">
-                    Topping: {item.selectedToppings.map(t => t.name).join(', ')}
-                  </div>
-                )}
-                {item.note && (
-                  <div className="text-sm text-gray-500 italic mt-1">
-                    Ghi chú: {item.note}
-                  </div>
-                )}
-              </div>
-              <div className="text-right ml-4">
-                <div className="font-semibold text-gray-800">
-                  {item.quantity}x
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="font-semibold text-gray-800">{item.name}</div>
+                  {item.selectedSize && (
+                    <div className="text-sm text-gray-600 mt-1">
+                      Size: {item.selectedSize.name}
+                    </div>
+                  )}
+                  {item.selectedToppings.length > 0 && (
+                    <div className="text-sm text-gray-600 mt-1">
+                      Topping: {item.selectedToppings.map(t => t.name).join(', ')}
+                    </div>
+                  )}
+                  {item.note && (
+                    <div className="text-sm text-gray-500 italic mt-1">
+                      Ghi chú: {item.note}
+                    </div>
+                  )}
                 </div>
-                <div className="text-sm text-gray-600">
-                  {formatPrice(item.totalPrice)}
+                <div className="text-right ml-4">
+                  <div className="font-semibold text-gray-800">
+                    {item.quantity}x
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {formatPrice(item.totalPrice)}
+                  </div>
                 </div>
               </div>
+              {/* Print Ticket Button */}
+              {isStaff && (
+                <div className="mt-2 pt-2 border-t border-gray-300">
+                  <PrintItemTicketButton order={order} item={item} />
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -293,8 +305,8 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, currentTime, onStat
 
         {/* Quick Actions */}
         <div className="mt-3 pt-3 border-t border-gray-200">
-          {/* Pending Verification Actions (Staff Only) */}
-          {isPendingVerification && isStaff ? (
+          {/* Pending Verification Actions (Staff Only - CUSTOMER orders only) */}
+          {canVerify ? (
             <div className="flex items-center gap-2">
               <button
                 onClick={handleVerifyOrder}
@@ -462,7 +474,13 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, currentTime, onStat
 
               {/* Print button for completed orders */}
               {order.backendStatus === 'COMPLETED' && (
-                <PrintReceiptButton order={order} />
+                <>
+                  <PrintReceiptButton order={order} />
+                  {/* Print all item tickets button */}
+                  {isStaff && order.items.length > 0 && (
+                    <PrintAllItemTicketsButton order={order} />
+                  )}
+                </>
               )}
             </div>
           )}

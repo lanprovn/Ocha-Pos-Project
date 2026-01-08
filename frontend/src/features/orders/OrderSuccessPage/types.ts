@@ -18,10 +18,10 @@ export interface OrderDetails {
 
 export interface LocationState {
   orderId?: string;
-  paymentMethod?: 'cash' | 'card' | 'qr';
+  paymentMethod?: 'cash' | 'qr';
   customerName?: string;
   table?: string;
 }
 
-export type PaymentMethod = 'cash' | 'card' | 'qr' | null;
+export type PaymentMethod = 'cash' | 'qr' | null;
 

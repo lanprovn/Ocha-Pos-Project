@@ -17,7 +17,7 @@ export interface CreateOrderInput {
   customerPhone?: string | null;
   customerTable?: string | null;
   notes?: string | null;
-  paymentMethod?: 'CASH' | 'CARD' | 'QR';
+  paymentMethod?: 'CASH' | 'QR';
   paymentStatus?: 'PENDING' | 'SUCCESS' | 'FAILED';
   orderCreator?: 'STAFF' | 'CUSTOMER';
   orderCreatorName?: string | null;
@@ -82,7 +82,7 @@ export interface CancelOrderInput {
   reason: string;
   reasonType: 'OUT_OF_STOCK' | 'CUSTOMER_REQUEST' | 'SYSTEM_ERROR' | 'OTHER';
   refundAmount?: number | null;
-  refundMethod?: 'CASH' | 'CARD' | 'QR' | null;
+  refundMethod?: 'CASH' | 'QR' | null;
 }
 
 export interface ReturnOrderItemInput {
@@ -94,7 +94,7 @@ export interface ReturnOrderItemInput {
 export interface ReturnOrderInput {
   returnType: 'FULL' | 'PARTIAL';
   returnReason: 'DEFECTIVE' | 'WRONG_ITEM' | 'CUSTOMER_REQUEST' | 'OTHER';
-  refundMethod: 'CASH' | 'CARD' | 'QR';
+  refundMethod: 'CASH' | 'QR';
   items: ReturnOrderItemInput[];
   notes?: string | null;
 }

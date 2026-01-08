@@ -21,7 +21,6 @@ const CANCEL_REASON_TYPES = [
 
 const REFUND_METHODS = [
   { value: 'CASH', label: 'Tiền mặt' },
-  { value: 'CARD', label: 'Thẻ' },
   { value: 'QR', label: 'Chuyển khoản' },
 ] as const;
 
@@ -34,7 +33,7 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
   const [reason, setReason] = useState('');
   const [reasonType, setReasonType] = useState<'OUT_OF_STOCK' | 'CUSTOMER_REQUEST' | 'SYSTEM_ERROR' | 'OTHER'>('CUSTOMER_REQUEST');
   const [refundAmount, setRefundAmount] = useState<number | null>(null);
-  const [refundMethod, setRefundMethod] = useState<'CASH' | 'CARD' | 'QR' | null>(null);
+  const [refundMethod, setRefundMethod] = useState<'CASH' | 'QR' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   React.useEffect(() => {
@@ -42,7 +41,7 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
       // Auto-calculate refund if order is paid
       if (order.paymentStatus === 'SUCCESS') {
         setRefundAmount(parseFloat(order.totalAmount));
-        setRefundMethod(order.paymentMethod as 'CASH' | 'CARD' | 'QR' | null);
+        setRefundMethod(order.paymentMethod as 'CASH' | 'QR' | null);
       } else {
         setRefundAmount(null);
         setRefundMethod(null);

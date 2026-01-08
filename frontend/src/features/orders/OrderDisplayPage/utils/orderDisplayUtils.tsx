@@ -127,10 +127,9 @@ export const getStatusConfig = (status: OrderTracking['status']): StatusConfig =
   }
 };
 
-export const getPaymentMethodText = (method?: 'cash' | 'card' | 'qr'): string => {
+export const getPaymentMethodText = (method?: 'cash' | 'qr'): string => {
   switch (method) {
     case 'cash': return 'Tiền mặt';
-    case 'card': return 'Thẻ ngân hàng';
     case 'qr': return 'QR Code';
     default: return 'Chưa thanh toán';
   }

@@ -45,7 +45,6 @@ export const useOrderSuccess = () => {
   const getPaymentMethodFromOrder = (order: Order): PaymentMethod => {
     const method = order.paymentMethod?.toLowerCase();
     if (method === 'cash') return 'cash';
-    if (method === 'card') return 'card';
     if (method === 'qr') return 'qr';
     return null;
   };
