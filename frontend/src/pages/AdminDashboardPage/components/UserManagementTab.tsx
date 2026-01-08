@@ -239,7 +239,7 @@ const UserManagementTab: React.FC = () => {
       {/* Reset Password Modal - Simple version */}
       {showResetPasswordModal && selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+          <div className="bg-white rounded-lg shadow-xl w-[80%] mx-4">
             <div className="p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
                 Đặt lại mật khẩu cho {selectedUser.name}

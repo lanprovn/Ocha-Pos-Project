@@ -255,20 +255,50 @@ export class ReportingService {
     // ===== SHEET 1: TỔNG QUAN (Summary) =====
     const summarySheet = workbook.addWorksheet('Tổng Quan');
 
-    // Title
+    // Title with report type
     summarySheet.mergeCells('A1:B1');
-    summarySheet.getCell('A1').value = 'BÁO CÁO DOANH THU';
+    const reportTypeName = filters.reportType 
+      ? filters.reportType === 'daily' ? 'BÁO CÁO DOANH THU THEO NGÀY'
+      : filters.reportType === 'weekly' ? 'BÁO CÁO DOANH THU THEO TUẦN'
+      : filters.reportType === 'monthly' ? 'BÁO CÁO DOANH THU THEO THÁNG'
+      : 'BÁO CÁO DOANH THU'
+      : 'BÁO CÁO DOANH THU';
+    summarySheet.getCell('A1').value = reportTypeName;
     summarySheet.getCell('A1').font = { size: 16, bold: true };
     summarySheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
 
-    // Period
+    // Period with detailed date information
+    const startDateObj = new Date(filters.startDate);
+    const endDateObj = new Date(filters.endDate);
+    const startDayOfWeek = this.getDayOfWeek(startDateObj);
+    const endDayOfWeek = this.getDayOfWeek(endDateObj);
+    const startFormatted = startDateObj.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    const endFormatted = endDateObj.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+
     summarySheet.getCell('A2').value = 'Kỳ báo cáo:';
-    summarySheet.getCell('B2').value = `${filters.startDate} đến ${filters.endDate}`;
+    summarySheet.getCell('B2').value = `${startDayOfWeek}, ${startFormatted} đến ${endDayOfWeek}, ${endFormatted}`;
     summarySheet.getCell('A2').font = { bold: true };
 
     // Export date
+    const exportDate = new Date();
+    const exportDayOfWeek = this.getDayOfWeek(exportDate);
     summarySheet.getCell('A3').value = 'Ngày xuất:';
-    summarySheet.getCell('B3').value = new Date().toLocaleString('vi-VN');
+    summarySheet.getCell('B3').value = `${exportDayOfWeek}, ${exportDate.toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    })}`;
     summarySheet.getCell('A3').font = { bold: true };
 
     // Empty row
@@ -291,12 +321,21 @@ export class ReportingService {
     // ===== SHEET 2: DOANH THU THEO NGÀY (Daily Revenue) =====
     const dailySheet = workbook.addWorksheet('Doanh Thu Theo Ngày');
 
-    dailySheet.addRow(['Ngày', 'Số đơn hàng', 'Doanh thu', 'Giảm giá', 'Thực thu']);
+    dailySheet.addRow(['Thứ', 'Ngày', 'Tháng', 'Năm', 'Số đơn hàng', 'Doanh thu', 'Giảm giá', 'Thực thu']);
     dailySheet.getRow(1).font = { bold: true };
 
     reportData.dailyData.forEach((day) => {
+      const date = new Date(day.date);
+      const dayOfWeek = this.getDayOfWeek(date);
+      const dayNumber = date.getDate();
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+
       dailySheet.addRow([
-        this.formatDate(day.date),
+        dayOfWeek,
+        dayNumber,
+        month,
+        year,
         day.orderCount,
         parseFloat(day.revenue),
         parseFloat(day.discount),
@@ -307,6 +346,9 @@ export class ReportingService {
     // Add total row
     const totalRow = dailySheet.addRow([
       'TỔNG CỘNG',
+      '',
+      '',
+      '',
       reportData.summary.totalOrders,
       parseFloat(reportData.summary.totalRevenue),
       parseFloat(reportData.summary.totalDiscount),
@@ -315,14 +357,17 @@ export class ReportingService {
     totalRow.font = { bold: true };
 
     // Style daily sheet
-    dailySheet.getColumn(1).width = 15;
-    dailySheet.getColumn(2).width = 15;
-    dailySheet.getColumn(3).width = 18;
-    dailySheet.getColumn(4).width = 18;
-    dailySheet.getColumn(5).width = 18;
-    dailySheet.getColumn(3).numFmt = '#,##0';
-    dailySheet.getColumn(4).numFmt = '#,##0';
-    dailySheet.getColumn(5).numFmt = '#,##0';
+    dailySheet.getColumn(1).width = 15; // Thứ
+    dailySheet.getColumn(2).width = 12; // Ngày
+    dailySheet.getColumn(3).width = 12; // Tháng
+    dailySheet.getColumn(4).width = 12; // Năm
+    dailySheet.getColumn(5).width = 15; // Số đơn hàng
+    dailySheet.getColumn(6).width = 18; // Doanh thu
+    dailySheet.getColumn(7).width = 18; // Giảm giá
+    dailySheet.getColumn(8).width = 18; // Thực thu
+    dailySheet.getColumn(6).numFmt = '#,##0';
+    dailySheet.getColumn(7).numFmt = '#,##0';
+    dailySheet.getColumn(8).numFmt = '#,##0';
 
     // ===== SHEET 3: TOP SẢN PHẨM BÁN CHẠY (Best Sellers) =====
     const bestSellersSheet = workbook.addWorksheet('Sản Phẩm Bán Chạy');
@@ -354,22 +399,28 @@ export class ReportingService {
     // ===== SHEET 4: GIỜ CAO ĐIỂM (Peak Hours) =====
     const peakHoursSheet = workbook.addWorksheet('Giờ Cao Điểm');
 
-    peakHoursSheet.addRow(['Giờ', 'Số đơn hàng', 'Doanh thu']);
+    peakHoursSheet.addRow(['Khung giờ', 'Giờ bắt đầu', 'Giờ kết thúc', 'Số đơn hàng', 'Doanh thu']);
     peakHoursSheet.getRow(1).font = { bold: true };
 
     reportData.peakHours.forEach((hour) => {
+      const startHour = hour.hour.toString().padStart(2, '0');
+      const endHour = ((hour.hour + 1) % 24).toString().padStart(2, '0');
       peakHoursSheet.addRow([
-        `${hour.hour}:00 - ${hour.hour + 1}:00`,
+        `${startHour}:00 - ${endHour}:00`,
+        `${startHour}:00`,
+        `${endHour}:00`,
         hour.orderCount,
         parseFloat(hour.revenue),
       ]);
     });
 
     // Style peak hours sheet
-    peakHoursSheet.getColumn(1).width = 20;
-    peakHoursSheet.getColumn(2).width = 15;
-    peakHoursSheet.getColumn(3).width = 18;
-    peakHoursSheet.getColumn(3).numFmt = '#,##0';
+    peakHoursSheet.getColumn(1).width = 20; // Khung giờ
+    peakHoursSheet.getColumn(2).width = 15; // Giờ bắt đầu
+    peakHoursSheet.getColumn(3).width = 15; // Giờ kết thúc
+    peakHoursSheet.getColumn(4).width = 15; // Số đơn hàng
+    peakHoursSheet.getColumn(5).width = 18; // Doanh thu
+    peakHoursSheet.getColumn(5).numFmt = '#,##0';
 
     // ===== SHEET 5: PHƯƠNG THỨC THANH TOÁN (Payment Methods) =====
     const paymentSheet = workbook.addWorksheet('Phương Thức Thanh Toán');
@@ -464,8 +515,19 @@ export class ReportingService {
       ordersSheet.getCell(`A${currentRow}`).alignment = { horizontal: 'left', vertical: 'middle' };
       currentRow++;
 
-      // Order information
-      ordersSheet.addRow(['Mã đơn:', order.orderNumber, '', 'Ngày giờ:', this.formatDateTime(order.createdAt)]);
+      // Order information with detailed date/time
+      const orderDate = new Date(order.createdAt);
+      const dayOfWeek = this.getDayOfWeek(orderDate);
+      const formattedDate = orderDate.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+      const formattedTime = this.formatTime(orderDate);
+      
+      ordersSheet.addRow(['Mã đơn:', order.orderNumber, '', 'Thứ:', dayOfWeek]);
+      ordersSheet.addRow(['Ngày:', formattedDate, '', 'Giờ:', formattedTime]);
+      ordersSheet.addRow(['Ngày giờ đầy đủ:', this.formatDateTime(order.createdAt), '', '', '']);
       ordersSheet.addRow(['Khách hàng:', order.customerName || 'Khách vãng lai', '', 'SĐT:', order.customerPhone || '-']);
       ordersSheet.addRow(['Bàn:', order.customerTable || '-', '', 'Phương thức TT:', this.getPaymentMethodName(order.paymentMethod || 'CASH')]);
       ordersSheet.addRow(['Trạng thái:', this.getOrderStatusName(order.status), '', 'Người tạo:', order.orderCreatorName || (order.orderCreator === 'STAFF' ? 'Nhân viên' : 'Khách hàng')]);
@@ -474,12 +536,15 @@ export class ReportingService {
       }
 
       // Style order info rows
-      for (let i = 0; i < 5; i++) {
+      const infoRowCount = order.notes ? 7 : 6;
+      for (let i = 0; i < infoRowCount; i++) {
         const row = ordersSheet.getRow(currentRow + i);
         row.getCell(1).font = { bold: true };
-        row.getCell(4).font = { bold: true };
+        if (row.getCell(4).value) {
+          row.getCell(4).font = { bold: true };
+        }
       }
-      currentRow += 5;
+      currentRow += infoRowCount;
 
       // Empty row
       currentRow++;
@@ -579,7 +644,14 @@ export class ReportingService {
 
     orderItemsSheet.addRow([
       'Mã đơn',
+      'Thứ',
       'Ngày',
+      'Tháng',
+      'Năm',
+      'Giờ',
+      'Phút',
+      'Giây',
+      'Ngày giờ đầy đủ',
       'Tên sản phẩm',
       'Danh mục',
       'Size',
@@ -596,12 +668,29 @@ export class ReportingService {
     // Reuse the same productMap from above instead of redeclaring
 
     for (const order of orders) {
+      const orderDate = new Date(order.createdAt);
+      const dayOfWeek = this.getDayOfWeek(orderDate);
+      const dayNumber = orderDate.getDate();
+      const month = orderDate.getMonth() + 1;
+      const year = orderDate.getFullYear();
+      const hour = orderDate.getHours();
+      const minute = orderDate.getMinutes();
+      const second = orderDate.getSeconds();
+      const fullDateTime = this.formatDateTime(order.createdAt);
+
       for (const item of order.items) {
         const product = productMap.get(item.productId);
 
         orderItemsSheet.addRow([
           order.orderNumber,
-          this.formatDate(order.createdAt.toISOString().split('T')[0]),
+          dayOfWeek,
+          dayNumber,
+          month,
+          year,
+          hour,
+          minute,
+          second,
+          fullDateTime,
           product?.name || 'Unknown',
           product?.category?.name || '-',
           item.selectedSize || '-',
@@ -616,17 +705,24 @@ export class ReportingService {
 
     // Style order items sheet
     orderItemsSheet.getColumn(1).width = 15; // Mã đơn
-    orderItemsSheet.getColumn(2).width = 12; // Ngày
-    orderItemsSheet.getColumn(3).width = 30; // Tên sản phẩm
-    orderItemsSheet.getColumn(4).width = 20; // Danh mục
-    orderItemsSheet.getColumn(5).width = 15; // Size
-    orderItemsSheet.getColumn(6).width = 25; // Topping
-    orderItemsSheet.getColumn(7).width = 12; // Số lượng
-    orderItemsSheet.getColumn(8).width = 15; // Đơn giá
-    orderItemsSheet.getColumn(9).width = 15; // Thành tiền
-    orderItemsSheet.getColumn(10).width = 25; // Ghi chú
-    orderItemsSheet.getColumn(8).numFmt = '#,##0';
-    orderItemsSheet.getColumn(9).numFmt = '#,##0';
+    orderItemsSheet.getColumn(2).width = 12; // Thứ
+    orderItemsSheet.getColumn(3).width = 10; // Ngày
+    orderItemsSheet.getColumn(4).width = 10; // Tháng
+    orderItemsSheet.getColumn(5).width = 10; // Năm
+    orderItemsSheet.getColumn(6).width = 10; // Giờ
+    orderItemsSheet.getColumn(7).width = 10; // Phút
+    orderItemsSheet.getColumn(8).width = 10; // Giây
+    orderItemsSheet.getColumn(9).width = 25; // Ngày giờ đầy đủ
+    orderItemsSheet.getColumn(10).width = 30; // Tên sản phẩm
+    orderItemsSheet.getColumn(11).width = 20; // Danh mục
+    orderItemsSheet.getColumn(12).width = 15; // Size
+    orderItemsSheet.getColumn(13).width = 25; // Topping
+    orderItemsSheet.getColumn(14).width = 12; // Số lượng
+    orderItemsSheet.getColumn(15).width = 15; // Đơn giá
+    orderItemsSheet.getColumn(16).width = 15; // Thành tiền
+    orderItemsSheet.getColumn(17).width = 25; // Ghi chú
+    orderItemsSheet.getColumn(15).numFmt = '#,##0';
+    orderItemsSheet.getColumn(16).numFmt = '#,##0';
 
     // ===== SHEET 8: DANH SÁCH SẢN PHẨM ĐÃ BÁN (All Products Sold) =====
     const allProductsSheet = workbook.addWorksheet('Danh Sách Sản Phẩm');
@@ -795,6 +891,94 @@ export class ReportingService {
     categorySheet.getColumn(4).numFmt = '#,##0';
     categorySheet.getColumn(5).numFmt = '0.00';
 
+    // ===== SHEET 10: CHI TIẾT THEO NGÀY (Daily Breakdown) =====
+    const dailyBreakdownSheet = workbook.addWorksheet('Chi Tiết Theo Ngày');
+
+    dailyBreakdownSheet.addRow([
+      'Thứ',
+      'Ngày',
+      'Tháng',
+      'Năm',
+      'Giờ',
+      'Phút',
+      'Giây',
+      'Mã đơn',
+      'Tên sản phẩm',
+      'Danh mục',
+      'Size',
+      'Topping',
+      'Số lượng',
+      'Đơn giá',
+      'Thành tiền',
+      'Khách hàng',
+      'Bàn',
+      'Phương thức TT',
+    ]);
+    dailyBreakdownSheet.getRow(1).font = { bold: true };
+
+    // Sort orders by date for daily breakdown
+    const sortedOrders = [...orders].sort((a, b) => 
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
+    for (const order of sortedOrders) {
+      const orderDate = new Date(order.createdAt);
+      const dayOfWeek = this.getDayOfWeek(orderDate);
+      const dayNumber = orderDate.getDate();
+      const month = orderDate.getMonth() + 1;
+      const year = orderDate.getFullYear();
+      const hour = orderDate.getHours();
+      const minute = orderDate.getMinutes();
+      const second = orderDate.getSeconds();
+
+      for (const item of order.items) {
+        const product = productMap.get(item.productId);
+
+        dailyBreakdownSheet.addRow([
+          dayOfWeek,
+          dayNumber,
+          month,
+          year,
+          hour,
+          minute,
+          second,
+          order.orderNumber,
+          product?.name || 'Unknown',
+          product?.category?.name || '-',
+          item.selectedSize || '-',
+          item.selectedToppings.length > 0 ? item.selectedToppings.join(', ') : '-',
+          item.quantity,
+          parseFloat(item.price.toString()),
+          parseFloat(item.subtotal.toString()),
+          order.customerName || 'Khách vãng lai',
+          order.customerTable || '-',
+          this.getPaymentMethodName(order.paymentMethod || 'CASH'),
+        ]);
+      }
+    }
+
+    // Style daily breakdown sheet
+    dailyBreakdownSheet.getColumn(1).width = 12; // Thứ
+    dailyBreakdownSheet.getColumn(2).width = 10; // Ngày
+    dailyBreakdownSheet.getColumn(3).width = 10; // Tháng
+    dailyBreakdownSheet.getColumn(4).width = 10; // Năm
+    dailyBreakdownSheet.getColumn(5).width = 10; // Giờ
+    dailyBreakdownSheet.getColumn(6).width = 10; // Phút
+    dailyBreakdownSheet.getColumn(7).width = 10; // Giây
+    dailyBreakdownSheet.getColumn(8).width = 15; // Mã đơn
+    dailyBreakdownSheet.getColumn(9).width = 30; // Tên sản phẩm
+    dailyBreakdownSheet.getColumn(10).width = 20; // Danh mục
+    dailyBreakdownSheet.getColumn(11).width = 15; // Size
+    dailyBreakdownSheet.getColumn(12).width = 25; // Topping
+    dailyBreakdownSheet.getColumn(13).width = 12; // Số lượng
+    dailyBreakdownSheet.getColumn(14).width = 15; // Đơn giá
+    dailyBreakdownSheet.getColumn(15).width = 15; // Thành tiền
+    dailyBreakdownSheet.getColumn(16).width = 20; // Khách hàng
+    dailyBreakdownSheet.getColumn(17).width = 12; // Bàn
+    dailyBreakdownSheet.getColumn(18).width = 18; // Phương thức TT
+    dailyBreakdownSheet.getColumn(14).numFmt = '#,##0';
+    dailyBreakdownSheet.getColumn(15).numFmt = '#,##0';
+
     // Apply borders and styling to all sheets
     const sheets = [
       summarySheet,
@@ -806,6 +990,7 @@ export class ReportingService {
       orderItemsSheet,
       allProductsSheet,
       categorySheet,
+      dailyBreakdownSheet,
     ];
 
     sheets.forEach((sheet) => {
@@ -846,11 +1031,77 @@ export class ReportingService {
   }
 
   /**
-   * Format date for display
+   * Get day of week name in Vietnamese
+   */
+  private getDayOfWeek(date: Date): string {
+    const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+    return days[date.getDay()];
+  }
+
+  /**
+   * Format date for display with day of week
    */
   private formatDate(dateString: string): string {
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN');
+    const dayOfWeek = this.getDayOfWeek(date);
+    const formattedDate = date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    return `${dayOfWeek}, ${formattedDate}`;
+  }
+
+  /**
+   * Format date only (without day of week) for compact display
+   */
+  private formatDateOnly(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  }
+
+  /**
+   * Format date with day of week (compact)
+   */
+  private formatDateWithDay(date: Date): string {
+    const dayOfWeek = this.getDayOfWeek(date);
+    const formattedDate = date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    return `${dayOfWeek}, ${formattedDate}`;
+  }
+
+  /**
+   * Format date and time for display with day of week
+   */
+  private formatDateTime(date: Date): string {
+    const dayOfWeek = this.getDayOfWeek(date);
+    const formattedDateTime = date.toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    return `${dayOfWeek}, ${formattedDateTime}`;
+  }
+
+  /**
+   * Format time only
+   */
+  private formatTime(date: Date): string {
+    return date.toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
   }
 
   /**
@@ -880,19 +1131,6 @@ export class ReportingService {
       'CANCELLED': 'Đã hủy',
     };
     return statusMap[status] || status;
-  }
-
-  /**
-   * Format date and time for display
-   */
-  private formatDateTime(date: Date): string {
-    return date.toLocaleString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
   }
 }
 

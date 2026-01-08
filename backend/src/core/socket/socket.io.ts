@@ -117,21 +117,6 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
 }
 
 /**
- * Get Socket.io instance
- */
-export function getIO(): SocketIOServer<
-  ClientToServerEvents,
-  ServerToClientEvents,
-  InterServerEvents,
-  SocketData
-> {
-  if (!io) {
-    throw new Error('Socket.io not initialized. Call initializeSocketIO first.');
-  }
-  return io;
-}
-
-/**
  * Emit order created event
  */
 export function emitOrderCreated(order: any): void {
@@ -198,15 +183,6 @@ export function emitOrderVerified(order: any): void {
 }
 
 /**
- * Emit display update event
- */
-export function emitDisplayUpdate(data: any): void {
-  if (io) {
-    io.to('display').emit('display_update', data);
-  }
-}
-
-/**
  * Emit stock alert event
  */
 export function emitStockAlert(alert: any): void {
@@ -231,41 +207,6 @@ export function emitStockUpdated(data: {
     io.to('stock').emit('stock_updated', data);
     const { type: stockType, ...restData } = data;
     io.to('dashboard').emit('dashboard_update', { type: 'stock_update', stockType, ...restData });
-  }
-}
-
-/**
- * Emit dashboard update event
- */
-export function emitDashboardUpdate(data: any): void {
-  if (io) {
-    io.to('dashboard').emit('dashboard_update', data);
-  }
-}
-
-/**
- * Emit settings updated event
- */
-export function emitSettingsUpdated(data: {
-  key?: string;
-  value?: string;
-  category?: string;
-  deleted?: boolean;
-  settings?: Array<{ key: string; value: string; category: string }>;
-}): void {
-  if (io) {
-    try {
-      io.to('dashboard').emit('settings_updated', data);
-      io.to('admin').emit('settings_updated', data);
-      logger.debug('Emitted settings_updated event', { key: data.key });
-    } catch (error) {
-      logger.error('Failed to emit settings_updated event', {
-        error: error instanceof Error ? error.message : String(error),
-        key: data.key,
-      });
-    }
-  } else {
-    logger.warn('Socket.io not initialized, cannot emit settings_updated event', { key: data.key });
   }
 }
 

@@ -2,7 +2,6 @@ import prisma from '@config/database';
 import { NotFoundError, ValidationError } from '@core/errors';
 import logger from '@utils/logger';
 import { Decimal } from '@prisma/client/runtime/library';
-import { emitPromotionCreated, emitPromotionUpdated, emitPromotionDeleted } from '@core/socket/socket.io';
 import orderService from './order.service';
 
 export interface PromotionFilters {
@@ -227,7 +226,6 @@ export class PromotionService {
       },
     });
 
-    emitPromotionCreated(promotion);
     logger.info('Promotion created', { promotionId: promotion.id, code: promotion.code });
 
     return promotion;
@@ -312,7 +310,6 @@ export class PromotionService {
       data: updateData,
     });
 
-    emitPromotionUpdated(promotion);
     logger.info('Promotion updated', { promotionId: promotion.id, code: promotion.code });
 
     // Recalculate affected orders in background (don't wait for it)
@@ -342,7 +339,6 @@ export class PromotionService {
       where: { id },
     });
 
-    emitPromotionDeleted(id);
     logger.info('Promotion deleted', { promotionId: id });
 
     // Recalculate affected orders in background (don't wait for it)

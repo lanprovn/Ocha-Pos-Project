@@ -19,10 +19,9 @@ import MenuManagementTab from './components/MenuManagementTab';
 import StockManagementTab from './components/StockManagementTab';
 import AnalyticsTab from './components/AnalyticsTab';
 import OverviewTab from './components/OverviewTab';
-import OrderManagementTab from './components/OrderManagementTab';
 import CustomerManagementTab from './components/CustomerManagementTab';
 import UserManagementTab from './components/UserManagementTab';
-type TabType = 'overview' | 'menu' | 'stock' | 'analytics' | 'orders' | 'customers' | 'users';
+type TabType = 'overview' | 'menu' | 'stock' | 'analytics' | 'customers' | 'users';
 
 interface NavItem {
   id: TabType;
@@ -93,7 +92,7 @@ const AdminDashboardPage: React.FC = () => {
   
   // Set initial tab: use tab from URL or default to 'overview'
   const [activeTab, setActiveTab] = useState<TabType>(() => {
-    return (tabFromUrl && ['overview', 'menu', 'stock', 'analytics', 'orders', 'customers'].includes(tabFromUrl)) 
+    return (tabFromUrl && ['overview', 'menu', 'stock', 'analytics', 'customers', 'users'].includes(tabFromUrl)) 
       ? tabFromUrl 
       : 'overview';
   });
@@ -112,7 +111,7 @@ const AdminDashboardPage: React.FC = () => {
     lastTabFromUrlRef.current = tabFromUrl;
     
     // Update activeTab based on URL param
-    if (tabFromUrl && ['overview', 'menu', 'stock', 'analytics', 'orders', 'customers', 'users'].includes(tabFromUrl)) {
+    if (tabFromUrl && ['overview', 'menu', 'stock', 'analytics', 'customers', 'users'].includes(tabFromUrl)) {
       isUpdatingFromUrlRef.current = true;
       setActiveTab(tabFromUrl);
       // Reset flag in next tick
@@ -151,10 +150,16 @@ const AdminDashboardPage: React.FC = () => {
       description: 'Dashboard và thống kê tổng thể',
     },
     {
-      id: 'orders',
-      name: 'Quản Lý Đơn Hàng',
-      icon: DocumentChartBarIcon,
-      description: 'Xem và quản lý đơn hàng',
+      id: 'menu',
+      name: 'Quản Lý Menu',
+      icon: CubeIcon,
+      description: 'Sản phẩm và danh mục',
+    },
+    {
+      id: 'stock',
+      name: 'Quản Lý Tồn Kho',
+      icon: Squares2X2Icon,
+      description: 'Tồn kho và nguyên liệu',
     },
     {
       id: 'customers',
@@ -167,18 +172,6 @@ const AdminDashboardPage: React.FC = () => {
       name: 'Quản Lý Người Dùng',
       icon: UserGroupIcon,
       description: 'Quản lý nhân viên và tài khoản',
-    },
-    {
-      id: 'menu',
-      name: 'Quản Lý Menu',
-      icon: CubeIcon,
-      description: 'Sản phẩm và danh mục',
-    },
-    {
-      id: 'stock',
-      name: 'Quản Lý Tồn Kho',
-      icon: Squares2X2Icon,
-      description: 'Tồn kho và nguyên liệu',
     },
     {
       id: 'analytics',
@@ -320,7 +313,6 @@ const AdminDashboardPage: React.FC = () => {
             {activeTab === 'menu' && <MenuManagementTab />}
             {activeTab === 'stock' && <StockManagementTab />}
             {activeTab === 'analytics' && <AnalyticsTab />}
-            {activeTab === 'orders' && <OrderManagementTab />}
             {activeTab === 'customers' && <CustomerManagementTab />}
             {activeTab === 'users' && <UserManagementTab />}
           </div>
