@@ -161,7 +161,7 @@ async function main() {
     customerName: string;
     customerPhone: string;
     customerTable?: string;
-    paymentMethod: 'CASH' | 'CARD' | 'QR';
+    paymentMethod: 'CASH' | 'QR';
     paymentStatus: 'PENDING' | 'SUCCESS' | 'FAILED';
     orderCreator: 'STAFF' | 'CUSTOMER';
     orderCreatorName?: string;
@@ -205,7 +205,7 @@ async function main() {
       customerName: 'Trần Thị B',
       customerPhone: '0987654321',
       customerTable: 'Bàn 2',
-      paymentMethod: 'CARD',
+      paymentMethod: 'QR',
       paymentStatus: 'SUCCESS',
       orderCreator: 'CUSTOMER',
       items: [

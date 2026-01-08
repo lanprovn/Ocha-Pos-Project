@@ -3,14 +3,12 @@ import type { IngredientStock } from '@/utils/ingredientManagement';
 
 interface IngredientCardProps {
   ingredient: IngredientStock;
-  onAddStock: () => void;
   onAdjustStock: () => void;
   onEdit: () => void;
 }
 
 export const IngredientCard: React.FC<IngredientCardProps> = memo(({
   ingredient,
-  onAddStock,
   onAdjustStock,
   onEdit,
 }) => {
@@ -86,17 +84,8 @@ export const IngredientCard: React.FC<IngredientCardProps> = memo(({
 
         <div className="flex space-x-2">
           <button
-            onClick={onAddStock}
-            className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors flex items-center justify-center space-x-1 shadow-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <span>Nhập</span>
-          </button>
-          <button
             onClick={onAdjustStock}
-            className="flex-1 px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm rounded-md transition-colors flex items-center justify-center space-x-1"
+            className="flex-1 px-3 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm rounded-md transition-colors flex items-center justify-center space-x-1"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />

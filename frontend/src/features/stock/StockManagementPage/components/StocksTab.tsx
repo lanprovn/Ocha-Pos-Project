@@ -116,7 +116,6 @@ export const StocksTab: React.FC<StocksTabProps> = ({
                 statusColor={statusColor}
                 statusIcon={statusIcon}
                 formatCurrency={formatCurrency}
-                onAddStock={() => onOpenAdjustModal(stock)}
                 onAdjustStock={() => onOpenAdjustModal(stock, undefined, true)}
                 onEditProduct={() => onEditProduct(stock)}
               />

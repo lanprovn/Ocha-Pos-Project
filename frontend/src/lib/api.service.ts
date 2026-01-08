@@ -40,11 +40,28 @@ axiosInstance.interceptors.response.use(
     if (error.response) {
       // Server responded with error
       const status = error.response.status;
-      const message = (error.response.data as any)?.error || error.message;
+      const responseData = error.response.data as any;
+      
+      // Extract error message - prioritize message field, then error field
+      let message = responseData?.message || responseData?.error || error.message;
+      
+      // If validation error, try to extract details
+      if (status === 400 && responseData?.errorCode === 'VALIDATION_ERROR') {
+        if (responseData?.message) {
+          message = responseData.message;
+        } else if (responseData?.details && Array.isArray(responseData.details) && responseData.details.length > 0) {
+          const firstError = responseData.details[0];
+          const fieldPath = firstError.path?.join('.') || 'unknown';
+          message = `Lỗi validation: ${fieldPath} - ${firstError.message || 'Giá trị không hợp lệ'}`;
+        }
+      }
       
       // Don't log 404 errors as they're often expected
       if (status !== 404) {
         console.error(`API Error [${status}]:`, message);
+        if (responseData?.details) {
+          console.error('Error details:', responseData.details);
+        }
       }
       
       return Promise.reject(new Error(message));

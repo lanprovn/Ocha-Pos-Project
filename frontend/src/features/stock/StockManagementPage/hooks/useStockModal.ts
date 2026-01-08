@@ -18,18 +18,9 @@ export const useStockModal = (
     if (!selectedProduct) return;
 
     try {
-      if (isAdjustMode) {
-        await stockService.updateProductStock(selectedProduct.id, { quantity });
-        toast.success(`Đã điều chỉnh tồn kho thành ${quantity} ${selectedProduct.unit}`);
-      } else {
-        await stockService.createTransaction({
-          productId: selectedProduct.productId,
-          type: 'purchase',
-          quantity,
-          reason: reason || 'Nhập hàng',
-        });
-        toast.success(`Đã nhập ${quantity} ${selectedProduct.unit} cho sản phẩm`);
-      }
+      // Always use adjust mode (set quantity directly)
+      await stockService.updateProductStock(selectedProduct.id, { quantity });
+      toast.success(`Đã điều chỉnh tồn kho thành ${quantity} ${selectedProduct.unit}`);
       
       reloadData();
       setSelectedProduct(null);
@@ -43,18 +34,9 @@ export const useStockModal = (
     if (!selectedIngredient) return;
 
     try {
-      if (isAdjustMode) {
-        await stockService.updateIngredientStock(selectedIngredient.id, { quantity });
-        toast.success(`Đã điều chỉnh tồn kho thành ${quantity} ${selectedIngredient.unit}`);
-      } else {
-        await stockService.createTransaction({
-          ingredientId: selectedIngredient.id,
-          type: 'purchase',
-          quantity,
-          reason: reason || 'Nhập nguyên liệu',
-        });
-        toast.success(`Đã nhập ${quantity} ${selectedIngredient.unit} cho nguyên liệu`);
-      }
+      // Always use adjust mode (set quantity directly)
+      await stockService.updateIngredientStock(selectedIngredient.id, { quantity });
+      toast.success(`Đã điều chỉnh tồn kho thành ${quantity} ${selectedIngredient.unit}`);
       
       reloadIngredients();
       setSelectedIngredient(null);

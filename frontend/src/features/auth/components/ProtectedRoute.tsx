@@ -40,15 +40,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
 
   // Check if route requires specific role
   if (requiredRole && user?.role !== requiredRole) {
-    // Only redirect if role context matches required role
-    // This prevents redirect when user from another tab is detected
-    if (roleContext === requiredRole) {
-      if (user?.role === 'ADMIN') {
-        return <Navigate to={`${ROUTES.ADMIN_DASHBOARD}?tab=overview`} replace />;
-      }
+    // User doesn't have required role - redirect immediately
+    // If user is ADMIN but route requires STAFF, redirect to admin dashboard
+    if (user?.role === 'ADMIN' && requiredRole === 'STAFF') {
+      return <Navigate to={`${ROUTES.ADMIN_DASHBOARD}?tab=overview`} replace />;
+    }
+    // If user is STAFF but route requires ADMIN, redirect to home
+    if (user?.role === 'STAFF' && requiredRole === 'ADMIN') {
       return <Navigate to={ROUTES.HOME} replace />;
     }
-    // If role context doesn't match, redirect to login
+    // Fallback: redirect to login if role doesn't match
     return <Navigate to={ROUTES.LOGIN} replace />;
   }
 

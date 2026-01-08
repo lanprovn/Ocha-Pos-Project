@@ -2,6 +2,7 @@ import prisma from '@config/database';
 import { comparePassword, hashPassword } from '@utils/bcrypt';
 import { generateToken } from '@utils/jwt';
 import { UnauthorizedError, UserNotFoundError, ValidationError } from '@core/errors';
+import { emitUserUpdated } from '@core/socket/socket.io';
 
 export interface LoginInput {
   email: string;
@@ -188,6 +189,18 @@ export class UserService {
       },
     });
 
+    // Emit socket event for real-time sync
+    emitUserUpdated({
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isActive: user.isActive,
+      },
+      action: 'created',
+    });
+
     return user;
   }
 
@@ -243,6 +256,18 @@ export class UserService {
       },
     });
 
+    // Emit socket event for real-time sync
+    emitUserUpdated({
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isActive: user.isActive,
+      },
+      action: 'updated',
+    });
+
     return user;
   }
 
@@ -260,6 +285,18 @@ export class UserService {
     }
 
     // Prevent deleting own account (should be handled in controller)
+    // Emit socket event before deletion
+    emitUserUpdated({
+      user: {
+        id: existingUser.id,
+        email: existingUser.email,
+        name: existingUser.name,
+        role: existingUser.role,
+        isActive: existingUser.isActive,
+      },
+      action: 'deleted',
+    });
+
     // Delete user
     await prisma.user.delete({
       where: { id },
@@ -294,6 +331,18 @@ export class UserService {
         createdAt: true,
         updatedAt: true,
       },
+    });
+
+    // Emit socket event for real-time sync
+    emitUserUpdated({
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        role: updatedUser.role,
+        isActive: updatedUser.isActive,
+      },
+      action: 'toggled',
     });
 
     return updatedUser;

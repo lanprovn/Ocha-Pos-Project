@@ -12,6 +12,7 @@ import {
   XMarkIcon,
   UserCircleIcon,
   UsersIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@features/auth/hooks/useAuth';
 import MenuManagementTab from './components/MenuManagementTab';
@@ -20,8 +21,8 @@ import AnalyticsTab from './components/AnalyticsTab';
 import OverviewTab from './components/OverviewTab';
 import OrderManagementTab from './components/OrderManagementTab';
 import CustomerManagementTab from './components/CustomerManagementTab';
-
-type TabType = 'overview' | 'menu' | 'stock' | 'analytics' | 'orders' | 'customers';
+import UserManagementTab from './components/UserManagementTab';
+type TabType = 'overview' | 'menu' | 'stock' | 'analytics' | 'orders' | 'customers' | 'users';
 
 interface NavItem {
   id: TabType;
@@ -65,6 +66,30 @@ const AdminDashboardPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get('tab') as TabType | null;
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Ensure only ADMIN can access this page
+  useEffect(() => {
+    if (!user) {
+      navigate(ROUTES.LOGIN);
+      return;
+    }
+    if (user.role !== 'ADMIN') {
+      navigate(ROUTES.HOME);
+      return;
+    }
+  }, [user, navigate]);
+
+  // Show loading if user is not loaded yet
+  if (!user || user.role !== 'ADMIN') {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-200 border-t-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600 font-medium">Đang kiểm tra quyền truy cập...</p>
+        </div>
+      </div>
+    );
+  }
   
   // Set initial tab: use tab from URL or default to 'overview'
   const [activeTab, setActiveTab] = useState<TabType>(() => {
@@ -87,7 +112,7 @@ const AdminDashboardPage: React.FC = () => {
     lastTabFromUrlRef.current = tabFromUrl;
     
     // Update activeTab based on URL param
-    if (tabFromUrl && ['overview', 'menu', 'stock', 'analytics', 'orders', 'customers'].includes(tabFromUrl)) {
+    if (tabFromUrl && ['overview', 'menu', 'stock', 'analytics', 'orders', 'customers', 'users'].includes(tabFromUrl)) {
       isUpdatingFromUrlRef.current = true;
       setActiveTab(tabFromUrl);
       // Reset flag in next tick
@@ -136,6 +161,12 @@ const AdminDashboardPage: React.FC = () => {
       name: 'Quản Lý Khách Hàng',
       icon: UsersIcon,
       description: 'Xem và quản lý khách hàng',
+    },
+    {
+      id: 'users',
+      name: 'Quản Lý Người Dùng',
+      icon: UserGroupIcon,
+      description: 'Quản lý nhân viên và tài khoản',
     },
     {
       id: 'menu',
@@ -291,6 +322,7 @@ const AdminDashboardPage: React.FC = () => {
             {activeTab === 'analytics' && <AnalyticsTab />}
             {activeTab === 'orders' && <OrderManagementTab />}
             {activeTab === 'customers' && <CustomerManagementTab />}
+            {activeTab === 'users' && <UserManagementTab />}
           </div>
         </main>
       </div>

@@ -243,3 +243,57 @@ export function emitDashboardUpdate(data: any): void {
   }
 }
 
+/**
+ * Emit settings updated event
+ */
+export function emitSettingsUpdated(data: {
+  key?: string;
+  value?: string;
+  category?: string;
+  deleted?: boolean;
+  settings?: Array<{ key: string; value: string; category: string }>;
+}): void {
+  if (io) {
+    try {
+      io.to('dashboard').emit('settings_updated', data);
+      io.to('admin').emit('settings_updated', data);
+      logger.debug('Emitted settings_updated event', { key: data.key });
+    } catch (error) {
+      logger.error('Failed to emit settings_updated event', {
+        error: error instanceof Error ? error.message : String(error),
+        key: data.key,
+      });
+    }
+  } else {
+    logger.warn('Socket.io not initialized, cannot emit settings_updated event', { key: data.key });
+  }
+}
+
+/**
+ * Emit user updated event
+ */
+export function emitUserUpdated(data: {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    isActive: boolean;
+  };
+  action: 'created' | 'updated' | 'deleted' | 'toggled';
+}): void {
+  if (io) {
+    try {
+      io.to('dashboard').emit('user_updated', data);
+      io.to('admin').emit('user_updated', data);
+      logger.debug('Emitted user_updated event', { userId: data.user.id, action: data.action });
+    } catch (error) {
+      logger.error('Failed to emit user_updated event', {
+        error: error instanceof Error ? error.message : String(error),
+        userId: data.user.id,
+      });
+    }
+  } else {
+    logger.warn('Socket.io not initialized, cannot emit user_updated event', { userId: data.user.id });
+  }
+}

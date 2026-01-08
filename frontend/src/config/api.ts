@@ -85,6 +85,12 @@ export const API_ENDPOINTS = {
   MEMBERSHIP_CONFIGS: `${API_BASE_URL}/customers/membership/configs`,
   MEMBERSHIP_DISCOUNT: (level: string) => `${API_BASE_URL}/customers/membership/${level}/discount`,
 
+  // Users
+  USERS: `${API_BASE_URL}/users`,
+  USER_BY_ID: (id: string) => `${API_BASE_URL}/users/${id}`,
+  USER_TOGGLE_ACTIVE: (id: string) => `${API_BASE_URL}/users/${id}/toggle-active`,
+  USER_RESET_PASSWORD: (id: string) => `${API_BASE_URL}/users/${id}/reset-password`,
+
   // Health
   HEALTH: `${API_BASE_URL.replace('/api', '')}/health`,
 };

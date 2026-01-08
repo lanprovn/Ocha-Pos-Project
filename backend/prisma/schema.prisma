@@ -455,3 +455,20 @@ model OrderMerge {
   @@index([mergedBy])
   @@map("order_merges")
 }
+
+// ===== Settings Model =====
+
+model Settings {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String   @db.Text
+  category    String // STORE, PAYMENT, TAX, LOYALTY, STOCK, RECEIPT
+  description String?
+  updatedBy   String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@index([key])
+  @@index([category])
+  @@map("settings")
+}

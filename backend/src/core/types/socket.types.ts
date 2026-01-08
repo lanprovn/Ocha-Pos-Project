@@ -21,6 +21,16 @@ export interface ServerToClientEvents {
     newQuantity: number;
   }) => void;
   dashboard_update: (data: any) => void;
+  user_updated: (data: {
+    user: {
+      id: string;
+      email: string;
+      name: string;
+      role: string;
+      isActive: boolean;
+    };
+    action: 'created' | 'updated' | 'deleted' | 'toggled';
+  }) => void;
 }
 
 export interface ClientToServerEvents {

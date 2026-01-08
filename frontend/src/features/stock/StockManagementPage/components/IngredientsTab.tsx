@@ -94,7 +94,6 @@ export const IngredientsTab: React.FC<IngredientsTabProps> = ({
             <IngredientCard
               key={ingredient.id}
               ingredient={ingredient}
-              onAddStock={() => onOpenAdjustModal(undefined, ingredient)}
               onAdjustStock={() => onOpenAdjustModal(undefined, ingredient, true)}
               onEdit={() => onEditIngredient(ingredient)}
             />
