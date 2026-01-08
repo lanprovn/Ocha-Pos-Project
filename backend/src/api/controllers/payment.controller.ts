@@ -5,6 +5,7 @@ import { z } from 'zod';
 import logger from '@utils/logger';
 import { PaymentStatus, OrderStatus } from '@core/types/common.types';
 import env from '@config/env';
+import { getErrorMessage } from '@utils/errorHandler';
 
 const createPaymentSchema = z.object({
   body: z.object({
@@ -71,7 +72,7 @@ export class PaymentController {
       });
 
       return res.json(paymentResponse);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: 'Validation error', details: error.errors });
       } else {
@@ -81,7 +82,7 @@ export class PaymentController {
           orderId: req.body?.orderId,
           paymentMethod: req.body?.paymentMethod,
         });
-        return res.status(500).json({ error: error.message || 'Failed to create payment' });
+        return res.status(500).json({ error: getErrorMessage(error) || 'Failed to create payment' });
       }
     }
   }
@@ -122,10 +123,13 @@ export class PaymentController {
         paymentDate: callback.transactionDate ? new Date(callback.transactionDate) : new Date(),
       });
 
-      // Nếu thanh toán thành công, cập nhật order status thành COMPLETED
-      if (callback.status === 'success') {
+      // Nếu thanh toán thành công:
+      // - STAFF orders: Auto-complete (status = COMPLETED)
+      // - CUSTOMER orders: Giữ PENDING (chờ nhân viên xác nhận)
+      if (callback.status === 'success' && order.orderCreator === 'STAFF') {
         await orderService.updateStatus(order.id, { status: OrderStatus.COMPLETED });
       }
+      // CUSTOMER orders giữ nguyên status PENDING để chờ verification
 
       // Redirect về frontend
       const redirectUrl = callback.status === 'success'
@@ -133,7 +137,7 @@ export class PaymentController {
         : `${env.FRONTEND_URL}/checkout?error=payment_failed&orderId=${order.id}`;
 
       res.redirect(redirectUrl);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Payment callback error', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,

@@ -1,9 +1,11 @@
 import prisma from '@config/database';
-import { CreateProductInput, UpdateProductInput } from '@core/types/product.types';
+import { CreateProductInput, UpdateProductInput, Product } from '@core/types/product.types';
 import { Decimal } from '@prisma/client/runtime/library';
+import { Prisma } from '@prisma/client';
 
 // Simple in-memory cache for products (TTL: 5 minutes)
-const productCache = new Map<string, { data: any; expires: number }>();
+type CachedProductData = PaginationResult<Product> | Product[];
+const productCache = new Map<string, { data: CachedProductData; expires: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export interface PaginationParams {
@@ -31,7 +33,7 @@ export class ProductService {
    * @param params - Raw query parameters from request
    * @returns Paginated result with data and pagination metadata, or simple array if includeAll
    */
-  async getAllWithPagination(params: PaginationParams): Promise<PaginationResult<any> | any[]> {
+  async getAllWithPagination(params: PaginationParams): Promise<PaginationResult<Product> | Product[]> {
     // Parse pagination params (optional - backward compatible)
     const page = params.page ? parseInt(params.page as string, 10) : undefined;
     const limit = params.limit ? parseInt(params.limit as string, 10) : undefined;
@@ -45,7 +47,7 @@ export class ProductService {
       return cached.data;
     }
 
-    const queryOptions: any = {
+    const queryOptions: Prisma.ProductFindManyArgs = {
       include: {
         category: {
           select: {

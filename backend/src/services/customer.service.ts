@@ -463,7 +463,27 @@ export class CustomerService {
     }
 
     // Use transaction client if provided, otherwise use prisma
-    const db = tx || prisma;
+    // In transaction context, we MUST use tx to maintain transaction isolation
+    let db: any;
+    
+    if (tx) {
+      // If tx is provided, use it (should be Prisma transaction client)
+      db = tx;
+    } else {
+      // Fallback to prisma if tx is not provided
+      db = prisma;
+    }
+    
+    // Safety check: ensure db exists
+    if (!db) {
+      throw new Error('Database client is not available. Both tx and prisma are undefined.');
+    }
+    
+    // Safety check: ensure db has customers property
+    // This should always be true for valid Prisma clients, but we check to provide better error messages
+    if (!db.customers) {
+      throw new Error(`Database client does not have 'customers' property. This may indicate a Prisma client initialization issue.`);
+    }
 
     // Normalize phone number (remove spaces, dashes, etc.)
     const normalizedPhone = phone.trim().replace(/[\s\-\(\)]/g, '');
@@ -517,6 +537,11 @@ export class CustomerService {
   async findByPhone(phone: string) {
     if (!phone || phone.trim() === '') {
       return null;
+    }
+
+    // Safety check: ensure prisma is available
+    if (!prisma || !prisma.customers) {
+      throw new Error('Prisma client is not available or does not have customers property.');
     }
 
     const normalizedPhone = phone.trim().replace(/[\s\-\(\)]/g, '');

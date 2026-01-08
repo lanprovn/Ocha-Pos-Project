@@ -178,13 +178,14 @@ app.get('/health', async (_req, res) => {
       memory: process.memoryUsage(),
       database: 'connected',
     });
-  } catch (error: any) {
-    logger.error('Health check failed', { error: error.message });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Health check failed', { error: errorMessage });
     res.status(503).json({
       status: 'error',
       timestamp: new Date().toISOString(),
       database: 'disconnected',
-      error: error.message,
+      error: errorMessage,
     });
   }
 });

@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import orderService from '@services/order.service';
-import { emitOrderCreated, emitOrderUpdated, emitOrderStatusChanged } from '@core/socket/socket.io';
+import userService from '@services/user.service';
 import { z } from 'zod';
 import { OrderStatus, PaymentMethod, PaymentStatus, OrderCreator } from '@core/types/common.types';
+import { AuthRequest } from '@api/middlewares/auth.middleware';
 
 // Schema for draft order - allows empty items array for real-time cart sync
 const createDraftOrderSchema = z.object({
@@ -63,6 +64,82 @@ const updateOrderStatusSchema = z.object({
   }),
 });
 
+const verifyOrderSchema = z.object({
+  params: z.object({
+    id: z.string().uuid(),
+  }),
+});
+
+const rejectOrderSchema = z.object({
+  params: z.object({
+    id: z.string().uuid(),
+  }),
+  body: z.object({
+    reason: z.string().optional(),
+  }),
+});
+
+const holdOrderSchema = z.object({
+  params: z.object({
+    id: z.string().uuid(),
+  }),
+  body: z.object({
+    holdName: z.string().optional().nullable(),
+  }),
+});
+
+const cancelOrderSchema = z.object({
+  params: z.object({
+    id: z.string().uuid(),
+  }),
+  body: z.object({
+    reason: z.string().min(1),
+    reasonType: z.enum(['OUT_OF_STOCK', 'CUSTOMER_REQUEST', 'SYSTEM_ERROR', 'OTHER']),
+    refundAmount: z.number().positive().optional().nullable(),
+    refundMethod: z.enum(['CASH', 'CARD', 'QR']).optional().nullable(),
+  }),
+});
+
+const returnOrderSchema = z.object({
+  params: z.object({
+    id: z.string().uuid(),
+  }),
+  body: z.object({
+    returnType: z.enum(['FULL', 'PARTIAL']),
+    returnReason: z.enum(['DEFECTIVE', 'WRONG_ITEM', 'CUSTOMER_REQUEST', 'OTHER']),
+    refundMethod: z.enum(['CASH', 'CARD', 'QR']),
+    items: z.array(
+      z.object({
+        orderItemId: z.string().uuid(),
+        quantity: z.number().int().positive(),
+        refundAmount: z.number().positive(),
+      })
+    ).min(1),
+    notes: z.string().optional().nullable(),
+  }),
+});
+
+const splitOrderSchema = z.object({
+  params: z.object({
+    id: z.string().uuid(),
+  }),
+  body: z.object({
+    splits: z.array(
+      z.object({
+        name: z.string().optional().nullable(),
+        itemIds: z.array(z.string().uuid()).min(1),
+      })
+    ).min(2), // Ít nhất 2 phần
+  }),
+});
+
+const mergeOrdersSchema = z.object({
+  body: z.object({
+    orderIds: z.array(z.string().uuid()).min(2), // Ít nhất 2 đơn
+    mergedOrderName: z.string().optional().nullable(),
+  }),
+});
+
 export class OrderController {
   /**
    * Create or update draft order (cart đang tạo)
@@ -73,12 +150,8 @@ export class OrderController {
       const validated = createDraftOrderSchema.parse({ body: req.body });
       const order = await orderService.createOrUpdateDraft(validated.body);
 
-      // Emit Socket.io event for real-time updates
-      emitOrderUpdated(order);
-
       res.status(200).json(order);
     } catch (error) {
-      // Pass error to error handler middleware
       // Pass error to error handler middleware
       next(error);
     }
@@ -89,12 +162,8 @@ export class OrderController {
       const validated = createOrderSchema.parse({ body: req.body });
       const order = await orderService.create(validated.body);
 
-      // Emit Socket.io event for real-time updates
-      emitOrderCreated(order);
-
       res.status(201).json(order);
     } catch (error) {
-      // Pass error to error handler middleware
       // Pass error to error handler middleware
       next(error);
     }
@@ -172,14 +241,244 @@ export class OrderController {
       });
       const order = await orderService.updateStatus(validated.params.id, validated.body);
 
-      // Emit Socket.io events for real-time updates
-      // Emit both order_updated (full order data) and order_status_changed (status only)
-      emitOrderUpdated(order);
-      emitOrderStatusChanged(order.id, order.status);
-
       res.json(order);
     } catch (error) {
       // Pass error to error handler middleware
+      next(error);
+    }
+  }
+
+  /**
+   * Verify order (Staff confirms Customer order)
+   * Changes status from PENDING to CONFIRMED
+   */
+  async verifyOrder(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized', errorCode: 'UNAUTHORIZED' });
+        return;
+      }
+
+      const validated = verifyOrderSchema.parse({
+        params: req.params,
+      });
+
+      // Get staff user info for confirmedBy field
+      const staffUser = await userService.findById(req.user.userId);
+      const staffName = staffUser?.name || req.user.email;
+
+      const order = await orderService.verifyOrder(
+        validated.params.id,
+        req.user.userId,
+        staffName
+      );
+
+      res.json(order);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Reject order (Staff rejects Customer order)
+   * Changes status from PENDING to CANCELLED
+   */
+  async rejectOrder(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized', errorCode: 'UNAUTHORIZED' });
+        return;
+      }
+
+      const validated = rejectOrderSchema.parse({
+        params: req.params,
+        body: req.body,
+      });
+
+      const order = await orderService.rejectOrder(
+        validated.params.id,
+        validated.body.reason
+      );
+
+      res.json(order);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Hold order (Lưu đơn hàng tạm)
+   */
+  async holdOrder(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized', errorCode: 'UNAUTHORIZED' });
+        return;
+      }
+
+      const validated = holdOrderSchema.parse({
+        params: req.params,
+        body: req.body,
+      });
+
+      const order = await orderService.holdOrder(
+        validated.params.id,
+        validated.body,
+        req.user.id
+      );
+
+      res.json(order);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Resume hold order (Khôi phục đơn hàng đã lưu)
+   */
+  async resumeHoldOrder(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized', errorCode: 'UNAUTHORIZED' });
+        return;
+      }
+
+      const validated = verifyOrderSchema.parse({
+        params: req.params,
+      });
+
+      const order = await orderService.resumeHoldOrder(
+        validated.params.id,
+        req.user.id
+      );
+
+      res.json(order);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get hold orders
+   */
+  async getHoldOrders(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized', errorCode: 'UNAUTHORIZED' });
+        return;
+      }
+
+      const orderCreator = req.query.orderCreator as 'STAFF' | 'CUSTOMER' | undefined;
+      const orders = await orderService.getHoldOrders(orderCreator);
+
+      res.json(orders);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Cancel order with reason and refund
+   */
+  async cancelOrder(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized', errorCode: 'UNAUTHORIZED' });
+        return;
+      }
+
+      const validated = cancelOrderSchema.parse({
+        params: req.params,
+        body: req.body,
+      });
+
+      const order = await orderService.cancelOrder(
+        validated.params.id,
+        validated.body,
+        req.user.id
+      );
+
+      res.json(order);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Return order items
+   */
+  async returnOrder(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized', errorCode: 'UNAUTHORIZED' });
+        return;
+      }
+
+      const validated = returnOrderSchema.parse({
+        params: req.params,
+        body: req.body,
+      });
+
+      const result = await orderService.returnOrder(
+        validated.params.id,
+        validated.body,
+        req.user.id
+      );
+
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Split order
+   */
+  async splitOrder(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized', errorCode: 'UNAUTHORIZED' });
+        return;
+      }
+
+      const validated = splitOrderSchema.parse({
+        params: req.params,
+        body: req.body,
+      });
+
+      const result = await orderService.splitOrder(
+        validated.params.id,
+        validated.body,
+        req.user.id
+      );
+
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Merge orders
+   */
+  async mergeOrders(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized', errorCode: 'UNAUTHORIZED' });
+        return;
+      }
+
+      const validated = mergeOrdersSchema.parse({
+        body: req.body,
+      });
+
+      const result = await orderService.mergeOrders(
+        validated.body,
+        req.user.id
+      );
+
+      res.json(result);
+    } catch (error) {
       next(error);
     }
   }

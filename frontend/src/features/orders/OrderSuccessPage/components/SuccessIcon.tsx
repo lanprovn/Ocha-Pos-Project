@@ -2,10 +2,10 @@ import React from 'react';
 
 export const SuccessIcon: React.FC = () => {
   return (
-    <div className="flex justify-center mb-6">
-      <div className="w-24 h-24 bg-green-600 rounded-full flex items-center justify-center shadow-sm">
+    <div className="flex justify-center mb-2">
+      <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center shadow-sm">
         <svg
-          className="w-12 h-12 text-white"
+          className="w-8 h-8 text-white"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"

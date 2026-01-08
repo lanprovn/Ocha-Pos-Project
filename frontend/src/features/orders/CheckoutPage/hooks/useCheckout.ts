@@ -372,17 +372,19 @@ export const useCheckout = () => {
         }
       }
 
-      // Khi thanh toán xong (cash), cập nhật order status thành COMPLETED luôn
-      // Với card/qr thì backend sẽ tự động update khi payment callback thành công
-      if (paymentMethod === 'cash') {
+      // Khi thanh toán xong (cash):
+      // - STAFF orders: Auto-complete (status = COMPLETED)
+      // - CUSTOMER orders: Giữ PENDING (chờ nhân viên xác nhận)
+      if (paymentMethod === 'cash' && !isCustomerDisplay) {
         try {
-          // Update order status to COMPLETED for cash payment
+          // Update order status to COMPLETED for STAFF cash payment only
           await orderService.updateStatus(orderData.id, { status: 'COMPLETED' });
         } catch (statusError) {
           console.error('❌ Failed to update order status:', statusError);
           // Không block flow nếu update status thất bại
         }
       }
+      // CUSTOMER orders giữ nguyên status PENDING để chờ verification
       
       toast.success(`Đơn hàng ${orderData.orderNumber} đã được tạo thành công!`, {
         duration: 3000,

@@ -5,6 +5,7 @@ import {
   Route,
   Navigate,
   useLocation,
+  Outlet,
 } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from '@features/auth/context/AuthContext';
@@ -13,6 +14,16 @@ import { ProductProvider } from '@features/products/context/ProductContext';
 import { IngredientProvider } from '@features/stock/context/IngredientContext';
 import { ProtectedRoute } from '@features/auth/components/ProtectedRoute';
 import { ROUTES } from '@constants';
+
+// ===== Type Definitions =====
+interface CheckoutLocationState {
+  fromCustomer?: boolean;
+  tableNumber?: string;
+}
+
+interface OrderSuccessLocationState {
+  fromCustomer?: boolean;
+}
 
 // ===== Lazy load layouts =====
 const MainLayout = lazy(() => import('../components/layout/MainLayout'));
@@ -57,11 +68,22 @@ function LayoutReset() {
 }
 
 // ===== Checkout Route Component =====
-// Simplified: Route already has ProtectedRoute, so we just need to render POSLayoutNew
-// CheckoutPage will handle customer display logic internally
+// Conditionally render layout based on whether checkout is from customer or staff
 const CheckoutRoute: React.FC = () => {
+  const location = useLocation();
+  const locationState = location.state as CheckoutLocationState | null;
+  const isFromCustomer = locationState?.fromCustomer === true;
+
+  // If from customer, render CheckoutPage directly without POSLayoutNew wrapper
+  if (isFromCustomer) {
+    return <CheckoutPage />;
+  }
+
+  // If from staff, wrap with POSLayoutNew
   return (
-    <POSLayoutNew />
+    <POSLayoutNew>
+      <Outlet />
+    </POSLayoutNew>
   );
 };
 
@@ -70,13 +92,17 @@ const CheckoutRoute: React.FC = () => {
  */
 function AppRoutes() {
   const location = useLocation();
+  const locationState = location.state as OrderSuccessLocationState | null;
+  
   const isDisplayPage = location.pathname.startsWith(ROUTES.CUSTOMER);
   const isLoginPage = location.pathname === ROUTES.LOGIN;
   const isOrderSuccessFromCustomer = location.pathname === ROUTES.ORDER_SUCCESS &&
-    (location.state as any)?.fromCustomer === true;
+    locationState?.fromCustomer === true;
 
   // === CASE 1: Customer Display (with layout like POS) ===
   // Tất cả routes trong customer section đều PUBLIC, không cần đăng nhập
+  // Note: Checkout route is handled in CASE 2 by CheckoutRoute component
+  // which will detect fromCustomer and render CheckoutPage directly
   if (isDisplayPage || isOrderSuccessFromCustomer) {
     return (
       <div className="w-full min-h-screen bg-gray-50">

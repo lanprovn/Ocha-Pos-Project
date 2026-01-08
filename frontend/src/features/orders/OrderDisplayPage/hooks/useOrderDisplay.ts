@@ -14,15 +14,18 @@ export const useOrderDisplay = () => {
   const previousCompletedCountRef = useRef<number>(0);
 
   // Map backend status to frontend display status
-  const mapStatus = useCallback((backendStatus: string, paymentStatus?: string): OrderTracking['status'] => {
+  const mapStatus = useCallback((backendStatus: string, paymentStatus?: string, orderCreator?: string): OrderTracking['status'] => {
     const statusUpper = backendStatus?.toUpperCase() || '';
     
     // Map backend statuses to frontend display statuses
-    // Logic mới: Khi thanh toán xong thì coi như đã hoàn thành
     switch (statusUpper) {
       case 'CREATING':
         return 'creating';
       case 'PENDING':
+        // PENDING orders from CUSTOMER need verification
+        return 'pending_verification';
+      case 'HOLD':
+        return 'hold';
       case 'CONFIRMED':
       case 'PREPARING':
       case 'READY':
@@ -30,14 +33,17 @@ export const useOrderDisplay = () => {
         if (paymentStatus?.toUpperCase() === 'SUCCESS') {
           return 'completed';
         }
-        // Nếu chưa thanh toán, hiển thị ở section "Đã thanh toán" (tạm thời)
+        // Nếu chưa thanh toán, hiển thị ở section "Đã thanh toán"
         return 'paid';
       case 'COMPLETED':
         return 'completed';
+      case 'CANCELLED':
+        // Cancelled orders don't show in display
+        return 'completed'; // Fallback to completed section
       default:
         // Fallback: nếu không match, thử lowercase trực tiếp
         const statusLower = backendStatus?.toLowerCase() || 'creating';
-        if (['creating', 'paid', 'preparing', 'completed'].includes(statusLower)) {
+        if (['creating', 'pending_verification', 'paid', 'preparing', 'completed', 'hold'].includes(statusLower)) {
           return statusLower as OrderTracking['status'];
         }
         // Default fallback
@@ -47,11 +53,11 @@ export const useOrderDisplay = () => {
 
   // Transform backend Order to OrderTracking format
   const transformOrder = useCallback((order: Order): OrderTracking => {
-    // Nếu đã thanh toán thành công, tự động chuyển sang completed
+    // Nếu đã thanh toán thành công, tự động chuyển sang completed (except for pending verification)
     const isPaid = order.paymentStatus?.toUpperCase() === 'SUCCESS' || order.paidAt;
-    const displayStatus = isPaid && order.status !== 'CREATING' 
+    const displayStatus = isPaid && order.status !== 'CREATING' && order.status !== 'PENDING'
       ? 'completed' 
-      : mapStatus(order.status, order.paymentStatus);
+      : mapStatus(order.status, order.paymentStatus, order.orderCreator);
     
     return {
       id: order.id,

@@ -182,6 +182,22 @@ export function emitOrderStatusChanged(orderId: string, status: string): void {
 }
 
 /**
+ * Emit order verified event (for customer notification)
+ */
+export function emitOrderVerified(order: any): void {
+  if (io) {
+    // Emit to all rooms so customer can receive notification
+    io.emit('order_verified', {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      confirmedBy: order.confirmedBy,
+      confirmedAt: order.confirmedAt,
+    });
+    logger.debug('Emitted order_verified event', { orderId: order.id, orderNumber: order.orderNumber });
+  }
+}
+
+/**
  * Emit display update event
  */
 export function emitDisplayUpdate(data: any): void {

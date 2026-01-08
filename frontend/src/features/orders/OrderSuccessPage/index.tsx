@@ -10,6 +10,8 @@ const OrderSuccessPage: React.FC = () => {
     orderDetails,
     paymentMethod,
     isLoading,
+    orderCreator,
+    orderStatus,
     handleNewOrder,
     handleGoHome
   } = useOrderSuccess();
@@ -27,7 +29,7 @@ const OrderSuccessPage: React.FC = () => {
     <div className="min-h-screen w-full bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SuccessIcon />
-        <SuccessMessage />
+        <SuccessMessage orderCreator={orderCreator} orderStatus={orderStatus} />
 
         {orderDetails && (
           <OrderInfoCard 

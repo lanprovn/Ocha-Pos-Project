@@ -8,7 +8,7 @@ interface SimplifiedCustomerInfoFormProps {
 
 /**
  * SimplifiedCustomerInfoForm - Simplified form for customer self-service
- * Only requires phone and table number
+ * Only requires phone and name (optional)
  */
 export const SimplifiedCustomerInfoForm: React.FC<SimplifiedCustomerInfoFormProps> = ({
   customerInfo,
@@ -44,59 +44,21 @@ export const SimplifiedCustomerInfoForm: React.FC<SimplifiedCustomerInfoFormProp
             Ví dụ: 0912345678 hoặc 0123456789
           </p>
         </div>
-        
+
         <div className="space-y-2">
-          <label htmlFor="table" className="block text-sm font-semibold text-gray-800">
-            Số bàn
+          <label htmlFor="name" className="block text-sm font-semibold text-gray-800">
+            Tên khách hàng
           </label>
           <input
             type="text"
-            id="table"
-            name="table"
-            value={customerInfo.table}
+            id="name"
+            name="name"
+            value={customerInfo.name}
             onChange={onInputChange}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors text-lg"
-            placeholder="Nhập số bàn (tùy chọn)"
+            placeholder="Nhập tên (tùy chọn)"
           />
         </div>
-
-        {/* Optional: Name field (hidden by default, can be expanded) */}
-        <details className="text-sm">
-          <summary className="cursor-pointer text-gray-600 hover:text-gray-800">
-            Thêm thông tin khác (tùy chọn)
-          </summary>
-          <div className="mt-3 space-y-3 pt-3 border-t border-gray-200">
-            <div className="space-y-2">
-              <label htmlFor="name" className="block text-sm font-semibold text-gray-800">
-                Tên khách hàng
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={customerInfo.name}
-                onChange={onInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors"
-                placeholder="Nhập tên (tùy chọn)"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="notes" className="block text-sm font-semibold text-gray-800">
-                Ghi chú
-              </label>
-              <textarea
-                id="notes"
-                name="notes"
-                value={customerInfo.notes}
-                onChange={onInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors resize-none"
-                rows={2}
-                placeholder="Ghi chú đặc biệt (tùy chọn)"
-              />
-            </div>
-          </div>
-        </details>
       </div>
     </div>
   );

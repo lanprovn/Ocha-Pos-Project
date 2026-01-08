@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCartIcon, MagnifyingGlassIcon, UserCircleIcon, ChartBarIcon, CubeIcon, ArrowRightOnRectangleIcon, DocumentChartBarIcon } from '@heroicons/react/24/outline';
+import { ShoppingCartIcon, MagnifyingGlassIcon, UserCircleIcon, ChartBarIcon, CubeIcon, ArrowRightOnRectangleIcon, DocumentChartBarIcon, BookmarkIcon } from '@heroicons/react/24/outline';
 import { useCart } from '@features/orders/hooks/useCart';
 import { useProducts } from '@features/products/hooks/useProducts';
 import { useAuth } from '@features/auth/hooks/useAuth';
@@ -8,6 +8,8 @@ import { usePOSDisplaySync } from '@/hooks/useDisplaySync';
 import ProductGrid from '@features/products/components/ProductGrid';
 import ProductModal from '@features/products/components/ProductModal';
 import StockAlertsPanel from '@features/stock/components/StockAlertsPanel';
+import { HoldOrderModal } from '@features/orders/OrderDisplayPage/components/HoldOrderModal';
+import { HoldOrdersList } from '@features/orders/OrderDisplayPage/components/HoldOrdersList';
 import { formatPrice } from '@/utils/formatPrice';
 import type { Product } from '@/types/product';
 
@@ -26,6 +28,8 @@ export default function POSLayoutNew() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showHoldModal, setShowHoldModal] = useState(false);
+  const [showHoldOrdersList, setShowHoldOrdersList] = useState(false);
 
   // Sync cart data to customer display
   usePOSDisplaySync(items, totalPrice, totalItems, 'creating');
@@ -49,6 +53,7 @@ export default function POSLayoutNew() {
       navigate('/checkout');
     }
   };
+
 
   const handleCategorySelect = (categoryName: string) => {
     setSelectedCategoryId(categoryName);
@@ -120,6 +125,14 @@ export default function POSLayoutNew() {
 
           {/* Management Buttons - Moved to left */}
           <div className="flex items-center space-x-2 ml-6">
+            <button
+              onClick={() => setShowHoldOrdersList(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors shadow-sm"
+              title="Xem đơn hàng đã lưu"
+            >
+              <BookmarkIcon className="w-4 h-4" />
+              <span className="text-sm font-medium">Đơn Đã Lưu</span>
+            </button>
             <button
               onClick={() => navigate('/orders')}
               className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors shadow-sm"
@@ -327,15 +340,31 @@ export default function POSLayoutNew() {
             </button>
           </div>
 
-          {/* Payment Button */}
-          <div className="p-4 border-t border-gray-300 bg-white">
+          {/* Action Buttons */}
+          <div className="p-4 border-t border-gray-300 bg-white space-y-2">
+            {/* Hold Order Button */}
+            <button
+              onClick={() => setShowHoldModal(true)}
+              disabled={totalItems === 0}
+              className={`w-full py-2.5 rounded-md font-semibold text-sm transition-colors flex items-center justify-center space-x-2 ${
+                totalItems === 0
+                  ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
+            >
+              <BookmarkIcon className="w-4 h-4" />
+              <span>Lưu đơn tạm</span>
+            </button>
+
+            {/* Checkout Button */}
             <button
               onClick={handleCheckout}
               disabled={totalItems === 0}
-              className={`w-full py-3 rounded-md font-semibold text-white text-base transition-colors flex items-center justify-center space-x-2 ${totalItems === 0
+              className={`w-full py-3 rounded-md font-semibold text-white text-base transition-colors flex items-center justify-center space-x-2 ${
+                totalItems === 0
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-slate-700 hover:bg-slate-800'
-                }`}
+              }`}
             >
               <span>Thanh toán</span>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -409,6 +438,27 @@ export default function POSLayoutNew() {
         />
       )}
 
+      {/* Hold Order Modal */}
+      <HoldOrderModal
+        isOpen={showHoldModal}
+        onClose={() => setShowHoldModal(false)}
+        order={null}
+        createFromCart={true}
+        onSuccess={() => {
+          clearCart();
+          setShowHoldModal(false);
+        }}
+      />
+
+      {/* Hold Orders List Modal */}
+      <HoldOrdersList
+        isOpen={showHoldOrdersList}
+        onClose={() => setShowHoldOrdersList(false)}
+        onResume={(orderId) => {
+          setShowHoldOrdersList(false);
+          // Cart will be loaded by HoldOrdersList component
+        }}
+      />
     </div>
   );
 }

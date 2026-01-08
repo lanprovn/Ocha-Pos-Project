@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import categoryService from '@services/category.service';
 import { transformCategory } from '@utils/transform';
 import { z } from 'zod';
+import { getErrorMessage, isErrorWithMessage } from '@utils/errorHandler';
 
 const createCategorySchema = z.object({
   body: z.object({
@@ -30,8 +31,9 @@ export class CategoryController {
       const categories = await categoryService.getAll();
       const transformed = categories.map(transformCategory);
       res.json(transformed);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Internal server error';
+      res.status(500).json({ error: message });
     }
   }
 
@@ -41,11 +43,12 @@ export class CategoryController {
       const category = await categoryService.getById(id);
       const transformed = transformCategory(category);
       res.json(transformed);
-    } catch (error: any) {
-      if (error.message === 'Category not found') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'Category not found') {
         res.status(404).json({ error: error.message });
       } else {
-        res.status(500).json({ error: error.message });
+        const message = error instanceof Error ? error.message : 'Internal server error';
+        res.status(500).json({ error: message });
       }
     }
   }
@@ -56,11 +59,12 @@ export class CategoryController {
       const category = await categoryService.create(validated.body);
       const transformed = transformCategory(category);
       res.status(201).json(transformed);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: 'Validation error', details: error.errors });
       } else {
-        res.status(500).json({ error: error.message });
+        const message = error instanceof Error ? error.message : 'Internal server error';
+        res.status(500).json({ error: message });
       }
     }
   }
@@ -74,13 +78,13 @@ export class CategoryController {
       const category = await categoryService.update(validated.params.id, validated.body);
       const transformed = transformCategory(category);
       res.json(transformed);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else if (error.message === 'Category not found') {
-        res.status(404).json({ error: error.message });
+      } else if (isErrorWithMessage(error, 'Category not found')) {
+        res.status(404).json({ error: getErrorMessage(error) });
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: getErrorMessage(error) });
       }
     }
   }
@@ -90,11 +94,12 @@ export class CategoryController {
       const { id } = req.params;
       await categoryService.delete(id);
       res.json({ message: 'Category deleted successfully' });
-    } catch (error: any) {
-      if (error.message === 'Category not found') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'Category not found') {
         res.status(404).json({ error: error.message });
       } else {
-        res.status(500).json({ error: error.message });
+        const message = error instanceof Error ? error.message : 'Internal server error';
+        res.status(500).json({ error: message });
       }
     }
   }

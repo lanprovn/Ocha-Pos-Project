@@ -33,7 +33,7 @@ export interface OrderTracking {
   items: CartItem[];
   totalPrice: number;
   totalItems: number;
-  status: 'creating' | 'confirmed' | 'paid' | 'preparing' | 'completed'; // Display status (mapped)
+  status: 'creating' | 'pending_verification' | 'confirmed' | 'paid' | 'preparing' | 'completed' | 'hold'; // Display status (mapped)
   backendStatus?: string; // Backend status gốc (CREATING, PENDING, CONFIRMED, PREPARING, READY, COMPLETED)
   customerInfo?: {
     name?: string;

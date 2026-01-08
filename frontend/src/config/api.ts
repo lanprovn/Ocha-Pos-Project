@@ -49,6 +49,15 @@ export const API_ENDPOINTS = {
   ORDERS_TODAY: `${API_BASE_URL}/orders/today`,
   ORDERS_BY_DATE: (date: string) => `${API_BASE_URL}/orders/date/${date}`,
   UPDATE_ORDER_STATUS: (id: string) => `${API_BASE_URL}/orders/${id}/status`,
+  VERIFY_ORDER: (id: string) => `${API_BASE_URL}/orders/${id}/verify`,
+  REJECT_ORDER: (id: string) => `${API_BASE_URL}/orders/${id}/reject`,
+  HOLD_ORDER: (id: string) => `${API_BASE_URL}/orders/${id}/hold`,
+  RESUME_HOLD_ORDER: (id: string) => `${API_BASE_URL}/orders/${id}/resume`,
+  HOLD_ORDERS: `${API_BASE_URL}/orders/holds`,
+  CANCEL_ORDER: (id: string) => `${API_BASE_URL}/orders/${id}/cancel`,
+  RETURN_ORDER: (id: string) => `${API_BASE_URL}/orders/${id}/return`,
+  SPLIT_ORDER: (id: string) => `${API_BASE_URL}/orders/${id}/split`,
+  MERGE_ORDERS: `${API_BASE_URL}/orders/merge`,
 
   // Stock
   STOCK_PRODUCTS: `${API_BASE_URL}/stock/products`,

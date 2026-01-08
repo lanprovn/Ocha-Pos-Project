@@ -53,6 +53,10 @@ const OrderSuccessView: React.FC<OrderSuccessViewProps> = ({
     };
   };
 
+  // Store order creator and status for SuccessMessage
+  const [orderCreator, setOrderCreator] = React.useState<'CUSTOMER' | 'STAFF' | undefined>();
+  const [orderStatus, setOrderStatus] = React.useState<string | undefined>();
+
   // Load order details from backend API
   useEffect(() => {
     const loadOrderFromAPI = async () => {
@@ -60,6 +64,8 @@ const OrderSuccessView: React.FC<OrderSuccessViewProps> = ({
         const order = await orderService.getById(orderId);
         const details = transformOrderToDetails(order);
         setOrderDetails(details);
+        setOrderCreator(order.orderCreator as 'CUSTOMER' | 'STAFF');
+        setOrderStatus(order.status);
         setIsLoading(false);
       } catch (error: any) {
         // Error loading order - toast notification shown
@@ -83,24 +89,28 @@ const OrderSuccessView: React.FC<OrderSuccessViewProps> = ({
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 py-8 px-4 overflow-y-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="h-full w-full bg-gray-50 flex flex-col items-center justify-center overflow-hidden px-4 py-2">
+      <div className="w-[80%] flex flex-col items-center justify-center space-y-2 flex-shrink-0">
         <SuccessIcon />
-        <SuccessMessage />
+        <SuccessMessage orderCreator={orderCreator} orderStatus={orderStatus} />
 
         {orderDetails && (
-          <OrderInfoCard 
-            orderDetails={orderDetails}
-            paymentMethod={paymentMethod}
-          />
+          <div className="w-full flex-shrink-0">
+            <OrderInfoCard 
+              orderDetails={orderDetails}
+              paymentMethod={paymentMethod}
+            />
+          </div>
         )}
 
-        <ActionButtons 
-          onNewOrder={onNewOrder}
-          onGoHome={onGoHome}
-          orderId={orderId}
-          orderNumber={orderNumber}
-        />
+        <div className="w-full flex-shrink-0">
+          <ActionButtons 
+            onNewOrder={onNewOrder}
+            onGoHome={onGoHome}
+            orderId={orderId}
+            orderNumber={orderNumber}
+          />
+        </div>
       </div>
     </div>
   );

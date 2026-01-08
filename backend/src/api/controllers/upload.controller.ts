@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import uploadService from '@services/upload.service';
 import env from '@config/env';
 import logger from '@utils/logger';
+import { getErrorMessage, isErrorWithMessage } from '@utils/errorHandler';
 
 export class UploadController {
   /**
@@ -30,13 +31,13 @@ export class UploadController {
         size: result.size,
         mimetype: result.mimetype,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Upload error', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         filename: req.file?.filename,
       });
-      res.status(500).json({ error: error.message || 'Lỗi khi upload file' });
+      res.status(500).json({ error: getErrorMessage(error) || 'Lỗi khi upload file' });
     }
   }
 
@@ -55,16 +56,17 @@ export class UploadController {
       await uploadService.deleteImage(filename);
 
       res.json({ message: 'Xóa file thành công' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Delete error', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         filename: req.params.filename,
       });
-      if (error.message === 'File không tồn tại' || error.message.includes('không tồn tại')) {
-        res.status(404).json({ error: error.message });
+      const errorMessage = getErrorMessage(error);
+      if (errorMessage === 'File không tồn tại' || errorMessage.includes('không tồn tại')) {
+        res.status(404).json({ error: errorMessage });
       } else {
-        res.status(500).json({ error: error.message || 'Lỗi khi xóa file' });
+        res.status(500).json({ error: errorMessage || 'Lỗi khi xóa file' });
       }
     }
   }
@@ -85,12 +87,12 @@ export class UploadController {
         images, 
         count: images.length,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('List images error', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
       });
-      res.status(500).json({ error: error.message || 'Lỗi khi lấy danh sách hình ảnh' });
+      res.status(500).json({ error: getErrorMessage(error) || 'Lỗi khi lấy danh sách hình ảnh' });
     }
   }
 }

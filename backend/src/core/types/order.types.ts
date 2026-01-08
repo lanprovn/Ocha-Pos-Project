@@ -97,3 +97,42 @@ export interface OrderWithItems {
     } | null;
   }>;
 }
+
+// ===== Advanced Order Management Types =====
+
+export interface HoldOrderInput {
+  holdName?: string | null;
+}
+
+export interface CancelOrderInput {
+  reason: string;
+  reasonType: 'OUT_OF_STOCK' | 'CUSTOMER_REQUEST' | 'SYSTEM_ERROR' | 'OTHER';
+  refundAmount?: number | null;
+  refundMethod?: 'CASH' | 'CARD' | 'QR' | null;
+}
+
+export interface ReturnOrderItemInput {
+  orderItemId: string;
+  quantity: number;
+  refundAmount: number;
+}
+
+export interface ReturnOrderInput {
+  returnType: 'FULL' | 'PARTIAL';
+  returnReason: 'DEFECTIVE' | 'WRONG_ITEM' | 'CUSTOMER_REQUEST' | 'OTHER';
+  refundMethod: 'CASH' | 'CARD' | 'QR';
+  items: ReturnOrderItemInput[];
+  notes?: string | null;
+}
+
+export interface SplitOrderInput {
+  splits: Array<{
+    name?: string | null;
+    itemIds: string[];
+  }>;
+}
+
+export interface MergeOrdersInput {
+  orderIds: string[];
+  mergedOrderName?: string | null;
+}

@@ -17,6 +17,8 @@ export const useOrderSuccess = () => {
   
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(null);
+  const [orderCreator, setOrderCreator] = useState<'CUSTOMER' | 'STAFF' | undefined>();
+  const [orderStatus, setOrderStatus] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(true);
 
   // Transform Order from API to OrderDetails format
@@ -73,6 +75,10 @@ export const useOrderSuccess = () => {
         const method = getPaymentMethodFromOrder(order) || state?.paymentMethod || null;
         setPaymentMethod(method);
 
+        // Store order creator and status for SuccessMessage
+        setOrderCreator(order.orderCreator as 'CUSTOMER' | 'STAFF');
+        setOrderStatus(order.status);
+
         setIsLoading(false);
       } catch (error: any) {
         console.error('Error loading order from API:', error);
@@ -115,6 +121,8 @@ export const useOrderSuccess = () => {
   return {
     orderDetails,
     paymentMethod,
+    orderCreator,
+    orderStatus,
     isLoading,
     handleNewOrder,
     handleGoHome

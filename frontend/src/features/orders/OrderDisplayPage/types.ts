@@ -5,9 +5,11 @@ export type OrderTracking = DisplayOrderTracking;
 
 export interface GroupedOrders {
   creating: OrderTracking[];
+  pending_verification: OrderTracking[];
   paid: OrderTracking[];
   preparing: OrderTracking[];
   completed: OrderTracking[];
+  hold: OrderTracking[];
 }
 
 export interface StatusConfig {

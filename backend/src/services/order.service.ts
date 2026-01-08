@@ -1,5 +1,5 @@
 import prisma from '@config/database';
-import { CreateOrderInput, OrderFilters, UpdateOrderStatusInput, UpdateOrderInput, OrderWithItems, Order } from '@core/types/order.types';
+import { CreateOrderInput, OrderFilters, UpdateOrderStatusInput, UpdateOrderInput, OrderWithItems, Order, HoldOrderInput, CancelOrderInput, ReturnOrderInput, SplitOrderInput, MergeOrdersInput } from '@core/types/order.types';
 import { Decimal } from '@prisma/client/runtime/library';
 import { Prisma } from '@prisma/client';
 import recipeService from './recipe.service';
@@ -7,8 +7,8 @@ import stockService from './stock.service';
 import customerService from './customer.service';
 import logger from '@utils/logger';
 import { InsufficientStockError, OrderNotFoundError } from '@core/errors';
-import { emitStockUpdated } from '@core/socket/socket.io';
-import { StockTransactionType } from '@core/types/common.types';
+import { emitStockUpdated, emitOrderCreated, emitOrderUpdated, emitOrderStatusChanged, emitOrderVerified } from '@core/socket/socket.io';
+import { StockTransactionType, OrderStatus } from '@core/types/common.types';
 import { calculateMembershipLevel } from '@config/membership.config';
 
 export class OrderService {
@@ -79,7 +79,12 @@ export class OrderService {
           },
         });
 
-        return this.transformOrder(updated);
+        const transformedOrder = this.transformOrder(updated);
+        
+        // Emit Socket.io event for real-time updates (after successful update)
+        emitOrderUpdated(transformedOrder);
+        
+        return transformedOrder;
       } else {
         // Create new draft order
         let orderNumber = this.generateOrderNumber();
@@ -131,7 +136,12 @@ export class OrderService {
           },
         });
 
-        return this.transformOrder(order);
+        const transformedOrder = this.transformOrder(order);
+        
+        // Emit Socket.io event for real-time updates (after successful creation)
+        emitOrderUpdated(transformedOrder);
+        
+        return transformedOrder;
       }
     } catch (error) {
       logger.error('Error in createOrUpdateDraft', {
@@ -364,7 +374,11 @@ export class OrderService {
     for (const update of stockUpdates) {
       try {
         // Get current stock info sau khi đã update
-        let stock: any;
+        type StockWithProduct = Awaited<ReturnType<typeof prisma.stock.findUnique<{ include: { product: true } }>>>;
+        type IngredientStockWithIngredient = Awaited<ReturnType<typeof prisma.ingredientStock.findUnique<{ include: { ingredient: true } }>>>;
+        type StockUnion = StockWithProduct | IngredientStockWithIngredient;
+        
+        let stock: StockUnion = null;
         let oldQuantity: number | undefined;
 
         if (update.type === 'product' && update.productId) {
@@ -491,11 +505,19 @@ export class OrderService {
         throw new Error('Không thể tạo order number duy nhất sau 10 lần thử');
       }
 
+      // 4.5. Determine initial status based on orderCreator
+      // CUSTOMER orders start as PENDING (require verification)
+      // STAFF orders start as CONFIRMED (auto-approved)
+      const orderCreator = data.orderCreator || 'STAFF';
+      const initialStatus = orderCreator === 'CUSTOMER' ? 'PENDING' : 'CONFIRMED';
+      const confirmedBy = orderCreator === 'STAFF' ? data.orderCreatorName || null : null;
+      const confirmedAt = orderCreator === 'STAFF' ? new Date() : null;
+
       // 5. Create order with items trong transaction
       const order = await tx.order.create({
         data: {
           orderNumber,
-          status: 'PENDING',
+          status: initialStatus,
           totalAmount: new Decimal(totalAmount),
           customerName: data.customerName || null,
           customerPhone: data.customerPhone || null,
@@ -504,8 +526,10 @@ export class OrderService {
           notes: data.notes || null,
           paymentMethod: data.paymentMethod || null,
           paymentStatus: data.paymentStatus || 'PENDING',
-          orderCreator: data.orderCreator || 'STAFF',
+          orderCreator: orderCreator,
           orderCreatorName: data.orderCreatorName || null,
+          confirmedBy: confirmedBy,
+          confirmedAt: confirmedAt,
           paidAt: data.paymentStatus === 'SUCCESS' ? new Date() : null,
           items: {
             create: data.items.map((item) => ({
@@ -583,7 +607,12 @@ export class OrderService {
       }
 
       // ✅ Tất cả operations atomic - hoặc thành công hết hoặc rollback hết
-      return this.transformOrder(order);
+      const transformedOrder = this.transformOrder(order);
+      
+      // Emit Socket.io event for real-time updates (after successful transaction commit)
+      emitOrderCreated(transformedOrder);
+      
+      return transformedOrder;
     });
   }
 
@@ -602,7 +631,7 @@ export class OrderService {
     page?: string | number;
     limit?: string | number;
   }): Promise<{ data: Order[]; pagination: { page: number; limit: number; total: number; totalPages: number; hasNext: boolean; hasPrev: boolean } } | Order[]> {
-    const where: any = {};
+    const where: Prisma.OrderWhereInput = {};
 
     if (filters?.status) {
       where.status = filters.status;
@@ -715,7 +744,7 @@ export class OrderService {
    * Get total count of orders matching filters (for pagination)
    */
   async getCount(filters?: OrderFilters): Promise<number> {
-    const where: any = {};
+    const where: Prisma.OrderWhereInput = {};
 
     if (filters?.status) {
       where.status = filters.status;
@@ -969,6 +998,10 @@ export class OrderService {
         await this.emitStockUpdatesAndCheckAlerts(stockUpdates);
       }
 
+      // Emit Socket.io events for real-time updates (after successful transaction commit)
+      emitOrderUpdated(order);
+      emitOrderStatusChanged(order.id, order.status);
+      
       return order;
     });
   }
@@ -986,7 +1019,7 @@ export class OrderService {
         throw new Error('Order not found');
       }
 
-      const updateData: any = {};
+      const updateData: Prisma.OrderUpdateInput = {};
       if (data.paymentStatus !== undefined) updateData.paymentStatus = data.paymentStatus;
       if (data.paymentTransactionId !== undefined) updateData.paymentTransactionId = data.paymentTransactionId;
       if (data.paymentDate !== undefined) updateData.paymentDate = data.paymentDate;
@@ -1061,6 +1094,127 @@ export class OrderService {
   }
 
   /**
+   * Verify order (Staff confirms Customer order)
+   * Changes status from PENDING to CONFIRMED
+   */
+  async verifyOrder(id: string, staffId: string, staffName?: string) {
+    return await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new OrderNotFoundError(id);
+      }
+
+      // Only PENDING orders can be verified
+      if (order.status !== 'PENDING') {
+        throw new Error(`Order ${order.orderNumber} cannot be verified. Current status: ${order.status}`);
+      }
+
+      // Only CUSTOMER orders can be verified
+      if (order.orderCreator !== 'CUSTOMER') {
+        throw new Error(`Only Customer orders can be verified. This order was created by ${order.orderCreator}`);
+      }
+
+      const updated = await tx.order.update({
+        where: { id },
+        data: {
+          status: 'CONFIRMED',
+          confirmedBy: staffName || staffId,
+          confirmedAt: new Date(),
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      const transformedOrder = this.transformOrder(updated);
+      
+      // Emit Socket.io event for real-time updates
+      emitOrderUpdated(transformedOrder);
+      emitOrderStatusChanged(transformedOrder.id, transformedOrder.status);
+      
+      // Emit special event for customer notification
+      emitOrderVerified(transformedOrder);
+      
+      return transformedOrder;
+    });
+  }
+
+  /**
+   * Reject order (Staff rejects Customer order)
+   * Changes status from PENDING to CANCELLED
+   */
+  async rejectOrder(id: string, reason?: string) {
+    return await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new OrderNotFoundError(id);
+      }
+
+      // Only PENDING orders can be rejected
+      if (order.status !== 'PENDING') {
+        throw new Error(`Order ${order.orderNumber} cannot be rejected. Current status: ${order.status}`);
+      }
+
+      // Only CUSTOMER orders can be rejected
+      if (order.orderCreator !== 'CUSTOMER') {
+        throw new Error(`Only Customer orders can be rejected. This order was created by ${order.orderCreator}`);
+      }
+
+      // Update notes with rejection reason if provided
+      const updatedNotes = reason 
+        ? `${order.notes ? order.notes + '\n' : ''}[REJECTED] ${reason}`
+        : order.notes;
+
+      const updated = await tx.order.update({
+        where: { id },
+        data: {
+          status: 'CANCELLED',
+          notes: updatedNotes,
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      const transformedOrder = this.transformOrder(updated);
+      
+      // Emit Socket.io event for real-time updates
+      emitOrderUpdated(transformedOrder);
+      emitOrderStatusChanged(transformedOrder.id, transformedOrder.status);
+      
+      return transformedOrder;
+    });
+  }
+
+  /**
    * Get order by orderNumber (for payment callback)
    */
   async getByOrderNumber(orderNumber: string) {
@@ -1100,6 +1254,8 @@ export class OrderService {
       paymentTransactionId: order.paymentTransactionId,
       orderCreator: order.orderCreator,
       orderCreatorName: order.orderCreatorName,
+      confirmedBy: order.confirmedBy || null,
+      confirmedAt: order.confirmedAt ? order.confirmedAt.toISOString() : null,
       paidAt: order.paidAt ? order.paidAt.toISOString() : null,
       paymentDate: order.paymentDate ? order.paymentDate.toISOString() : null,
       createdAt: order.createdAt.toISOString(),
@@ -1120,6 +1276,678 @@ export class OrderService {
         },
       })),
     };
+  }
+
+  /**
+   * Hold order (Lưu đơn hàng tạm)
+   * Chuyển đơn hàng từ CREATING hoặc PENDING sang HOLD
+   */
+  async holdOrder(id: string, data: HoldOrderInput, userId: string) {
+    return await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new OrderNotFoundError(id);
+      }
+
+      // Chỉ cho phép hold đơn ở trạng thái CREATING hoặc PENDING
+      if (order.status !== 'CREATING' && order.status !== 'PENDING') {
+        throw new Error(`Cannot hold order with status: ${order.status}`);
+      }
+
+      const updated = await tx.order.update({
+        where: { id },
+        data: {
+          status: 'HOLD',
+          holdName: data.holdName || `Đơn tạm - ${new Date().toLocaleString('vi-VN')}`,
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      const transformedOrder = this.transformOrder(updated);
+      emitOrderUpdated(transformedOrder);
+      emitOrderStatusChanged(transformedOrder.id, transformedOrder.status);
+
+      return transformedOrder;
+    });
+  }
+
+  /**
+   * Resume hold order (Khôi phục đơn hàng đã lưu)
+   * Chuyển đơn hàng từ HOLD về PENDING
+   */
+  async resumeHoldOrder(id: string, userId: string) {
+    return await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new OrderNotFoundError(id);
+      }
+
+      if (order.status !== 'HOLD') {
+        throw new Error(`Cannot resume order with status: ${order.status}`);
+      }
+
+      const updated = await tx.order.update({
+        where: { id },
+        data: {
+          status: 'PENDING',
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      const transformedOrder = this.transformOrder(updated);
+      emitOrderUpdated(transformedOrder);
+      emitOrderStatusChanged(transformedOrder.id, transformedOrder.status);
+
+      return transformedOrder;
+    });
+  }
+
+  /**
+   * Get all hold orders
+   */
+  async getHoldOrders(orderCreator?: 'STAFF' | 'CUSTOMER') {
+    const where: Prisma.OrderWhereInput = {
+      status: 'HOLD',
+    };
+
+    if (orderCreator) {
+      where.orderCreator = orderCreator;
+    }
+
+    const orders = await prisma.order.findMany({
+      where,
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return orders.map((order) => this.transformOrder(order));
+  }
+
+  /**
+   * Cancel order with reason and refund (Hủy đơn hàng nâng cao)
+   */
+  async cancelOrder(id: string, data: CancelOrderInput, userId: string) {
+    return await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new OrderNotFoundError(id);
+      }
+
+      // Không cho phép hủy đơn đã COMPLETED hoặc đã CANCELLED
+      if (order.status === 'COMPLETED') {
+        throw new Error('Cannot cancel completed order');
+      }
+      if (order.status === 'CANCELLED') {
+        throw new Error('Order is already cancelled');
+      }
+
+      // Tính toán refund amount nếu chưa có
+      let refundAmount = data.refundAmount;
+      if (!refundAmount && order.paymentStatus === 'SUCCESS') {
+        refundAmount = parseFloat(order.totalAmount.toString());
+      }
+
+      // Tạo cancellation record
+      const cancellation = await tx.orderCancellation.create({
+        data: {
+          orderId: id,
+          reason: data.reason,
+          reasonType: data.reasonType,
+          refundAmount: refundAmount ? new Decimal(refundAmount) : null,
+          refundMethod: data.refundMethod || null,
+          refundStatus: refundAmount ? 'PENDING' : null,
+          cancelledBy: userId,
+          notes: null,
+        },
+      });
+
+      // Cập nhật order status
+      const updated = await tx.order.update({
+        where: { id },
+        data: {
+          status: 'CANCELLED',
+          notes: order.notes
+            ? `${order.notes}\n[CANCELLED] ${data.reason}`
+            : `[CANCELLED] ${data.reason}`,
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          cancellation: true,
+        },
+      });
+
+      // Hoàn lại tồn kho nếu đơn đã được xử lý (đã trừ tồn kho)
+      if (order.status === 'COMPLETED' || order.status === 'PREPARING' || order.status === 'READY') {
+        // Hoàn lại tồn kho cho từng item
+        for (const item of order.items) {
+          const stock = await tx.stock.findUnique({
+            where: { productId: item.productId },
+          });
+
+          if (stock) {
+            await tx.stock.update({
+              where: { productId: item.productId },
+              data: {
+                quantity: {
+                  increment: item.quantity,
+                },
+              },
+            });
+
+            // Tạo stock transaction
+            await tx.stockTransaction.create({
+              data: {
+                productId: item.productId,
+                type: 'RETURN',
+                quantity: item.quantity,
+                reason: `Hoàn lại tồn kho do hủy đơn hàng ${order.orderNumber}`,
+                userId: userId,
+              },
+            });
+          }
+        }
+      }
+
+      const transformedOrder = this.transformOrder(updated);
+      emitOrderUpdated(transformedOrder);
+      emitOrderStatusChanged(transformedOrder.id, transformedOrder.status);
+
+      return transformedOrder;
+    });
+  }
+
+  /**
+   * Return order items (Đổi trả hàng)
+   */
+  async returnOrder(id: string, data: ReturnOrderInput, userId: string) {
+    return await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new OrderNotFoundError(id);
+      }
+
+      // Chỉ cho phép return đơn đã COMPLETED
+      if (order.status !== 'COMPLETED') {
+        throw new Error(`Cannot return order with status: ${order.status}`);
+      }
+
+      // Validate items
+      const totalRefundAmount = data.items.reduce((sum, item) => sum + item.refundAmount, 0);
+      
+      for (const returnItem of data.items) {
+        const orderItem = order.items.find((item) => item.id === returnItem.orderItemId);
+        if (!orderItem) {
+          throw new Error(`Order item not found: ${returnItem.orderItemId}`);
+        }
+        if (returnItem.quantity > orderItem.quantity) {
+          throw new Error(`Return quantity (${returnItem.quantity}) exceeds order quantity (${orderItem.quantity})`);
+        }
+      }
+
+      // Tạo return record
+      const orderReturn = await tx.orderReturn.create({
+        data: {
+          orderId: id,
+          returnType: data.returnType,
+          returnReason: data.returnReason,
+          refundAmount: new Decimal(totalRefundAmount),
+          refundMethod: data.refundMethod,
+          refundStatus: 'PENDING',
+          returnedBy: userId,
+          notes: data.notes || null,
+          items: {
+            create: data.items.map((item) => ({
+              orderItemId: item.orderItemId,
+              quantity: item.quantity,
+              refundAmount: new Decimal(item.refundAmount),
+            })),
+          },
+        },
+        include: {
+          items: {
+            include: {
+              orderItem: {
+                include: {
+                  product: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Hoàn lại tồn kho
+      for (const returnItem of orderReturn.items) {
+        const stock = await tx.stock.findUnique({
+          where: { productId: returnItem.orderItem.productId },
+        });
+
+        if (stock) {
+          await tx.stock.update({
+            where: { productId: returnItem.orderItem.productId },
+            data: {
+              quantity: {
+                increment: returnItem.quantity,
+              },
+            },
+          });
+
+          await tx.stockTransaction.create({
+            data: {
+              productId: returnItem.orderItem.productId,
+              type: 'RETURN',
+              quantity: returnItem.quantity,
+              reason: `Hoàn lại tồn kho do đổi trả đơn hàng ${order.orderNumber}`,
+              userId: userId,
+            },
+          });
+        }
+      }
+
+      // Cập nhật order notes
+      await tx.order.update({
+        where: { id },
+        data: {
+          notes: order.notes
+            ? `${order.notes}\n[RETURNED] ${data.returnReason} - Hoàn tiền: ${totalRefundAmount.toLocaleString('vi-VN')} VNĐ`
+            : `[RETURNED] ${data.returnReason} - Hoàn tiền: ${totalRefundAmount.toLocaleString('vi-VN')} VNĐ`,
+        },
+      });
+
+      const updatedOrder = await tx.order.findUnique({
+        where: { id },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          returns: {
+            include: {
+              items: true,
+            },
+          },
+        },
+      });
+
+      const transformedOrder = this.transformOrder(updatedOrder!);
+      emitOrderUpdated(transformedOrder);
+
+      return {
+        order: transformedOrder,
+        returnRecord: {
+          id: orderReturn.id,
+          returnType: orderReturn.returnType,
+          returnReason: orderReturn.returnReason,
+          refundAmount: orderReturn.refundAmount.toString(),
+          refundMethod: orderReturn.refundMethod,
+          refundStatus: orderReturn.refundStatus,
+          items: orderReturn.items.map((item) => ({
+            id: item.id,
+            orderItemId: item.orderItemId,
+            quantity: item.quantity,
+            refundAmount: item.refundAmount.toString(),
+          })),
+        },
+      };
+    });
+  }
+
+  /**
+   * Split order (Chia hóa đơn)
+   */
+  async splitOrder(id: string, data: SplitOrderInput, userId: string) {
+    return await prisma.$transaction(async (tx) => {
+      const originalOrder = await tx.order.findUnique({
+        where: { id },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      if (!originalOrder) {
+        throw new OrderNotFoundError(id);
+      }
+
+      // Chỉ cho phép split đơn ở trạng thái PENDING hoặc HOLD
+      if (originalOrder.status !== 'PENDING' && originalOrder.status !== 'HOLD') {
+        throw new Error(`Cannot split order with status: ${originalOrder.status}`);
+      }
+
+      // Validate: Tất cả items phải được chia
+      const allItemIds = originalOrder.items.map((item) => item.id);
+      const splitItemIds = data.splits.flatMap((split) => split.itemIds);
+      const missingItems = allItemIds.filter((id) => !splitItemIds.includes(id));
+      const duplicateItems = splitItemIds.filter((id, index) => splitItemIds.indexOf(id) !== index);
+
+      if (missingItems.length > 0) {
+        throw new Error(`Missing items in split: ${missingItems.join(', ')}`);
+      }
+      if (duplicateItems.length > 0) {
+        throw new Error(`Duplicate items in split: ${duplicateItems.join(', ')}`);
+      }
+
+      const splitOrders = [];
+
+      // Tạo các đơn mới từ các phần đã chia
+      for (const split of data.splits) {
+        const splitItems = originalOrder.items.filter((item) => split.itemIds.includes(item.id));
+        const splitTotalAmount = splitItems.reduce((sum, item) => sum + parseFloat(item.subtotal.toString()), 0);
+
+        const orderNumber = this.generateOrderNumber();
+        let attempts = 0;
+        while (attempts < 10) {
+          const existing = await tx.order.findUnique({
+            where: { orderNumber },
+          });
+          if (!existing) break;
+          attempts++;
+        }
+
+        const newOrder = await tx.order.create({
+          data: {
+            orderNumber,
+            status: 'PENDING',
+            totalAmount: new Decimal(splitTotalAmount),
+            customerName: originalOrder.customerName,
+            customerPhone: originalOrder.customerPhone,
+            customerTable: originalOrder.customerTable,
+            notes: split.name || `Đơn chia từ ${originalOrder.orderNumber}`,
+            orderCreator: originalOrder.orderCreator,
+            orderCreatorName: originalOrder.orderCreatorName,
+            items: {
+              create: splitItems.map((item) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                price: item.price,
+                subtotal: item.subtotal,
+                selectedSize: item.selectedSize,
+                selectedToppings: item.selectedToppings,
+                note: item.note,
+              })),
+            },
+          },
+          include: {
+            items: {
+              include: {
+                product: true,
+              },
+            },
+          },
+        });
+
+        // Tạo split record
+        await tx.orderSplit.create({
+          data: {
+            originalOrderId: id,
+            splitOrderId: newOrder.id,
+            splitBy: userId,
+          },
+        });
+
+        splitOrders.push(this.transformOrder(newOrder));
+      }
+
+      // Cập nhật đơn gốc: đánh dấu là đã chia (có thể xóa hoặc giữ lại)
+      // Ở đây ta giữ lại đơn gốc với status CANCELLED và notes
+      await tx.order.update({
+        where: { id },
+        data: {
+          status: 'CANCELLED',
+          notes: originalOrder.notes
+            ? `${originalOrder.notes}\n[SPLIT] Đơn đã được chia thành ${data.splits.length} đơn mới`
+            : `[SPLIT] Đơn đã được chia thành ${data.splits.length} đơn mới`,
+        },
+      });
+
+      // Emit events
+      for (const splitOrder of splitOrders) {
+        emitOrderCreated(splitOrder);
+      }
+
+      const updatedOriginal = await tx.order.findUnique({
+        where: { id },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      emitOrderUpdated(this.transformOrder(updatedOriginal!));
+
+      return {
+        originalOrder: this.transformOrder(updatedOriginal!),
+        splitOrders,
+      };
+    });
+  }
+
+  /**
+   * Merge orders (Gộp đơn hàng)
+   */
+  async mergeOrders(data: MergeOrdersInput, userId: string) {
+    return await prisma.$transaction(async (tx) => {
+      // Validate: Phải có ít nhất 2 đơn
+      if (data.orderIds.length < 2) {
+        throw new Error('Must merge at least 2 orders');
+      }
+
+      // Lấy tất cả đơn cần gộp
+      const orders = await tx.order.findMany({
+        where: {
+          id: {
+            in: data.orderIds,
+          },
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      if (orders.length !== data.orderIds.length) {
+        throw new Error('Some orders not found');
+      }
+
+      // Validate: Tất cả đơn phải cùng khách hàng và chưa thanh toán
+      const firstOrder = orders[0];
+      const customerPhone = firstOrder.customerPhone;
+      const customerName = firstOrder.customerName;
+
+      for (const order of orders) {
+        if (order.status !== 'PENDING' && order.status !== 'HOLD') {
+          throw new Error(`Cannot merge order ${order.orderNumber} with status: ${order.status}`);
+        }
+        if (order.paymentStatus === 'SUCCESS') {
+          throw new Error(`Cannot merge paid order: ${order.orderNumber}`);
+        }
+        if (order.customerPhone !== customerPhone) {
+          throw new Error(`Orders must have same customer phone`);
+        }
+      }
+
+      // Gộp tất cả items
+      const mergedItems: Array<{
+        productId: string;
+        quantity: number;
+        price: Decimal;
+        subtotal: Decimal;
+        selectedSize?: string | null;
+        selectedToppings: string[];
+        note?: string | null;
+      }> = [];
+
+      for (const order of orders) {
+        for (const item of order.items) {
+          mergedItems.push({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+            subtotal: item.subtotal,
+            selectedSize: item.selectedSize,
+            selectedToppings: item.selectedToppings,
+            note: item.note,
+          });
+        }
+      }
+
+      const mergedTotalAmount = mergedItems.reduce((sum, item) => sum + parseFloat(item.subtotal.toString()), 0);
+
+      // Tạo đơn mới
+      const orderNumber = this.generateOrderNumber();
+      let attempts = 0;
+      while (attempts < 10) {
+        const existing = await tx.order.findUnique({
+          where: { orderNumber },
+        });
+        if (!existing) break;
+        attempts++;
+      }
+
+      const mergedOrder = await tx.order.create({
+        data: {
+          orderNumber,
+          status: 'PENDING',
+          totalAmount: new Decimal(mergedTotalAmount),
+          customerName,
+          customerPhone,
+          customerTable: firstOrder.customerTable,
+          notes: data.mergedOrderName || `Đơn gộp từ ${orders.map((o) => o.orderNumber).join(', ')}`,
+          orderCreator: firstOrder.orderCreator,
+          orderCreatorName: firstOrder.orderCreatorName,
+          items: {
+            create: mergedItems,
+          },
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      // Tạo merge records và đánh dấu các đơn gốc là CANCELLED
+      for (const originalOrder of orders) {
+        await tx.orderMerge.create({
+          data: {
+            mergedOrderId: mergedOrder.id,
+            originalOrderId: originalOrder.id,
+            mergedBy: userId,
+          },
+        });
+
+        await tx.order.update({
+          where: { id: originalOrder.id },
+          data: {
+            status: 'CANCELLED',
+            notes: originalOrder.notes
+              ? `${originalOrder.notes}\n[MERGED] Đã được gộp vào đơn ${mergedOrder.orderNumber}`
+              : `[MERGED] Đã được gộp vào đơn ${mergedOrder.orderNumber}`,
+          },
+        });
+      }
+
+      const transformedMergedOrder = this.transformOrder(mergedOrder);
+      emitOrderCreated(transformedMergedOrder);
+
+      // Emit updates cho các đơn gốc
+      for (const originalOrder of orders) {
+        const updated = await tx.order.findUnique({
+          where: { id: originalOrder.id },
+          include: {
+            items: {
+              include: {
+                product: true,
+              },
+            },
+          },
+        });
+        if (updated) {
+          emitOrderUpdated(this.transformOrder(updated));
+        }
+      }
+
+      return {
+        mergedOrder: transformedMergedOrder,
+        originalOrders: orders.map((o) => this.transformOrder(o)),
+      };
+    });
   }
 }
 

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import stockService from '@services/stock.service';
+import { getErrorMessage, isErrorWithMessage } from '@utils/errorHandler';
 
 const createProductStockSchema = z.object({
   body: z.object({
@@ -44,8 +45,8 @@ export class StockController {
     try {
       const stocks = await stockService.getAllProductStocks();
       res.json(stocks);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    } catch (error: unknown) {
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   }
 
@@ -54,11 +55,11 @@ export class StockController {
       const { id } = req.params;
       const stock = await stockService.getProductStockById(id);
       res.json(stock);
-    } catch (error: any) {
-      if (error.message === 'Product stock not found') {
-        res.status(404).json({ error: error.message });
+    } catch (error: unknown) {
+      if (isErrorWithMessage(error, 'Product stock not found')) {
+        res.status(404).json({ error: getErrorMessage(error) });
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: getErrorMessage(error) });
       }
     }
   }
@@ -68,11 +69,11 @@ export class StockController {
       const { id } = req.params;
       const stock = await stockService.updateProductStock(id, req.body);
       res.json(stock);
-    } catch (error: any) {
-      if (error.message === 'Product stock not found') {
-        res.status(404).json({ error: error.message });
+    } catch (error: unknown) {
+      if (isErrorWithMessage(error, 'Product stock not found')) {
+        res.status(404).json({ error: getErrorMessage(error) });
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: getErrorMessage(error) });
       }
     }
   }
@@ -82,13 +83,13 @@ export class StockController {
       const validated = createProductStockSchema.parse({ body: req.body });
       const stock = await stockService.createProductStock(validated.body);
       res.status(201).json(stock);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else if (error.message === 'Product not found' || error.message === 'Stock already exists for this product') {
-        res.status(400).json({ error: error.message });
+      } else if (isErrorWithMessage(error, 'Product not found') || isErrorWithMessage(error, 'Stock already exists for this product')) {
+        res.status(400).json({ error: getErrorMessage(error) });
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: getErrorMessage(error) });
       }
     }
   }
@@ -98,13 +99,13 @@ export class StockController {
       const validated = deleteProductStockSchema.parse({ params: req.params });
       const result = await stockService.deleteProductStock(validated.params.id);
       res.json(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else if (error.message === 'Product stock not found') {
-        res.status(404).json({ error: error.message });
+      } else if (isErrorWithMessage(error, 'Product stock not found')) {
+        res.status(404).json({ error: getErrorMessage(error) });
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: getErrorMessage(error) });
       }
     }
   }
@@ -114,8 +115,8 @@ export class StockController {
     try {
       const stocks = await stockService.getAllIngredientStocks();
       res.json(stocks);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    } catch (error: unknown) {
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   }
 
@@ -124,11 +125,11 @@ export class StockController {
       const { id } = req.params;
       const stock = await stockService.getIngredientStockById(id);
       res.json(stock);
-    } catch (error: any) {
-      if (error.message === 'Ingredient stock not found') {
-        res.status(404).json({ error: error.message });
+    } catch (error: unknown) {
+      if (isErrorWithMessage(error, 'Ingredient stock not found')) {
+        res.status(404).json({ error: getErrorMessage(error) });
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: getErrorMessage(error) });
       }
     }
   }
@@ -138,11 +139,11 @@ export class StockController {
       const { id } = req.params;
       const stock = await stockService.updateIngredientStock(id, req.body);
       res.json(stock);
-    } catch (error: any) {
-      if (error.message === 'Ingredient stock not found') {
-        res.status(404).json({ error: error.message });
+    } catch (error: unknown) {
+      if (isErrorWithMessage(error, 'Ingredient stock not found')) {
+        res.status(404).json({ error: getErrorMessage(error) });
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: getErrorMessage(error) });
       }
     }
   }
@@ -166,13 +167,13 @@ export class StockController {
       const validated = deleteIngredientSchema.parse({ params: req.params });
       const result = await stockService.deleteIngredient(validated.params.id);
       res.json(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else if (error.message === 'Ingredient not found') {
-        res.status(404).json({ error: error.message });
+      } else if (isErrorWithMessage(error, 'Ingredient not found')) {
+        res.status(404).json({ error: getErrorMessage(error) });
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: getErrorMessage(error) });
       }
     }
   }
@@ -182,8 +183,8 @@ export class StockController {
     try {
       const transaction = await stockService.createTransaction(req.body);
       res.status(201).json(transaction);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    } catch (error: unknown) {
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   }
 
@@ -195,8 +196,8 @@ export class StockController {
       };
       const transactions = await stockService.getAllTransactions(filters);
       res.json(transactions);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    } catch (error: unknown) {
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   }
 
@@ -205,11 +206,11 @@ export class StockController {
       const { id } = req.params;
       const transaction = await stockService.getTransactionById(id);
       res.json(transaction);
-    } catch (error: any) {
-      if (error.message === 'Stock transaction not found') {
-        res.status(404).json({ error: error.message });
+    } catch (error: unknown) {
+      if (isErrorWithMessage(error, 'Stock transaction not found')) {
+        res.status(404).json({ error: getErrorMessage(error) });
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: getErrorMessage(error) });
       }
     }
   }
@@ -219,8 +220,8 @@ export class StockController {
     try {
       const alert = await stockService.createAlert(req.body);
       res.status(201).json(alert);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    } catch (error: unknown) {
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   }
 
@@ -233,8 +234,8 @@ export class StockController {
       };
       const alerts = await stockService.getAllAlerts(filters);
       res.json(alerts);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    } catch (error: unknown) {
+      res.status(500).json({ error: getErrorMessage(error) });
     }
   }
 
@@ -243,11 +244,11 @@ export class StockController {
       const { id } = req.params;
       const alert = await stockService.getAlertById(id);
       res.json(alert);
-    } catch (error: any) {
-      if (error.message === 'Stock alert not found') {
-        res.status(404).json({ error: error.message });
+    } catch (error: unknown) {
+      if (isErrorWithMessage(error, 'Stock alert not found')) {
+        res.status(404).json({ error: getErrorMessage(error) });
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: getErrorMessage(error) });
       }
     }
   }
@@ -257,11 +258,11 @@ export class StockController {
       const { id } = req.params;
       const alert = await stockService.updateAlert(id, req.body);
       res.json(alert);
-    } catch (error: any) {
-      if (error.message === 'Stock alert not found') {
-        res.status(404).json({ error: error.message });
+    } catch (error: unknown) {
+      if (isErrorWithMessage(error, 'Stock alert not found')) {
+        res.status(404).json({ error: getErrorMessage(error) });
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: getErrorMessage(error) });
       }
     }
   }
@@ -271,11 +272,11 @@ export class StockController {
       const { id } = req.params;
       const alert = await stockService.markAlertAsRead(id);
       res.json(alert);
-    } catch (error: any) {
-      if (error.message === 'Stock alert not found') {
-        res.status(404).json({ error: error.message });
+    } catch (error: unknown) {
+      if (isErrorWithMessage(error, 'Stock alert not found')) {
+        res.status(404).json({ error: getErrorMessage(error) });
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: getErrorMessage(error) });
       }
     }
   }
@@ -285,11 +286,11 @@ export class StockController {
       const { id } = req.params;
       await stockService.deleteAlert(id);
       res.json({ message: 'Stock alert deleted successfully' });
-    } catch (error: any) {
-      if (error.message === 'Stock alert not found') {
-        res.status(404).json({ error: error.message });
+    } catch (error: unknown) {
+      if (isErrorWithMessage(error, 'Stock alert not found')) {
+        res.status(404).json({ error: getErrorMessage(error) });
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: getErrorMessage(error) });
       }
     }
   }

@@ -53,10 +53,13 @@ export interface Order {
   paymentStatus: string;
   orderCreator: string;
   orderCreatorName: string | null;
+  confirmedBy: string | null;
+  confirmedAt: string | null;
   paidAt: string | null;
   createdAt: string;
   updatedAt: string;
   items: OrderItem[];
+  holdName?: string | null; // For hold orders
 }
 
 export interface OrderFilters {
@@ -68,7 +71,44 @@ export interface OrderFilters {
 }
 
 export interface UpdateOrderStatusInput {
-  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
+  status: 'CREATING' | 'PENDING' | 'HOLD' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
+}
+
+export interface HoldOrderInput {
+  holdName?: string | null;
+}
+
+export interface CancelOrderInput {
+  reason: string;
+  reasonType: 'OUT_OF_STOCK' | 'CUSTOMER_REQUEST' | 'SYSTEM_ERROR' | 'OTHER';
+  refundAmount?: number | null;
+  refundMethod?: 'CASH' | 'CARD' | 'QR' | null;
+}
+
+export interface ReturnOrderItemInput {
+  orderItemId: string;
+  quantity: number;
+  refundAmount: number;
+}
+
+export interface ReturnOrderInput {
+  returnType: 'FULL' | 'PARTIAL';
+  returnReason: 'DEFECTIVE' | 'WRONG_ITEM' | 'CUSTOMER_REQUEST' | 'OTHER';
+  refundMethod: 'CASH' | 'CARD' | 'QR';
+  items: ReturnOrderItemInput[];
+  notes?: string | null;
+}
+
+export interface SplitOrderInput {
+  splits: Array<{
+    name?: string | null;
+    itemIds: string[];
+  }>;
+}
+
+export interface MergeOrdersInput {
+  orderIds: string[];
+  mergedOrderName?: string | null;
 }
 
 export const orderService = {
@@ -114,6 +154,52 @@ export const orderService = {
   // Update order status
   async updateStatus(id: string, data: UpdateOrderStatusInput): Promise<Order> {
     return apiClient.put<Order>(API_ENDPOINTS.UPDATE_ORDER_STATUS(id), data);
+  },
+
+  // Verify order (Staff confirms Customer order)
+  async verifyOrder(id: string): Promise<Order> {
+    return apiClient.patch<Order>(API_ENDPOINTS.VERIFY_ORDER(id));
+  },
+
+  // Reject order (Staff rejects Customer order)
+  async rejectOrder(id: string, reason?: string): Promise<Order> {
+    return apiClient.patch<Order>(API_ENDPOINTS.REJECT_ORDER(id), { reason });
+  },
+
+  // Hold order (Lưu đơn hàng tạm)
+  async holdOrder(id: string, data: HoldOrderInput): Promise<Order> {
+    return apiClient.post<Order>(API_ENDPOINTS.HOLD_ORDER(id), data);
+  },
+
+  // Resume hold order (Khôi phục đơn hàng đã lưu)
+  async resumeHoldOrder(id: string): Promise<Order> {
+    return apiClient.post<Order>(API_ENDPOINTS.RESUME_HOLD_ORDER(id));
+  },
+
+  // Get hold orders
+  async getHoldOrders(orderCreator?: 'STAFF' | 'CUSTOMER'): Promise<Order[]> {
+    const params = orderCreator ? `?orderCreator=${orderCreator}` : '';
+    return apiClient.get<Order[]>(API_ENDPOINTS.HOLD_ORDERS + params);
+  },
+
+  // Cancel order with reason
+  async cancelOrder(id: string, data: CancelOrderInput): Promise<Order> {
+    return apiClient.post<Order>(API_ENDPOINTS.CANCEL_ORDER(id), data);
+  },
+
+  // Return order items
+  async returnOrder(id: string, data: ReturnOrderInput): Promise<{ order: Order; returnRecord: any }> {
+    return apiClient.post<{ order: Order; returnRecord: any }>(API_ENDPOINTS.RETURN_ORDER(id), data);
+  },
+
+  // Split order
+  async splitOrder(id: string, data: SplitOrderInput): Promise<{ originalOrder: Order; splitOrders: Order[] }> {
+    return apiClient.post<{ originalOrder: Order; splitOrders: Order[] }>(API_ENDPOINTS.SPLIT_ORDER(id), data);
+  },
+
+  // Merge orders
+  async mergeOrders(data: MergeOrdersInput): Promise<{ mergedOrder: Order; originalOrders: Order[] }> {
+    return apiClient.post<{ mergedOrder: Order; originalOrders: Order[] }>(API_ENDPOINTS.MERGE_ORDERS, data);
   },
 };
 

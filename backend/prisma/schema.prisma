@@ -8,14 +8,18 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      UserRole @default(STAFF)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String              @id @default(uuid())
+  email         String              @unique
+  password      String
+  name          String
+  role          UserRole            @default(STAFF)
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  cancellations OrderCancellation[]
+  returns       OrderReturn[]
+  orderSplits   OrderSplit[]
+  orderMerges   OrderMerge[]
 
   @@map("users")
 }
@@ -108,9 +112,18 @@ model Order {
   paymentDate          DateTime?
   paymentTransactionId String?
   customerId           String?
+  confirmedBy          String?
+  confirmedAt          DateTime?
+  holdName             String? // Tên đơn hàng khi lưu tạm
   loyalty_transactions loyalty_transactions[]
   items                OrderItem[]
   customers            customers?             @relation(fields: [customerId], references: [id])
+  cancellation         OrderCancellation?
+  returns              OrderReturn[]
+  originalSplits       OrderSplit[]           @relation("OriginalOrder")
+  splitOrders          OrderSplit[]           @relation("SplitOrder")
+  originalMerges       OrderMerge[]           @relation("OriginalOrder")
+  mergedOrders         OrderMerge[]           @relation("MergedOrder")
 
   @@index([status])
   @@index([createdAt])
@@ -119,22 +132,24 @@ model Order {
   @@index([customerPhone])
   @@index([orderCreator])
   @@index([customerId])
+  @@index([status, orderCreator])
   @@map("orders")
 }
 
 model OrderItem {
-  id               String   @id @default(uuid())
+  id               String            @id @default(uuid())
   orderId          String
   productId        String
   quantity         Int
-  price            Decimal  @db.Decimal(10, 2)
-  subtotal         Decimal  @db.Decimal(10, 2)
+  price            Decimal           @db.Decimal(10, 2)
+  subtotal         Decimal           @db.Decimal(10, 2)
   selectedSize     String?
   selectedToppings String[]
   note             String?
-  createdAt        DateTime @default(now())
-  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product          Product  @relation(fields: [productId], references: [id])
+  createdAt        DateTime          @default(now())
+  order            Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product          Product           @relation(fields: [productId], references: [id])
+  returnItems      OrderReturnItem[]
 
   @@index([orderId])
   @@index([productId])
@@ -293,6 +308,7 @@ enum UserRole {
 enum OrderStatus {
   CREATING
   PENDING
+  HOLD
   CONFIRMED
   PREPARING
   READY
@@ -342,4 +358,101 @@ enum MembershipLevel {
   SILVER
   GOLD
   PLATINUM
+}
+
+// ===== Order Management Models =====
+
+model OrderCancellation {
+  id           String   @id @default(uuid())
+  orderId      String   @unique
+  reason       String
+  reasonType   String // OUT_OF_STOCK, CUSTOMER_REQUEST, SYSTEM_ERROR, OTHER
+  refundAmount Decimal? @db.Decimal(10, 2)
+  refundMethod String? // CASH, CARD, QR
+  refundStatus String?  @default("PENDING") // PENDING, COMPLETED, FAILED
+  cancelledBy  String
+  cancelledAt  DateTime @default(now())
+  notes        String?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [cancelledBy], references: [id])
+
+  @@index([orderId])
+  @@index([cancelledBy])
+  @@index([cancelledAt])
+  @@index([reasonType])
+  @@map("order_cancellations")
+}
+
+model OrderReturn {
+  id           String   @id @default(uuid())
+  orderId      String
+  returnType   String // FULL, PARTIAL
+  returnReason String // DEFECTIVE, WRONG_ITEM, CUSTOMER_REQUEST, OTHER
+  refundAmount Decimal  @db.Decimal(10, 2)
+  refundMethod String // CASH, CARD, QR
+  refundStatus String   @default("PENDING") // PENDING, COMPLETED, FAILED
+  returnedBy   String
+  returnedAt   DateTime @default(now())
+  notes        String?
+
+  items OrderReturnItem[]
+  order Order             @relation(fields: [orderId], references: [id])
+  user  User              @relation(fields: [returnedBy], references: [id])
+
+  @@index([orderId])
+  @@index([returnedBy])
+  @@index([returnedAt])
+  @@index([returnType])
+  @@map("order_returns")
+}
+
+model OrderReturnItem {
+  id           String  @id @default(uuid())
+  returnId     String
+  orderItemId  String
+  quantity     Int // Số lượng đổi trả
+  refundAmount Decimal @db.Decimal(10, 2)
+
+  return    OrderReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  orderItem OrderItem   @relation(fields: [orderItemId], references: [id])
+
+  @@index([returnId])
+  @@index([orderItemId])
+  @@map("order_return_items")
+}
+
+model OrderSplit {
+  id              String   @id @default(uuid())
+  originalOrderId String // Đơn hàng gốc
+  splitOrderId    String // Đơn hàng đã chia
+  splitBy         String // User ID
+  splitAt         DateTime @default(now())
+
+  originalOrder Order @relation("OriginalOrder", fields: [originalOrderId], references: [id], onDelete: Cascade)
+  splitOrder    Order @relation("SplitOrder", fields: [splitOrderId], references: [id], onDelete: Cascade)
+  user          User  @relation(fields: [splitBy], references: [id])
+
+  @@unique([originalOrderId, splitOrderId])
+  @@index([originalOrderId])
+  @@index([splitOrderId])
+  @@index([splitBy])
+  @@map("order_splits")
+}
+
+model OrderMerge {
+  id              String   @id @default(uuid())
+  mergedOrderId   String // Đơn hàng sau khi gộp
+  originalOrderId String // Đơn hàng gốc (một trong các đơn được gộp)
+  mergedBy        String // User ID
+  mergedAt        DateTime @default(now())
+
+  mergedOrder   Order @relation("MergedOrder", fields: [mergedOrderId], references: [id], onDelete: Cascade)
+  originalOrder Order @relation("OriginalOrder", fields: [originalOrderId], references: [id], onDelete: Cascade)
+  user          User  @relation(fields: [mergedBy], references: [id])
+
+  @@index([mergedOrderId])
+  @@index([originalOrderId])
+  @@index([mergedBy])
+  @@map("order_merges")
 }

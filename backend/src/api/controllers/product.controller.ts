@@ -77,8 +77,9 @@ export class ProductController {
         };
         res.json(transformed);
       }
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Internal server error';
+      res.status(500).json({ error: message });
     }
   }
 
@@ -88,11 +89,12 @@ export class ProductController {
       const product = await productService.getById(id);
       const transformed = transformProduct(product);
       res.json(transformed);
-    } catch (error: any) {
-      if (error.message === 'Product not found') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'Product not found') {
         res.status(404).json({ error: error.message });
       } else {
-        res.status(500).json({ error: error.message });
+        const message = error instanceof Error ? error.message : 'Internal server error';
+        res.status(500).json({ error: message });
       }
     }
   }
@@ -103,11 +105,12 @@ export class ProductController {
       const product = await productService.create(validated.body);
       const transformed = transformProduct(product);
       res.status(201).json(transformed);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: 'Validation error', details: error.errors });
       } else {
-        res.status(500).json({ error: error.message });
+        const message = error instanceof Error ? error.message : 'Internal server error';
+        res.status(500).json({ error: message });
       }
     }
   }
@@ -121,13 +124,14 @@ export class ProductController {
       const product = await productService.update(validated.params.id, validated.body);
       const transformed = transformProduct(product);
       res.json(transformed);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: 'Validation error', details: error.errors });
-      } else if (error.message === 'Product not found') {
+      } else if (error instanceof Error && error.message === 'Product not found') {
         res.status(404).json({ error: error.message });
       } else {
-        res.status(500).json({ error: error.message });
+        const message = error instanceof Error ? error.message : 'Internal server error';
+        res.status(500).json({ error: message });
       }
     }
   }
@@ -137,11 +141,12 @@ export class ProductController {
       const { id } = req.params;
       await productService.delete(id);
       res.json({ message: 'Product deleted successfully' });
-    } catch (error: any) {
-      if (error.message === 'Product not found') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'Product not found') {
         res.status(404).json({ error: error.message });
       } else {
-        res.status(500).json({ error: error.message });
+        const message = error instanceof Error ? error.message : 'Internal server error';
+        res.status(500).json({ error: message });
       }
     }
   }

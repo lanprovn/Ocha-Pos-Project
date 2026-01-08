@@ -4,6 +4,7 @@ import orderService from '@services/order.service';
 import { z } from 'zod';
 import logger from '@utils/logger';
 import { PaymentStatus, OrderStatus } from '@core/types/common.types';
+import { getErrorMessage } from '@utils/errorHandler';
 
 const generateQRSchema = z.object({
   body: z.object({
@@ -83,7 +84,7 @@ export class QRController {
         orderNumber: order.orderNumber,
         totalAmount: Number(order.totalAmount),
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: 'Validation error', details: error.errors });
       } else {
@@ -92,7 +93,7 @@ export class QRController {
           stack: error instanceof Error ? error.stack : undefined,
           orderId: req.body?.orderId,
         });
-        return res.status(500).json({ error: error.message || 'Failed to generate QR code' });
+        return res.status(500).json({ error: getErrorMessage(error) || 'Failed to generate QR code' });
       }
     }
   }
@@ -121,21 +122,26 @@ export class QRController {
         paymentDate: new Date(),
       });
 
-      // Cập nhật order status thành COMPLETED sau khi thanh toán thành công
-      await orderService.updateStatus(orderId, { status: OrderStatus.COMPLETED });
+      // Nếu thanh toán thành công:
+      // - STAFF orders: Auto-complete (status = COMPLETED)
+      // - CUSTOMER orders: Giữ PENDING (chờ nhân viên xác nhận)
+      if (order.orderCreator === 'STAFF') {
+        await orderService.updateStatus(orderId, { status: OrderStatus.COMPLETED });
+      }
+      // CUSTOMER orders giữ nguyên status PENDING để chờ verification
 
       const updatedOrder = await orderService.findById(orderId);
       return res.json({
         message: 'Payment verified successfully',
         order: updatedOrder,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Payment verification error', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         orderId: req.body?.orderId,
       });
-      return res.status(500).json({ error: error.message || 'Failed to verify payment' });
+      return res.status(500).json({ error: getErrorMessage(error) || 'Failed to verify payment' });
     }
   }
 }

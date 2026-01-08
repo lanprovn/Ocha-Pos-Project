@@ -9,6 +9,7 @@ export interface ServerToClientEvents {
   order_created: (order: Order) => void;
   order_updated: (order: Order) => void;
   order_status_changed: (data: { orderId: string; status: string }) => void;
+  order_verified: (data: { orderId: string; orderNumber: string; confirmedBy: string | null; confirmedAt: string | null }) => void;
   display_update: (data: any) => void;
   stock_alert: (alert: any) => void;
   stock_updated: (data: {

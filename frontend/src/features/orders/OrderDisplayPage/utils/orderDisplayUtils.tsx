@@ -5,9 +5,11 @@ import type { OrderTracking, GroupedOrders, StatusConfig, StatusSection } from '
 export const groupOrdersByStatus = (orders: OrderTracking[]): GroupedOrders => {
   const groups: GroupedOrders = {
     creating: [],
+    pending_verification: [],
     paid: [],
     preparing: [],
-    completed: []
+    completed: [],
+    hold: []
   };
 
   orders.forEach(order => {
@@ -56,6 +58,17 @@ export const getStatusConfig = (status: OrderTracking['status']): StatusConfig =
           </svg>
         )
       };
+    case 'pending_verification':
+      return {
+        label: 'Chờ duyệt',
+        bgColor: 'bg-amber-500',
+        badgeColor: 'bg-amber-100 text-amber-800',
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        )
+      };
     case 'paid':
       return {
         label: 'Đã thanh toán',
@@ -89,6 +102,17 @@ export const getStatusConfig = (status: OrderTracking['status']): StatusConfig =
           </svg>
         )
       };
+    case 'hold':
+      return {
+        label: 'Đã lưu',
+        bgColor: 'bg-purple-600',
+        badgeColor: 'bg-purple-100 text-purple-800',
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+          </svg>
+        )
+      };
     default:
       return {
         label: status,
@@ -113,10 +137,11 @@ export const getPaymentMethodText = (method?: 'cash' | 'card' | 'qr'): string =>
 };
 
 export const getStatusSections = (groupedOrders: GroupedOrders): StatusSection[] => {
-  // Chỉ hiển thị 2 sections: Đang Tạo và Hoàn Thành
-  // Khi thanh toán xong thì đã hoàn thành luôn, không cần các bước trung gian
+  // Display sections: Creating, Pending Verification, Hold, Completed
   return [
     { key: 'creating', title: 'Đang Tạo', orders: groupedOrders.creating },
+    { key: 'pending_verification', title: '⚡ Chờ Duyệt', orders: groupedOrders.pending_verification },
+    { key: 'hold', title: '📌 Đã Lưu', orders: groupedOrders.hold },
     { key: 'completed', title: 'Hoàn Thành', orders: groupedOrders.completed }
   ];
 };

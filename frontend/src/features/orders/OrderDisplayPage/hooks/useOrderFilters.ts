@@ -72,9 +72,11 @@ export const useOrderFilters = (allOrders: OrderTracking[]): UseOrderFiltersRetu
   const filteredGroupedOrders = useMemo<GroupedOrders>(() => {
     const grouped: GroupedOrders = {
       creating: [],
+      pending_verification: [],
       paid: [],
       preparing: [],
       completed: [],
+      hold: [],
     };
 
     filteredOrders.forEach((order) => {
