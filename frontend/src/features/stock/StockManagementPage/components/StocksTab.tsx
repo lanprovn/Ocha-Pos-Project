@@ -23,8 +23,7 @@ interface StocksTabProps {
   getCategories: () => string[];
   getProductInfo: (id: string) => Product | null;
   onOpenAdjustModal: (product?: StockProduct, ingredient?: IngredientStock, adjustMode?: boolean) => void;
-  onCreateProduct: () => void;
-  onEditProduct: (stock: StockProduct) => void;
+  onAddStock: () => void;
 }
 
 export const StocksTab: React.FC<StocksTabProps> = ({
@@ -40,8 +39,7 @@ export const StocksTab: React.FC<StocksTabProps> = ({
   getCategories,
   getProductInfo,
   onOpenAdjustModal,
-  onCreateProduct,
-  onEditProduct,
+  onAddStock,
 }) => {
   return (
     <div>
@@ -66,11 +64,11 @@ export const StocksTab: React.FC<StocksTabProps> = ({
             getCategories={getCategories}
           />
           <button
-            onClick={onCreateProduct}
+            onClick={onAddStock}
             className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center space-x-2"
           >
             ➕
-            <span>Thêm sản phẩm</span>
+            <span>Thêm Tồn Kho</span>
           </button>
         </div>
       </div>
@@ -87,7 +85,7 @@ export const StocksTab: React.FC<StocksTabProps> = ({
           message={
             searchQuery || categoryFilter !== 'all' || filter !== 'all'
               ? 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm'
-              : 'Bắt đầu bằng cách thêm sản phẩm vào hệ thống'
+              : 'Bắt đầu bằng cách thêm tồn kho cho sản phẩm từ menu'
           }
           showClearButton={Boolean(searchQuery) || categoryFilter !== 'all' || filter !== 'all'}
           onClear={() => {
@@ -117,7 +115,6 @@ export const StocksTab: React.FC<StocksTabProps> = ({
                 statusIcon={statusIcon}
                 formatCurrency={formatCurrency}
                 onAdjustStock={() => onOpenAdjustModal(stock, undefined, true)}
-                onEditProduct={() => onEditProduct(stock)}
               />
             );
           })}

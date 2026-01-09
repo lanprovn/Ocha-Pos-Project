@@ -46,7 +46,7 @@ async function testCloudinaryConnection() {
     console.log('   Status: ' + result.status);
     console.log('');
 
-    // Test upload capabilities by checking account
+    // Test upload capabilities by checking account (optional - không bắt buộc)
     try {
       const accountInfo = await cloudinary.api.account();
       console.log('📊 Thông tin tài khoản Cloudinary:');
@@ -55,8 +55,9 @@ async function testCloudinaryConnection() {
       console.log(`   Sub-Accounts: ${accountInfo.sub_accounts || 0}`);
       console.log('');
     } catch (error) {
-      console.log('⚠️  Không thể lấy thông tin tài khoản (có thể do quyền hạn)');
-      console.log('');
+      // Không hiển thị cảnh báo vì đây không phải lỗi nghiêm trọng
+      // Endpoint này chỉ cần thiết để xem thông tin chi tiết tài khoản
+      // Upload/Delete vẫn hoạt động bình thường
     }
 
     // Test upload with a small test image (1x1 pixel PNG)
@@ -101,13 +102,29 @@ async function testCloudinaryConnection() {
 
   } catch (error: any) {
     console.error('❌ Lỗi khi kiểm tra Cloudinary:');
-    console.error(`   ${error.message || String(error)}`);
     
-    if (error.http_code === 401) {
+    // Extract error message from nested error object
+    const errorMessage = error.error?.message || error.message || String(error);
+    const httpCode = error.error?.http_code || error.http_code;
+    
+    console.error(`   Message: ${errorMessage}`);
+    if (httpCode) {
+      console.error(`   HTTP Code: ${httpCode}`);
+    }
+    
+    if (httpCode === 401) {
       console.error('');
       console.error('⚠️  Lỗi xác thực! Vui lòng kiểm tra lại:');
-      console.error('   - API Key và API Secret có đúng không?');
-      console.error('   - API Key có đang active không?');
+      
+      if (errorMessage.includes('disabled')) {
+        console.error('   ❌ Tài khoản Cloudinary đã bị vô hiệu hóa');
+        console.error('   → Vui lòng đăng nhập vào Cloudinary Dashboard để kích hoạt lại');
+        console.error('   → Hoặc tạo tài khoản mới tại: https://cloudinary.com/');
+      } else {
+        console.error('   - API Key và API Secret có đúng không?');
+        console.error('   - API Key có đang active không?');
+        console.error('   - Kiểm tra lại trong Dashboard > Settings > Product Environment Credentials');
+      }
     }
     
     process.exit(1);

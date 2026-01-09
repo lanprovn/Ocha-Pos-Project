@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useIngredients } from '@features/stock/context/IngredientContext';
 import StockAdjustModal from '@features/stock/components/StockAdjustModal';
-import ProductFormModal, { type ProductFormValues } from '@features/stock/components/ProductFormModal';
+import AddStockModal, { type StockFormData } from '@features/stock/components/AddStockModal';
 import IngredientFormModal, { type IngredientFormValues } from '@features/stock/components/IngredientFormModal';
 import { StatsCards } from '@features/stock/StockManagementPage/components/StatsCards';
 import { StockTabs } from '@features/stock/StockManagementPage/components/StockTabs';
@@ -14,7 +14,6 @@ import { useStockManagement } from '@features/stock/StockManagementPage/hooks/us
 import { useStockModal } from '@features/stock/StockManagementPage/hooks/useStockModal';
 import { useStockFilters } from '@features/stock/StockManagementPage/hooks/useStockFilters';
 import stockService from '@features/stock/services/stock.service';
-import { productService } from '@features/products/services/product.service';
 import type { StockProduct } from '@features/stock/services/stock.service';
 import type { IngredientStock } from '@/utils/ingredientManagement';
 import { useProducts } from '@features/products/hooks/useProducts';
@@ -26,44 +25,23 @@ const StockManagementTab: React.FC = () => {
     markAlertAsRead: markIngredientAlertAsRead,
   } = useIngredients();
   
-  const { categories: productCategories = [], loadProducts, products } = useProducts();
+  const { loadProducts } = useProducts();
 
   // Load products on mount to ensure product names are available
   useEffect(() => {
-    if (products.length === 0) {
-      loadProducts();
-    }
-  }, [products.length, loadProducts]);
+    loadProducts();
+  }, [loadProducts]);
 
-  const categoryOptions = useMemo(
-    () =>
-      (Array.isArray(productCategories) ? productCategories : []).map((category: any) => ({
-        id: String(category.id),
-        name: category.name,
-      })),
-    [productCategories]
-  );
-
-  const [isProductFormOpen, setProductFormOpen] = useState(false);
-  const [productFormMode, setProductFormMode] = useState<'create' | 'edit'>('create');
-  const [editingProduct, setEditingProduct] = useState<StockProduct | null>(null);
-  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [isAddStockModalOpen, setAddStockModalOpen] = useState(false);
+  const [isSavingStock, setIsSavingStock] = useState(false);
 
   const [isIngredientFormOpen, setIngredientFormOpen] = useState(false);
   const [ingredientFormMode, setIngredientFormMode] = useState<'create' | 'edit'>('create');
   const [editingIngredient, setEditingIngredient] = useState<IngredientStock | null>(null);
   const [isSavingIngredient, setIsSavingIngredient] = useState(false);
 
-  const openCreateProductForm = () => {
-    setProductFormMode('create');
-    setEditingProduct(null);
-    setProductFormOpen(true);
-  };
-
-  const openEditProductForm = (stock: StockProduct) => {
-    setProductFormMode('edit');
-    setEditingProduct(stock);
-    setProductFormOpen(true);
+  const openAddStockModal = () => {
+    setAddStockModalOpen(true);
   };
 
   const openCreateIngredientForm = () => {
@@ -78,23 +56,26 @@ const StockManagementTab: React.FC = () => {
     setIngredientFormOpen(true);
   };
 
-  const productInitialValues = useMemo<Partial<ProductFormValues> | undefined>(() => {
-    if (!editingProduct) return undefined;
-    return {
-      productId: editingProduct.productId,
-      stockId: editingProduct.id,
-      name: editingProduct.product?.name || '',
-      price: editingProduct.product?.price ?? 0,
-      description: editingProduct.product?.description,
-      image: editingProduct.product?.image || undefined,
-      categoryId: editingProduct.product?.category?.id || '',
-      unit: editingProduct.unit,
-      quantity: editingProduct.currentStock,
-      minStock: editingProduct.minStock,
-      maxStock: editingProduct.maxStock,
-      isActive: editingProduct.isActive,
-    };
-  }, [editingProduct]);
+  const handleAddStock = async (productId: string, stockData: StockFormData) => {
+    try {
+      setIsSavingStock(true);
+      await stockService.createProductStock({
+        productId,
+        quantity: stockData.quantity,
+        minStock: stockData.minStock,
+        maxStock: stockData.maxStock,
+        unit: stockData.unit,
+        isActive: stockData.isActive,
+      });
+      toast.success('Đã thêm tồn kho cho sản phẩm');
+      await reloadData();
+    } catch (error: any) {
+      console.error('Error adding stock:', error);
+      throw error; // Re-throw để AddStockModal xử lý
+    } finally {
+      setIsSavingStock(false);
+    }
+  };
 
   const ingredientInitialValues = useMemo<Partial<IngredientFormValues> | undefined>(() => {
     if (!editingIngredient) return undefined;
@@ -149,80 +130,6 @@ const StockManagementTab: React.FC = () => {
   const unreadAlertsCount = alerts.filter((alert) => !alert.isRead).length;
   const unreadIngredientAlertsCount = ingredientAlerts.filter((alert) => !alert.isRead).length;
 
-  const handleSaveProduct = async (values: ProductFormValues) => {
-    try {
-      setIsSavingProduct(true);
-      if (productFormMode === 'create') {
-        // Create product first, then create stock
-        const createdProduct = await productService.create({
-          name: values.name,
-          price: values.price,
-          categoryId: values.categoryId || undefined,
-          description: values.description,
-          image: values.image,
-          isAvailable: values.isActive,
-        });
-
-        await stockService.createProductStock({
-          productId: createdProduct.id,
-          quantity: values.quantity,
-          minStock: values.minStock,
-          maxStock: values.maxStock,
-          unit: values.unit,
-          isActive: values.isActive,
-        });
-
-        toast.success('Đã thêm sản phẩm mới');
-      } else if (editingProduct) {
-        // Update product and stock
-        await productService.update(editingProduct.productId, {
-          name: values.name,
-          price: values.price,
-          categoryId: values.categoryId || undefined,
-          description: values.description,
-          image: values.image,
-          isAvailable: values.isActive,
-        });
-
-        await stockService.updateProductStock(editingProduct.id, {
-          quantity: values.quantity,
-          minStock: values.minStock,
-          maxStock: values.maxStock,
-          unit: values.unit,
-          isActive: values.isActive,
-        });
-
-        toast.success('Đã cập nhật sản phẩm');
-      }
-      setProductFormOpen(false);
-      setEditingProduct(null);
-      await reloadData();
-      await loadProducts();
-    } catch (error: any) {
-      console.error('Error saving product:', error);
-      toast.error(error?.message || 'Không thể lưu sản phẩm');
-    } finally {
-      setIsSavingProduct(false);
-    }
-  };
-
-  const handleDeleteProduct = async () => {
-    if (!editingProduct) return;
-    try {
-      setIsSavingProduct(true);
-      await productService.delete(editingProduct.productId);
-      toast.success('Đã xóa sản phẩm');
-      setProductFormOpen(false);
-      setEditingProduct(null);
-      await reloadData();
-      await loadProducts();
-    } catch (error: any) {
-      console.error('Error deleting product:', error);
-      toast.error(error?.message || 'Không thể xóa sản phẩm');
-    } finally {
-      setIsSavingProduct(false);
-    }
-  };
 
   const handleSaveIngredient = async (values: IngredientFormValues) => {
     try {
@@ -353,8 +260,7 @@ const StockManagementTab: React.FC = () => {
               getCategories={getCategories}
               getProductInfo={getProductInfo}
               onOpenAdjustModal={(product) => handleOpenModal(product)}
-              onCreateProduct={openCreateProductForm}
-              onEditProduct={openEditProductForm}
+              onAddStock={openAddStockModal}
             />
           )}
 
@@ -407,18 +313,12 @@ const StockManagementTab: React.FC = () => {
         ingredient={selectedIngredient || null}
       />
 
-      <ProductFormModal
-        isOpen={isProductFormOpen}
-        mode={productFormMode}
-        onClose={() => {
-          setProductFormOpen(false);
-          setEditingProduct(null);
-        }}
-        onSubmit={handleSaveProduct}
-        onDelete={productFormMode === 'edit' ? handleDeleteProduct : undefined}
-        initialValues={productInitialValues}
-        categories={categoryOptions}
-        loading={isSavingProduct}
+      <AddStockModal
+        isOpen={isAddStockModalOpen}
+        onClose={() => setAddStockModalOpen(false)}
+        onSubmit={handleAddStock}
+        existingStocks={stocks}
+        loading={isSavingStock}
       />
 
       <IngredientFormModal

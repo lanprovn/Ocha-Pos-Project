@@ -18,7 +18,8 @@
     "test:coverage": "jest --coverage",
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
-    "migrate:images": "ts-node --transpile-only scripts/migrate-images-to-cloudinary.ts"
+    "migrate:images": "ts-node --transpile-only scripts/migrate-images-to-cloudinary.ts",
+    "test:cloudinary": "ts-node --transpile-only scripts/test-cloudinary.ts"
   },
   "keywords": [
     "pos",

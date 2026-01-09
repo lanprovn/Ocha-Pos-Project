@@ -22,13 +22,15 @@ export interface ListImagesResponse {
 class UploadService {
   /**
    * Upload image file
+   * @param file - File to upload
+   * @param folder - Cloudinary folder (products, categories, users, general)
    */
-  async uploadImage(file: File): Promise<UploadImageResponse> {
+  async uploadImage(file: File, folder: 'products' | 'categories' | 'users' | 'general' = 'products'): Promise<UploadImageResponse> {
     const formData = new FormData();
     formData.append('image', file);
 
     // apiClient đã transform response.data, nên không cần .data
-    return apiClient.post<UploadImageResponse>('/upload/image', formData, {
+    return apiClient.post<UploadImageResponse>(`/upload/image?folder=${folder}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

@@ -10,7 +10,6 @@ interface StockCardProps {
   statusIcon: string;
   formatCurrency: (amount: number) => string;
   onAdjustStock: () => void;
-  onEditProduct: () => void;
 }
 
 export const StockCard: React.FC<StockCardProps> = memo(({
@@ -21,7 +20,6 @@ export const StockCard: React.FC<StockCardProps> = memo(({
   statusIcon,
   formatCurrency,
   onAdjustStock,
-  onEditProduct,
 }) => {
   return (
     <div className="bg-white rounded-md shadow-sm border border-gray-300 overflow-hidden hover:shadow-md transition-all">
@@ -72,12 +70,6 @@ export const StockCard: React.FC<StockCardProps> = memo(({
                 </svg>
               )}
             </div>
-            <button
-              onClick={onEditProduct}
-              className="text-xs text-slate-700 hover:text-slate-900 font-semibold"
-            >
-              Chỉnh sửa
-            </button>
           </div>
         </div>
 

@@ -85,7 +85,8 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
       name: formData.name,
       description: formData.description || undefined,
       price: parseFloat(formData.price),
-      image: formData.image || undefined,
+      // Chỉ gửi image nếu có giá trị và không phải empty string
+      image: formData.image && formData.image.trim() ? formData.image.trim() : undefined,
       isAvailable: formData.isAvailable,
       isPopular: formData.isPopular,
       tags: formData.tags,
@@ -182,13 +183,18 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
     try {
       setIsUploading(true);
-      const result = await uploadService.uploadImage(file);
+      // Upload với folder 'products' để tổ chức tốt hơn trên Cloudinary
+      const result = await uploadService.uploadImage(file, 'products');
       
       // Auto-fill image URL with the uploaded image URL
-      setFormData({ ...formData, image: result.fullUrl });
-      
-      // Show success message
-      toast.success('Upload hình ảnh thành công!');
+      // Đảm bảo sử dụng fullUrl (đã có http/https prefix)
+      const imageUrl = result.fullUrl || result.url;
+      if (imageUrl) {
+        setFormData({ ...formData, image: imageUrl });
+        toast.success('Upload hình ảnh thành công!');
+      } else {
+        throw new Error('Không nhận được URL hình ảnh từ server');
+      }
     } catch (error: any) {
       // Better error handling
       let errorMessage = 'Lỗi khi upload hình ảnh';
@@ -344,18 +350,20 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                         <span className="shrink-0">{isUploading ? 'Đang upload...' : 'Upload'}</span>
                       </button>
                     </div>
-                    {formData.image && (
+                    {formData.image && formData.image.trim() && (
                       <div className="mt-2">
                         <img
                           src={formData.image}
                           alt="Preview"
                           className="h-32 w-32 object-cover rounded border border-gray-300"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            console.error('Failed to load image:', formData.image);
                           }}
                         />
                         <p className="mt-1 text-xs text-gray-500">
-                          📁 Local Storage
+                          {formData.image.includes('cloudinary.com') ? '☁️ Cloudinary' : '📁 Local Storage'}
                         </p>
                       </div>
                     )}

@@ -111,18 +111,25 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
           let imageUrl = p.image || `${backendBaseUrl}/uploads/images/gallery/default-food.png`;
           
           if (p.image) {
-            if (p.image.startsWith('http://localhost:') || p.image.startsWith('https://localhost:')) {
-              // Replace localhost URL with current backend URL
+            // Cloudinary URL - use as is (already full URL)
+            if (p.image.includes('cloudinary.com') || p.image.startsWith('https://res.cloudinary.com')) {
+              imageUrl = p.image;
+            }
+            // Localhost URL - replace with current backend URL
+            else if (p.image.startsWith('http://localhost:') || p.image.startsWith('https://localhost:')) {
               const urlPath = p.image.replace(/^https?:\/\/localhost:\d+/, '');
               imageUrl = `${backendBaseUrl}${urlPath}`;
-            } else if (p.image.startsWith('http') || p.image.startsWith('//') || p.image.startsWith('https')) {
-              // Full URL (external) - use as is
+            }
+            // Full URL (external) - use as is
+            else if (p.image.startsWith('http://') || p.image.startsWith('https://') || p.image.startsWith('//')) {
               imageUrl = p.image;
-            } else if (p.image.startsWith('/src/assets/') || p.image.startsWith('/img/')) {
-              // Frontend asset path (from seed data) - use as is, frontend will resolve it
+            }
+            // Frontend asset path (from seed data) - use as is, frontend will resolve it
+            else if (p.image.startsWith('/src/assets/') || p.image.startsWith('/img/')) {
               imageUrl = p.image;
-            } else {
-              // Relative path (backend uploads) - prefix with backend URL
+            }
+            // Relative path (backend uploads) - prefix with backend URL
+            else {
               imageUrl = `${backendBaseUrl}${p.image.startsWith('/') ? '' : '/'}${p.image}`;
             }
           }

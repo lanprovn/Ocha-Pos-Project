@@ -7,6 +7,39 @@ const router = Router();
 
 /**
  * @swagger
+ * /api/upload/cloudinary/status:
+ *   get:
+ *     summary: Check Cloudinary status
+ *     description: Check if Cloudinary is configured and connected
+ *     tags: [Upload]
+ *     responses:
+ *       200:
+ *         description: Cloudinary status information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 configured:
+ *                   type: boolean
+ *                   description: Whether Cloudinary credentials are configured
+ *                 connected:
+ *                   type: boolean
+ *                   description: Whether Cloudinary connection is successful
+ *                 cloudName:
+ *                   type: string
+ *                   description: Cloudinary cloud name
+ *                 plan:
+ *                   type: string
+ *                   description: Cloudinary plan (Free, Paid, etc.)
+ *                 message:
+ *                   type: string
+ *                   description: Status message
+ */
+router.get('/cloudinary/status', uploadController.checkCloudinaryStatus.bind(uploadController));
+
+/**
+ * @swagger
  * /api/upload/images:
  *   get:
  *     summary: List uploaded images
@@ -40,10 +73,18 @@ router.get('/images', uploadController.listImages.bind(uploadController));
  * /api/upload/image:
  *   post:
  *     summary: Upload image
- *     description: Upload an image file (requires ADMIN or STAFF role)
+ *     description: Upload an image file to Cloudinary or local storage (requires ADMIN or STAFF role)
  *     tags: [Upload]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: folder
+ *         schema:
+ *           type: string
+ *           enum: [products, categories, users, general]
+ *           default: products
+ *         description: Cloudinary folder to organize images
  *     requestBody:
  *       required: true
  *       content:
@@ -55,20 +96,42 @@ router.get('/images', uploadController.listImages.bind(uploadController));
  *               image:
  *                 type: string
  *                 format: binary
- *                 description: Image file to upload
+ *                 description: Image file to upload (JPEG, PNG, WebP, GIF - max 5MB)
  *     responses:
- *       200:
+ *       201:
  *         description: Image uploaded successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Upload thành công
  *                 filename:
  *                   type: string
+ *                   description: File identifier (public_id for Cloudinary, filename for local)
  *                 url:
  *                   type: string
  *                   format: uri
+ *                   description: Image URL
+ *                 fullUrl:
+ *                   type: string
+ *                   format: uri
+ *                   description: Full image URL
+ *                 size:
+ *                   type: number
+ *                   description: File size in bytes
+ *                 mimetype:
+ *                   type: string
+ *                   example: image/jpeg
+ *                 publicId:
+ *                   type: string
+ *                   description: Cloudinary public_id (only for Cloudinary uploads)
+ *                 storageType:
+ *                   type: string
+ *                   enum: [cloudinary, local]
+ *                   description: Storage type used
  *       400:
  *         description: Validation error or invalid file
  *         content:
