@@ -32,6 +32,7 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
   onDiscountRateChange,
 }) => {
   const [foundCustomer, setFoundCustomer] = useState<Customer | null>(null);
+  const [newlyCreatedCustomer, setNewlyCreatedCustomer] = useState<Customer | null>(null);
   const [discountRate, setDiscountRate] = useState<number>(0);
   const [isChecking, setIsChecking] = useState(false);
   const [checkTimeout, setCheckTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -39,12 +40,16 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
   const checkCustomer = useCallback(async (phone: string) => {
     if (!phone || phone.length < 10) {
       setFoundCustomer(null);
+      setNewlyCreatedCustomer(null);
       return;
     }
 
     setIsChecking(true);
     try {
       const result = await customerService.findByPhone(phone);
+      // Clear newly created customer state when checking
+      setNewlyCreatedCustomer(null);
+      
       if (result.exists && result.customer) {
         setFoundCustomer(result.customer);
         // Get discount rate for customer's membership level
@@ -73,12 +78,14 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
     } catch (error) {
       console.error('Error checking customer:', error);
       setFoundCustomer(null);
+      setNewlyCreatedCustomer(null);
     } finally {
       setIsChecking(false);
     }
   }, [customerInfo.name, onCustomerFound, onInputChange, onDiscountRateChange]);
 
   // Auto-save customer when both phone and name are provided
+  // Show different messages for existing vs newly created customers
   const autoSaveCustomer = useCallback(async (phone: string, name: string) => {
     if (!phone || phone.length < 10 || !name || name.trim().length === 0) {
       return;
@@ -87,7 +94,18 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
     try {
       const result = await customerService.findOrCreateByPhone(phone, name.trim());
       if (result.customer) {
-        setFoundCustomer(result.customer);
+        // Clear previous states
+        setFoundCustomer(null);
+        setNewlyCreatedCustomer(null);
+        
+        if (result.exists) {
+          // Customer already existed - show "existing customer" message
+          setFoundCustomer(result.customer);
+        } else if (result.created) {
+          // New customer created - show "newly created" message
+          setNewlyCreatedCustomer(result.customer);
+        }
+        
         // Get discount rate for customer's membership level
         const discountInfo = await customerService.getDiscountRate(result.customer.membershipLevel);
         setDiscountRate(discountInfo.discountRate);
@@ -108,6 +126,9 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
     onInputChange(e);
     const phone = e.target.value;
 
+    // Clear newly created customer state when phone changes
+    setNewlyCreatedCustomer(null);
+
     // Clear previous timeout
     if (checkTimeout) {
       clearTimeout(checkTimeout);
@@ -115,10 +136,15 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
 
     // Debounce: Check customer after 500ms of no typing
     const timeout = setTimeout(() => {
-      checkCustomer(phone);
-      // Auto-save if both phone and name are provided
+      // If name is already provided, use autoSaveCustomer (which handles both check and create)
+      // Otherwise, just check if customer exists
       if (phone.length >= 10 && customerInfo.name && customerInfo.name.trim().length > 0) {
+        // Both phone and name provided - use autoSaveCustomer
+        // This will create new customer if not exists, or update existing one
         autoSaveCustomer(phone, customerInfo.name);
+      } else {
+        // Only phone provided - just check if customer exists
+        checkCustomer(phone);
       }
     }, 500);
 
@@ -128,6 +154,9 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onInputChange(e);
     const name = e.target.value;
+
+    // Clear newly created customer state when name changes
+    setNewlyCreatedCustomer(null);
 
     // Auto-save if both phone and name are provided
     if (customerInfo.phone && customerInfo.phone.length >= 10 && name && name.trim().length > 0) {
@@ -183,7 +212,7 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
               value={customerInfo.phone}
               onChange={handlePhoneChange}
               className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
-                foundCustomer ? 'border-green-300 bg-green-50' : 'border-gray-300'
+                foundCustomer || newlyCreatedCustomer ? 'border-green-300 bg-green-50' : 'border-gray-300'
               }`}
               placeholder="Nhập số điện thoại (VD: 0912345678)"
               required
@@ -194,7 +223,7 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-500"></div>
               </div>
             )}
-            {foundCustomer && !isChecking && (
+            {(foundCustomer || newlyCreatedCustomer) && !isChecking && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                 <CheckCircleIcon className="h-5 w-5 text-green-500" />
               </div>
@@ -203,6 +232,8 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
           <p className="text-xs text-gray-500 mt-1">
             Ví dụ: 0912345678 hoặc 0123456789
           </p>
+          
+          {/* Existing Customer Message */}
           {foundCustomer && (
             <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-start gap-2">
@@ -241,21 +272,37 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
               </div>
             </div>
           )}
-        </div>
 
-        <div className="space-y-2">
-          <label htmlFor="table" className="block text-sm font-semibold text-gray-800">
-            Số bàn
-          </label>
-          <input
-            type="text"
-            id="table"
-            name="table"
-            value={customerInfo.table}
-            onChange={onInputChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors"
-            placeholder="Nhập số bàn (tùy chọn)"
-          />
+          {/* Newly Created Customer Message */}
+          {newlyCreatedCustomer && (
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start gap-2">
+                <InformationCircleIcon className="h-5 w-5 text-blue-600 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900">
+                    Khách hàng đã được tạo thành viên
+                  </p>
+                  <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                    <span
+                      className={`px-2 py-1 rounded-full font-medium ${
+                        membershipLevelColors[newlyCreatedCustomer.membershipLevel] || 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {membershipLevelLabels[newlyCreatedCustomer.membershipLevel] || newlyCreatedCustomer.membershipLevel}
+                    </span>
+                    {discountRate > 0 && (
+                      <span className="px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-800">
+                        Giảm {discountRate}%
+                      </span>
+                    )}
+                    <span className="text-gray-600">
+                      Điểm tích lũy: <span className="font-semibold">{newlyCreatedCustomer.loyaltyPoints.toLocaleString()}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
