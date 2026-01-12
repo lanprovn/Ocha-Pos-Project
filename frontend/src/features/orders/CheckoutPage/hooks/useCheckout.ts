@@ -8,6 +8,8 @@ import { validatePhone, isCustomerDisplay as checkIsCustomerDisplay } from '../u
 import { orderService } from '@features/orders/services/order.service';
 import qrService from '@features/orders/services/qr.service';
 import { STORAGE_KEYS } from '@constants';
+import { subscribeToCustomerDiscount } from '@lib/socket.service';
+import { useDisplaySync } from '@/hooks/useDisplaySync';
 import type { CustomerInfo, PaymentMethod } from '../types';
 import type { QRPaymentData } from '@features/orders/components/QRPaymentModal';
 import type { CartItem } from '@/types/cart';
@@ -17,6 +19,7 @@ export const useCheckout = () => {
   const { products } = useProducts();
   const navigate = useNavigate();
   const location = useLocation();
+  const { sendToDisplay } = useDisplaySync();
   
   // Load table number from localStorage or location state
   const savedTableNumber = localStorage.getItem('customer_table_number');
@@ -36,12 +39,60 @@ export const useCheckout = () => {
   
   const [discountRate, setDiscountRate] = useState<number>(0);
   
-  // Save discountRate to localStorage whenever it changes
+  // Save discountRate to localStorage and sync to display whenever it changes
   useEffect(() => {
     localStorage.setItem('checkout_discount_rate', discountRate.toString());
     // Dispatch custom event for same-tab updates
     window.dispatchEvent(new CustomEvent('discountRateChanged'));
-  }, [discountRate]);
+    
+    // Sync discountRate to POS and Customer Display via display sync
+    sendToDisplay(
+      items,
+      totalPrice,
+      items.reduce((sum, item) => sum + item.quantity, 0),
+      'creating',
+      customerInfo.phone || customerInfo.name ? {
+        name: customerInfo.name,
+        phone: customerInfo.phone,
+        table: customerInfo.table
+      } : undefined,
+      undefined,
+      undefined,
+      discountRate
+    );
+  }, [discountRate, items, totalPrice, customerInfo, sendToDisplay]);
+
+  // Listen to real-time customer discount updates via Socket.io
+  useEffect(() => {
+    const cleanup = subscribeToCustomerDiscount((data) => {
+      // Normalize phone numbers for comparison (remove spaces, dashes, etc.)
+      const normalizePhone = (phone: string) => phone.trim().replace(/[\s\-\(\)]/g, '');
+      const currentPhone = normalizePhone(customerInfo.phone);
+      const eventPhone = normalizePhone(data.phone);
+
+      // Only update if phone numbers match
+      if (currentPhone && eventPhone && currentPhone === eventPhone) {
+        console.log('📡 Real-time discount update received:', {
+          phone: data.phone,
+          membershipLevel: data.customer.membershipLevel,
+          discountRate: data.discountRate,
+        });
+        
+        // Update discount rate
+        setDiscountRate(data.discountRate);
+        
+        // Auto-fill customer name (always update, not just when empty)
+        if (data.customer.name) {
+          setCustomerInfo(prev => ({
+            ...prev,
+            name: data.customer.name,
+          }));
+        }
+      }
+    });
+
+    return cleanup;
+  }, [customerInfo.phone, customerInfo.name]);
   
   // Flag to track if order has been restored
   const [orderRestored, setOrderRestored] = useState(false);

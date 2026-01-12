@@ -31,6 +31,23 @@ export interface ServerToClientEvents {
     };
     action: 'created' | 'updated' | 'deleted' | 'toggled';
   }) => void;
+  customer_discount_updated: (data: {
+    phone: string;
+    customer: {
+      id: string;
+      name: string;
+      phone: string;
+      membershipLevel: string;
+      loyaltyPoints: number;
+      totalSpent: number;
+    };
+    discountRate: number;
+  }) => void;
+  draft_orders_deleted: (data: {
+    orderIds: string[];
+    orderCreator: 'STAFF' | 'CUSTOMER';
+    orderCreatorName: string | null;
+  }) => void;
 }
 
 export interface ClientToServerEvents {

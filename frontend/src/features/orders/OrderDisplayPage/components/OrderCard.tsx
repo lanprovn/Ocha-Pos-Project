@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { OrderTracking } from '@/types/display';
 import { formatPrice } from '@/utils/formatPrice';
 import { formatOrderTime, getStatusConfig, getPaymentMethodText } from '../utils/orderDisplayUtils';
+import { calculateOrderTotals } from '../services/orderCalculation.service';
 import { orderService } from '@features/orders/services/order.service';
 import { useAuth } from '@features/auth/hooks/useAuth';
 import PrintReceiptButton from './PrintReceiptButton';
@@ -266,22 +267,19 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, currentTime, onStat
       {/* Order Footer */}
       <div className="p-3 sm:p-4 bg-gray-50 border-t border-gray-200 flex-shrink-0">
         <div className="space-y-2">
-          {/* Tính toán VAT từ totalPrice (totalPrice đã bao gồm VAT) */}
-          {/* Nếu totalPrice = X, thì giá gốc = X / 1.1, VAT = X - (X / 1.1) */}
+          {/* Calculate order totals using service */}
           {(() => {
-            const priceWithVAT = order.totalPrice;
-            const priceWithoutVAT = priceWithVAT / 1.1;
-            const vatAmount = priceWithVAT - priceWithoutVAT;
+            const totals = calculateOrderTotals(order);
             
             return (
               <>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-600">Tạm tính:</span>
-                  <span className="text-gray-600">{formatPrice(priceWithoutVAT)}</span>
+                  <span className="text-gray-600">{formatPrice(totals.subtotal)}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-600">VAT (10%):</span>
-                  <span className="text-gray-600">{formatPrice(vatAmount)}</span>
+                  <span className="text-gray-600">{formatPrice(totals.vatAmount)}</span>
                 </div>
               </>
             );

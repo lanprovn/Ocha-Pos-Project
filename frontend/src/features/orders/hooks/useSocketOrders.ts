@@ -9,19 +9,22 @@ import type { Order } from '../services/order.service';
 export function useSocketOrders(
   onOrderCreated?: (order: Order) => void,
   onOrderUpdated?: (order: Order) => void,
-  onOrderStatusChanged?: (data: { orderId: string; status: string }) => void
+  onOrderStatusChanged?: (data: { orderId: string; status: string }) => void,
+  onDraftOrdersDeleted?: (data: { orderIds: string[]; orderCreator: 'STAFF' | 'CUSTOMER'; orderCreatorName: string | null }) => void
 ) {
   // Use refs to store latest callbacks without causing re-subscriptions
   const onOrderCreatedRef = useRef(onOrderCreated);
   const onOrderUpdatedRef = useRef(onOrderUpdated);
   const onOrderStatusChangedRef = useRef(onOrderStatusChanged);
+  const onDraftOrdersDeletedRef = useRef(onDraftOrdersDeleted);
 
   // Update refs when callbacks change
   useEffect(() => {
     onOrderCreatedRef.current = onOrderCreated;
     onOrderUpdatedRef.current = onOrderUpdated;
     onOrderStatusChangedRef.current = onOrderStatusChanged;
-  }, [onOrderCreated, onOrderUpdated, onOrderStatusChanged]);
+    onDraftOrdersDeletedRef.current = onDraftOrdersDeleted;
+  }, [onOrderCreated, onOrderUpdated, onOrderStatusChanged, onDraftOrdersDeleted]);
 
   useEffect(() => {
     // Wrapper functions that use refs to get latest callbacks
@@ -34,11 +37,15 @@ export function useSocketOrders(
     const wrappedOnOrderStatusChanged = (data: { orderId: string; status: string }) => {
       onOrderStatusChangedRef.current?.(data);
     };
+    const wrappedOnDraftOrdersDeleted = (data: { orderIds: string[]; orderCreator: 'STAFF' | 'CUSTOMER'; orderCreatorName: string | null }) => {
+      onDraftOrdersDeletedRef.current?.(data);
+    };
 
     const cleanup = subscribeToOrders(
       wrappedOnOrderCreated,
       wrappedOnOrderUpdated,
-      wrappedOnOrderStatusChanged
+      wrappedOnOrderStatusChanged,
+      wrappedOnDraftOrdersDeleted
     );
 
     return cleanup;

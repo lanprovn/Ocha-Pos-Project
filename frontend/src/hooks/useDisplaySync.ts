@@ -34,6 +34,7 @@ export function useDisplaySync(): UseDisplaySyncReturn {
    * @param customerInfo - Thông tin khách hàng (optional)
    * @param paymentMethod - Phương thức thanh toán (optional)
    * @param paymentStatus - Trạng thái thanh toán (optional)
+   * @param discountRate - Phần trăm giảm giá (optional)
    */
   const sendToDisplay = useCallback((
     cartItems: CartItem[],
@@ -42,7 +43,8 @@ export function useDisplaySync(): UseDisplaySyncReturn {
     status: DisplayData['status'] = 'creating',
     customerInfo?: DisplayData['customerInfo'],
     paymentMethod?: DisplayData['paymentMethod'],
-    paymentStatus?: DisplayData['paymentStatus']
+    paymentStatus?: DisplayData['paymentStatus'],
+    discountRate?: number
   ) => {
     try {
       const displayData: DisplayData = {
@@ -53,7 +55,8 @@ export function useDisplaySync(): UseDisplaySyncReturn {
         customerInfo,
         timestamp: Date.now(),
         paymentMethod,
-        paymentStatus
+        paymentStatus,
+        discountRate
       };
 
       // Gửi qua BroadcastChannel
@@ -91,7 +94,8 @@ export function useDisplaySync(): UseDisplaySyncReturn {
           customerInfo,
           timestamp: Date.now(),
           paymentMethod,
-          paymentStatus
+          paymentStatus,
+          discountRate
         };
         localStorage.setItem(DISPLAY_STORAGE_KEY, JSON.stringify(displayData));
       } catch (storageError) {
@@ -236,16 +240,18 @@ export function useDisplaySync(): UseDisplaySyncReturn {
  * @param totalPrice - Tổng tiền
  * @param totalItems - Tổng số lượng sản phẩm
  * @param status - Trạng thái đơn hàng
+ * @param discountRate - Phần trăm giảm giá (optional)
  */
 export function usePOSDisplaySync(
   cartItems: CartItem[],
   totalPrice: number,
   totalItems: number,
-  status: DisplayData['status'] = 'creating'
+  status: DisplayData['status'] = 'creating',
+  discountRate?: number
 ) {
   const { sendToDisplay } = useDisplaySync();
 
   useEffect(() => {
-    sendToDisplay(cartItems, totalPrice, totalItems, status);
-  }, [cartItems, totalPrice, totalItems, status, sendToDisplay]);
+    sendToDisplay(cartItems, totalPrice, totalItems, status, undefined, undefined, undefined, discountRate);
+  }, [cartItems, totalPrice, totalItems, status, discountRate, sendToDisplay]);
 }

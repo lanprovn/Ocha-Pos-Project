@@ -16,18 +16,31 @@ const CustomerOrderTrackingPage: React.FC = () => {
   // Get orderId from location state or query params
   const orderId = (location.state as { orderId?: string } | null)?.orderId || 
                   new URLSearchParams(location.search).get('orderId');
+  
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [showSearchForm, setShowSearchForm] = useState<boolean>(!orderId);
 
   useEffect(() => {
     if (!orderId) {
-      toast.error('Không tìm thấy thông tin đơn hàng');
-      navigate('/customer');
+      // Don't show error if user hasn't searched yet
+      if (!showSearchForm) {
+        setIsLoading(false);
+      }
       return;
     }
 
     const loadOrder = async () => {
+      setIsLoading(true);
       try {
-        const orderData = await orderService.getById(orderId);
-        setOrder(orderData);
+        // Try to find by phone or order number first
+        try {
+          const orderData = await orderService.findByPhoneOrOrderNumber(orderId);
+          setOrder(orderData);
+        } catch (error: any) {
+          // Fallback to getById for UUID
+          const orderData = await orderService.getById(orderId);
+          setOrder(orderData);
+        }
       } catch (error: any) {
         console.error('Error loading order:', error);
         toast.error('Không thể tải thông tin đơn hàng');
@@ -37,7 +50,7 @@ const CustomerOrderTrackingPage: React.FC = () => {
     };
 
     loadOrder();
-  }, [orderId, navigate]);
+  }, [orderId, showSearchForm]);
 
   // Subscribe to order updates via Socket.io
   useEffect(() => {
@@ -62,11 +75,44 @@ const CustomerOrderTrackingPage: React.FC = () => {
 
   const loadOrder = async () => {
     if (!orderId) return;
+    setIsLoading(true);
     try {
-      const orderData = await orderService.getById(orderId);
-      setOrder(orderData);
+      // Try to find by phone or order number first
+      try {
+        const orderData = await orderService.findByPhoneOrOrderNumber(orderId);
+        setOrder(orderData);
+      } catch (error: any) {
+        // Fallback to getById for UUID
+        const orderData = await orderService.getById(orderId);
+        setOrder(orderData);
+      }
     } catch (error) {
       console.error('Error loading order:', error);
+      toast.error('Không tìm thấy đơn hàng');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchTerm.trim()) {
+      toast.error('Vui lòng nhập mã đơn hàng hoặc số điện thoại');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const orderData = await orderService.findByPhoneOrOrderNumber(searchTerm.trim());
+      setOrder(orderData);
+      setShowSearchForm(false);
+      // Update URL without reload
+      navigate(`/customer/orders/track?orderId=${encodeURIComponent(searchTerm.trim())}`, { replace: true });
+    } catch (error: any) {
+      console.error('Error loading order:', error);
+      toast.error('Không tìm thấy đơn hàng. Vui lòng kiểm tra lại số điện thoại hoặc mã đơn hàng');
+      setOrder(null);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -99,18 +145,82 @@ const CustomerOrderTrackingPage: React.FC = () => {
     );
   }
 
+  // Show search form if no order and no orderId
+  if (showSearchForm || (!order && !orderId)) {
+    return (
+      <div className="h-full w-full overflow-y-auto bg-gradient-to-br from-emerald-50 via-white to-blue-50">
+        <div className="min-h-full py-6 px-4">
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg mx-auto mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <h1 className="text-2xl font-bold text-gray-800 mb-2">Theo dõi đơn hàng</h1>
+                <p className="text-gray-600">Nhập mã đơn hàng hoặc số điện thoại để theo dõi</p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Mã đơn hàng hoặc số điện thoại
+                  </label>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    placeholder="Nhập mã đơn hàng (ORD-123456) hoặc số điện thoại..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Mã đơn hàng được gửi đến bạn sau khi đặt hàng thành công
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleSearch}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
+                >
+                  Tìm kiếm
+                </button>
+
+                <button
+                  onClick={() => navigate('/customer')}
+                  className="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                >
+                  Về trang chủ
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!order) {
     return (
       <div className="flex flex-col items-center justify-center h-screen w-full bg-gray-50">
         <div className="text-6xl mb-4">📦</div>
         <h2 className="text-2xl font-bold text-gray-800 mb-2">Không tìm thấy đơn hàng</h2>
         <p className="text-gray-600 mb-6">Đơn hàng không tồn tại hoặc đã bị xóa</p>
-        <button
-          onClick={() => navigate('/customer')}
-          className="px-6 py-3 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
-        >
-          Về trang chủ
-        </button>
+        <div className="flex gap-4">
+          <button
+            onClick={() => setShowSearchForm(true)}
+            className="px-6 py-3 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
+          >
+            Tìm kiếm lại
+          </button>
+          <button
+            onClick={() => navigate('/customer')}
+            className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+          >
+            Về trang chủ
+          </button>
+        </div>
       </div>
     );
   }

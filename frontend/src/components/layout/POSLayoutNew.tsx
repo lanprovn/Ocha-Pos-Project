@@ -4,7 +4,7 @@ import { ShoppingCartIcon, MagnifyingGlassIcon, UserCircleIcon, ChartBarIcon, Cu
 import { useCart } from '@features/orders/hooks/useCart';
 import { useProducts } from '@features/products/hooks/useProducts';
 import { useAuth } from '@features/auth/hooks/useAuth';
-import { usePOSDisplaySync } from '@/hooks/useDisplaySync';
+import { usePOSDisplaySync, useDisplaySync } from '@/hooks/useDisplaySync';
 import ProductGrid from '@features/products/components/ProductGrid';
 import ProductModal from '@features/products/components/ProductModal';
 import StockAlertsPanel from '@features/stock/components/StockAlertsPanel';
@@ -12,6 +12,7 @@ import { HoldOrderModal } from '@features/orders/OrderDisplayPage/components/Hol
 import { HoldOrdersList } from '@features/orders/OrderDisplayPage/components/HoldOrdersList';
 import { formatPrice } from '@/utils/formatPrice';
 import type { Product } from '@/types/product';
+import type { DisplayData } from '@/types/display';
 
 /**
  * POSLayoutNew - Professional POS-style layout for staff
@@ -30,9 +31,13 @@ export default function POSLayoutNew() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showHoldModal, setShowHoldModal] = useState(false);
   const [showHoldOrdersList, setShowHoldOrdersList] = useState(false);
+  
+  // Get discount rate from localStorage (set by checkout page) and display sync
+  const [discountRate, setDiscountRate] = useState<number>(0);
+  const { subscribeToDisplay } = useDisplaySync();
 
-  // Sync cart data to customer display
-  usePOSDisplaySync(items, totalPrice, totalItems, 'creating');
+  // Sync cart data to customer display (including discount rate)
+  usePOSDisplaySync(items, totalPrice, totalItems, 'creating', discountRate);
 
   // Set order creator as staff when component mounts
   useEffect(() => {
@@ -57,6 +62,36 @@ export default function POSLayoutNew() {
     }
   };
 
+  /**
+   * Reset tất cả state khi bấm nút Home
+   */
+  const handleHomeClick = () => {
+    // Clear cart
+    clearCart();
+    
+    // Reset search query
+    setSearchQuery('');
+    
+    // Reset category selection
+    setSelectedCategory('all');
+    setSelectedCategoryId('all');
+    
+    // Reset selected items
+    setSelectedItemId(null);
+    setSelectedProduct(null);
+    
+    // Close all modals
+    setIsModalOpen(false);
+    setShowHoldModal(false);
+    setShowHoldOrdersList(false);
+    
+    // Reset discount rate
+    localStorage.removeItem('checkout_discount_rate');
+    window.dispatchEvent(new CustomEvent('discountRateChanged'));
+    
+    // Navigate to home
+    navigate('/');
+  };
 
   const handleCategorySelect = (categoryName: string) => {
     setSelectedCategoryId(categoryName);
@@ -73,9 +108,7 @@ export default function POSLayoutNew() {
     setSelectedProduct(null);
   };
 
-  // Get discount rate from localStorage (set by checkout page)
-  const [discountRate, setDiscountRate] = useState<number>(0);
-  
+  // Load and sync discount rate from localStorage and display sync
   useEffect(() => {
     const savedDiscountRate = localStorage.getItem('checkout_discount_rate');
     if (savedDiscountRate) {
@@ -101,11 +134,21 @@ export default function POSLayoutNew() {
     
     window.addEventListener('discountRateChanged', handleDiscountChange);
     
+    // Subscribe to display sync to receive discountRate updates from checkout
+    const unsubscribe = subscribeToDisplay((data: DisplayData) => {
+      if (data.discountRate !== undefined) {
+        setDiscountRate(data.discountRate);
+        // Also update localStorage to keep in sync
+        localStorage.setItem('checkout_discount_rate', data.discountRate.toString());
+      }
+    });
+    
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('discountRateChanged', handleDiscountChange);
+      unsubscribe();
     };
-  }, []);
+  }, [subscribeToDisplay]);
 
   // Calculate prices with discount
   const subtotal = totalPrice;
@@ -152,9 +195,9 @@ export default function POSLayoutNew() {
           {/* Breadcrumb */}
           <div className="flex items-center space-x-2 text-sm text-gray-600 ml-6">
             <button
-              onClick={() => navigate('/')}
+              onClick={handleHomeClick}
               className="p-1 rounded hover:bg-gray-100 transition-colors cursor-pointer"
-              title="Về trang chủ"
+              title="Về trang chủ và reset tất cả"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -176,9 +219,9 @@ export default function POSLayoutNew() {
               <span className="text-sm font-medium">Đơn Đã Lưu</span>
             </button>
             <button
-              onClick={() => navigate('/orders')}
+              onClick={() => window.open('/orders', '_blank')}
               className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors shadow-sm"
-              title="Xem đơn hàng"
+              title="Xem đơn hàng (mở tab mới)"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />

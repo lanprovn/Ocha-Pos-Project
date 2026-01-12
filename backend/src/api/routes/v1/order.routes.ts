@@ -32,6 +32,8 @@ const router = Router();
  *               $ref: '#/components/schemas/ValidationError'
  */
 router.post('/draft', orderController.createOrUpdateDraft.bind(orderController));
+router.delete('/draft', orderController.deleteDraftOrders.bind(orderController));
+router.delete('/draft/all', authenticate, requireRole('ADMIN'), orderController.deleteAllDraftOrders.bind(orderController));
 
 /**
  * @swagger
@@ -347,6 +349,36 @@ router.patch('/:id/reject', authenticate, requireRole('ADMIN', 'STAFF'), orderCo
  *         description: Unauthorized
  */
 router.get('/holds', authenticate, requireRole('ADMIN', 'STAFF'), orderController.getHoldOrders.bind(orderController));
+
+/**
+ * @swagger
+ * /api/orders/track/{phoneOrOrderNumber}:
+ *   get:
+ *     summary: Find order by phone number or order number
+ *     description: Find an order by phone number or order number (Public endpoint for customer tracking)
+ *     tags: [Orders]
+ *     parameters:
+ *       - in: path
+ *         name: phoneOrOrderNumber
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Phone number or order number
+ *     responses:
+ *       200:
+ *         description: Order found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Order'
+ *       404:
+ *         description: Order not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/track/:phoneOrOrderNumber', orderController.findByPhoneOrOrderNumber.bind(orderController));
 
 /**
  * @swagger

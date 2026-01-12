@@ -8,10 +8,12 @@ export interface DisplayData {
   customerInfo?: {
     name?: string;
     table?: string;
+    phone?: string;
   };
   timestamp: number;
   paymentMethod?: 'cash' | 'card' | 'qr';
   paymentStatus?: 'success' | 'pending' | 'failed';
+  discountRate?: number; // Phần trăm giảm giá (0-100)
 }
 
 export interface DisplaySyncMessage {
@@ -20,7 +22,7 @@ export interface DisplaySyncMessage {
 }
 
 export interface UseDisplaySyncReturn {
-  sendToDisplay: (cartItems: CartItem[], totalPrice: number, totalItems: number, status?: DisplayData['status'], customerInfo?: DisplayData['customerInfo'], paymentMethod?: DisplayData['paymentMethod'], paymentStatus?: DisplayData['paymentStatus']) => void;
+  sendToDisplay: (cartItems: CartItem[], totalPrice: number, totalItems: number, status?: DisplayData['status'], customerInfo?: DisplayData['customerInfo'], paymentMethod?: DisplayData['paymentMethod'], paymentStatus?: DisplayData['paymentStatus'], discountRate?: number) => void;
   subscribeToDisplay: (callback: (data: DisplayData) => void) => () => void;
 }
 

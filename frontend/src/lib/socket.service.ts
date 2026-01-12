@@ -7,6 +7,8 @@ import type {
 
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 
+// Socket.io service for real-time updates
+
 /**
  * Get or create Socket.io connection
  */
@@ -55,7 +57,8 @@ export function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> 
 export function subscribeToOrders(
   onOrderCreated?: (order: any) => void,
   onOrderUpdated?: (order: any) => void,
-  onOrderStatusChanged?: (data: { orderId: string; status: string }) => void
+  onOrderStatusChanged?: (data: { orderId: string; status: string }) => void,
+  onDraftOrdersDeleted?: (data: { orderIds: string[]; orderCreator: 'STAFF' | 'CUSTOMER'; orderCreatorName: string | null }) => void
 ): () => void {
   const socketInstance = getSocket();
   if (!socketInstance) {
@@ -94,6 +97,9 @@ export function subscribeToOrders(
   if (onOrderStatusChanged) {
     socketInstance.on('order_status_changed', onOrderStatusChanged);
   }
+  if (onDraftOrdersDeleted) {
+    socketInstance.on('draft_orders_deleted', onDraftOrdersDeleted);
+  }
 
   // Return cleanup function
   return () => {
@@ -105,6 +111,9 @@ export function subscribeToOrders(
     }
     if (onOrderStatusChanged) {
       socketInstance.off('order_status_changed', onOrderStatusChanged);
+    }
+    if (onDraftOrdersDeleted) {
+      socketInstance.off('draft_orders_deleted', onDraftOrdersDeleted);
     }
   };
 }
@@ -174,6 +183,42 @@ export function subscribeToDashboard(
 }
 
 /**
+ * Subscribe to customer discount updates
+ */
+export function subscribeToCustomerDiscount(
+  onCustomerDiscountUpdated?: (data: {
+    phone: string;
+    customer: {
+      id: string;
+      name: string;
+      phone: string;
+      membershipLevel: string;
+      loyaltyPoints: number;
+      totalSpent: number;
+    };
+    discountRate: number;
+  }) => void
+): () => void {
+  const socketInstance = getSocket();
+  if (!socketInstance) {
+    console.warn('Socket.io not available, using fallback');
+    return () => {};
+  }
+
+  // Register event listener
+  if (onCustomerDiscountUpdated) {
+    socketInstance.on('customer_discount_updated', onCustomerDiscountUpdated);
+  }
+
+  // Return cleanup function
+  return () => {
+    if (onCustomerDiscountUpdated) {
+      socketInstance.off('customer_discount_updated', onCustomerDiscountUpdated);
+    }
+  };
+}
+
+/**
  * Disconnect Socket.io
  */
 export function disconnectSocket(): void {
@@ -189,4 +234,5 @@ export function disconnectSocket(): void {
 export function isSocketConnected(): boolean {
   return socket?.connected || false;
 }
+
 

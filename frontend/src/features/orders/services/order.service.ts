@@ -117,6 +117,13 @@ export const orderService = {
     return apiClient.post<Order>(API_ENDPOINTS.ORDERS_DRAFT, data);
   },
 
+  // Delete draft orders
+  async deleteDraftOrders(orderCreator: 'STAFF' | 'CUSTOMER', orderCreatorName?: string | null): Promise<{ success: boolean; deletedCount: number; deletedIds: string[] }> {
+    return apiClient.delete<{ success: boolean; deletedCount: number; deletedIds: string[] }>(API_ENDPOINTS.DELETE_DRAFT_ORDERS, {
+      data: { orderCreator, orderCreatorName: orderCreatorName || null },
+    });
+  },
+
   // Create new order
   async create(data: CreateOrderInput): Promise<Order> {
     return apiClient.post<Order>(API_ENDPOINTS.ORDERS, data);
@@ -149,6 +156,11 @@ export const orderService = {
   // Get order by ID
   async getById(id: string): Promise<Order> {
     return apiClient.get<Order>(API_ENDPOINTS.ORDER_BY_ID(id));
+  },
+
+  // Find order by phone number or order number (for customer tracking)
+  async findByPhoneOrOrderNumber(phoneOrOrderNumber: string): Promise<Order> {
+    return apiClient.get<Order>(API_ENDPOINTS.ORDER_TRACK(phoneOrOrderNumber));
   },
 
   // Update order status

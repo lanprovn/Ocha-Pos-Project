@@ -41,6 +41,10 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
     if (!phone || phone.length < 10) {
       setFoundCustomer(null);
       setNewlyCreatedCustomer(null);
+      setDiscountRate(0);
+      if (onDiscountRateChange) {
+        onDiscountRateChange(0);
+      }
       return;
     }
 
@@ -61,8 +65,8 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
         if (onCustomerFound) {
           onCustomerFound(result.customer);
         }
-        // Auto-fill name if empty
-        if (!customerInfo.name && result.customer.name) {
+        // Auto-fill name (always update, not just when empty) khi tìm thấy customer
+        if (result.customer.name) {
           const event = {
             target: { name: 'name', value: result.customer.name },
           } as React.ChangeEvent<HTMLInputElement>;
@@ -123,8 +127,8 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
   }, [onCustomerFound, onDiscountRateChange]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onInputChange(e);
     const phone = e.target.value;
+    onInputChange(e);
 
     // Clear newly created customer state when phone changes
     setNewlyCreatedCustomer(null);
@@ -132,6 +136,23 @@ export const CustomerInfoForm: React.FC<CustomerInfoFormProps> = ({
     // Clear previous timeout
     if (checkTimeout) {
       clearTimeout(checkTimeout);
+    }
+
+    // Nếu xóa số điện thoại (phone rỗng hoặc < 10 ký tự), reset tên và discount rate ngay lập tức
+    if (!phone || phone.length < 10) {
+      setFoundCustomer(null);
+      setDiscountRate(0);
+      if (onDiscountRateChange) {
+        onDiscountRateChange(0);
+      }
+      // Clear name field nếu đã được auto-fill từ customer
+      if (foundCustomer && customerInfo.name === foundCustomer.name) {
+        const event = {
+          target: { name: 'name', value: '' },
+        } as React.ChangeEvent<HTMLInputElement>;
+        onInputChange(event);
+      }
+      return;
     }
 
     // Debounce: Check customer after 500ms of no typing

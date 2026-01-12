@@ -5,6 +5,7 @@ import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { useCart } from '@features/orders/hooks/useCart';
 import { useProducts } from '@features/products/hooks/useProducts';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useDisplaySync } from '@/hooks/useDisplaySync';
 import ProductGrid from '@features/products/components/ProductGrid';
 import ProductModal from '@features/products/components/ProductModal';
 import OrderTrackingModal from './CustomerDisplayLayout/components/OrderTrackingModal';
@@ -12,6 +13,7 @@ import HomeButton from '@components/ui/HomeButton';
 import { formatPrice } from '@/utils/formatPrice';
 import toast from 'react-hot-toast';
 import type { Product } from '@/types/product';
+import type { DisplayData } from '@/types/display';
 
 /**
  * CustomerDisplayLayout - Professional POS-style layout for customers
@@ -29,6 +31,21 @@ export default function CustomerDisplayLayout() {
   const [isOrderTrackingModalOpen, setIsOrderTrackingModalOpen] = useState(false);
   const [tableNumber, setTableNumber] = useState<string>('');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(false);
+  const [discountRate, setDiscountRate] = useState<number>(0);
+  
+  // Subscribe to display sync to receive discountRate updates from checkout
+  const { subscribeToDisplay } = useDisplaySync();
+  
+  useEffect(() => {
+    const unsubscribe = subscribeToDisplay((data: DisplayData) => {
+      // Update discountRate when received from checkout
+      if (data.discountRate !== undefined) {
+        setDiscountRate(data.discountRate);
+      }
+    });
+    
+    return unsubscribe;
+  }, [subscribeToDisplay]);
 
   // Load table number from localStorage on mount
   useEffect(() => {
@@ -122,11 +139,16 @@ export default function CustomerDisplayLayout() {
     ? filteredProducts.filter((p) => isFavorite(p.id))
     : filteredProducts;
 
+  // Calculate prices with discount
+  const subtotal = totalPrice;
+  const discountAmount = discountRate > 0 ? subtotal * (discountRate / 100) : 0;
+  const priceAfterDiscount = subtotal - discountAmount;
+  
   const calculateTax = () => {
-    return totalPrice * 0.1; // 10% VAT
+    return priceAfterDiscount * 0.1; // 10% VAT on price after discount
   };
 
-  const finalTotal = totalPrice + calculateTax();
+  const finalTotal = priceAfterDiscount + calculateTax();
 
   const selectedItem = items.find(item => item.id === selectedItemId);
 
@@ -314,8 +336,14 @@ export default function CustomerDisplayLayout() {
           <div className="p-4 border-t border-gray-300 bg-slate-50 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Tạm tính:</span>
-              <span className="font-semibold text-gray-900">{formatPrice(totalPrice)}</span>
+              <span className="font-semibold text-gray-900">{formatPrice(subtotal)}</span>
             </div>
+            {discountRate > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-green-600 font-medium">Giảm giá ({discountRate}%):</span>
+                <span className="text-green-600 font-medium">-{formatPrice(discountAmount)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">VAT (10%):</span>
               <span className="font-semibold text-gray-900">{formatPrice(calculateTax())}</span>

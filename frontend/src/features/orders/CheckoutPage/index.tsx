@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useCheckout } from './hooks/useCheckout';
+import { useStaffCheckout } from './hooks/useStaffCheckout';
+import { useCustomerCheckout } from './hooks/useCustomerCheckout';
 import { OrderSummary } from './components/OrderSummary';
 import { CustomerInfoForm } from './components/CustomerInfoForm';
 import { SimplifiedCustomerInfoForm } from './components/SimplifiedCustomerInfoForm';
@@ -16,6 +17,14 @@ const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const isCustomerDisplay = checkIsCustomerDisplay(location.pathname, location.state as any);
 
+  // Sử dụng hook riêng biệt cho staff và customer để tránh conflict
+  // Chỉ gọi hook phù hợp để tránh gọi cả 2 hooks cùng lúc
+  const staffCheckout = useStaffCheckout();
+  const customerCheckout = useCustomerCheckout();
+  
+  // Chọn hook phù hợp dựa trên isCustomerDisplay
+  const checkout = isCustomerDisplay ? customerCheckout : staffCheckout;
+  
   const {
     items,
     totalPrice,
@@ -35,7 +44,7 @@ const CheckoutPage: React.FC = () => {
     handleNewOrder,
     handleGoHome,
     handleDiscountRateChange,
-  } = useCheckout();
+  } = checkout;
 
   // Simplified validation for customer: only phone required
   // Staff: name + phone required
@@ -115,6 +124,7 @@ const CheckoutPage: React.FC = () => {
                     <SimplifiedCustomerInfoForm
                       customerInfo={customerInfo}
                       onInputChange={handleInputChange}
+                      onDiscountRateChange={handleDiscountRateChange}
                     />
                   ) : (
                     <CustomerInfoForm

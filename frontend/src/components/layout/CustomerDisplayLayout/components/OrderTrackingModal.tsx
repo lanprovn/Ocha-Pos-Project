@@ -28,17 +28,24 @@ const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
     }
   }, [isOpen, initialOrderId]);
 
-  const loadOrder = async (id: string) => {
-    if (!id.trim()) return;
+  const loadOrder = async (searchTerm: string) => {
+    if (!searchTerm.trim()) return;
     
     setIsLoading(true);
     try {
-      const orderData = await orderService.getById(id);
+      // Try to find by phone or order number (new API)
+      const orderData = await orderService.findByPhoneOrOrderNumber(searchTerm.trim());
       setOrder(orderData);
     } catch (error: any) {
       console.error('Error loading order:', error);
-      toast.error('Không thể tải thông tin đơn hàng');
-      setOrder(null);
+      // If new API fails, try old API (for UUID)
+      try {
+        const orderData = await orderService.getById(searchTerm.trim());
+        setOrder(orderData);
+      } catch (fallbackError: any) {
+        toast.error('Không tìm thấy đơn hàng. Vui lòng kiểm tra lại số điện thoại hoặc mã đơn hàng');
+        setOrder(null);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -63,7 +70,7 @@ const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
 
   const handleSearch = () => {
     if (!orderId.trim()) {
-      toast.error('Vui lòng nhập mã đơn hàng');
+      toast.error('Vui lòng nhập mã đơn hàng hoặc số điện thoại');
       return;
     }
     loadOrder(orderId.trim());
@@ -107,7 +114,7 @@ const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
       
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
-        <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] my-auto transform transition-all flex flex-col overflow-hidden">
+        <div className="bg-white rounded-lg shadow-xl w-[80%] max-h-[90vh] my-auto transform transition-all flex flex-col overflow-hidden">
           {/* Header */}
           <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-b">
             <h3 className="text-lg font-medium text-gray-900">Theo dõi đơn hàng</h3>
@@ -125,7 +132,7 @@ const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
             {/* Search Input */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nhập mã đơn hàng
+                Nhập mã đơn hàng hoặc số điện thoại
               </label>
               <div className="flex space-x-2">
                 <input
@@ -133,7 +140,7 @@ const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
                   value={orderId}
                   onChange={(e) => setOrderId(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder="Nhập mã đơn hàng..."
+                  placeholder="Nhập mã đơn hàng hoặc số điện thoại..."
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500"
                 />
                 <button
@@ -143,6 +150,9 @@ const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
                   Tìm kiếm
                 </button>
               </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Bạn có thể tìm kiếm bằng mã đơn hàng (ví dụ: ORD-123456) hoặc số điện thoại đã đặt hàng
+              </p>
             </div>
 
             {/* Loading */}
@@ -255,7 +265,7 @@ const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
                 <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">Nhập mã đơn hàng để theo dõi</h3>
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">Nhập mã đơn hàng hoặc số điện thoại để theo dõi</h3>
                 <p className="text-sm text-gray-500">Mã đơn hàng được gửi đến bạn sau khi đặt hàng thành công</p>
               </div>
             )}

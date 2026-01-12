@@ -8,7 +8,12 @@ import { EmptyState } from '@components/ui/EmptyState';
 import { getStatusSections } from './utils/orderDisplayUtils';
 
 const OrderDisplayPage: React.FC = () => {
-  const { orders: allOrders, currentTime, completedSectionRef } = useOrderDisplay();
+  const {
+    orders: allOrders,
+    currentTime,
+    completedSectionRef,
+    handleManualStatusUpdate,
+  } = useOrderDisplay();
   const {
     filters,
     setSearchQuery,
@@ -57,6 +62,7 @@ const OrderDisplayPage: React.FC = () => {
                   section={section}
                   currentTime={currentTime}
                   sectionRef={section.key === 'completed' ? completedSectionRef : undefined}
+                  onStatusUpdate={handleManualStatusUpdate}
                 />
               ))}
             </div>

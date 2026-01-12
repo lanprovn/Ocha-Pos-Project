@@ -6,12 +6,14 @@ interface OrderStatusSectionProps {
   section: StatusSection;
   currentTime: Date;
   sectionRef?: React.RefObject<HTMLDivElement | null>;
+  onStatusUpdate?: () => void;
 }
 
 export const OrderStatusSection: React.FC<OrderStatusSectionProps> = ({
   section,
   currentTime,
-  sectionRef
+  sectionRef,
+  onStatusUpdate,
 }) => {
   if (section.orders.length === 0) return null;
 
@@ -29,7 +31,7 @@ export const OrderStatusSection: React.FC<OrderStatusSectionProps> = ({
             key={order.id} 
             order={order} 
             currentTime={currentTime}
-            onStatusUpdate={() => window.location.reload()} // Reload để sync
+            onStatusUpdate={onStatusUpdate}
           />
         ))}
       </div>

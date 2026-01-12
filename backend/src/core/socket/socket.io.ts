@@ -183,6 +183,33 @@ export function emitOrderVerified(order: any): void {
 }
 
 /**
+ * Emit draft orders deleted event
+ */
+export function emitDraftOrdersDeleted(orderIds: string[], orderCreator: 'STAFF' | 'CUSTOMER', orderCreatorName?: string | null): void {
+  if (io) {
+    try {
+      io.to('orders').emit('draft_orders_deleted', {
+        orderIds,
+        orderCreator,
+        orderCreatorName: orderCreatorName || null,
+      });
+      logger.debug('Emitted draft_orders_deleted event', { 
+        orderIds, 
+        orderCreator, 
+        orderCreatorName 
+      });
+    } catch (error) {
+      logger.error('Failed to emit draft_orders_deleted event', {
+        error: error instanceof Error ? error.message : String(error),
+        orderIds,
+      });
+    }
+  } else {
+    logger.warn('Socket.io not initialized, cannot emit draft_orders_deleted event', { orderIds });
+  }
+}
+
+/**
  * Emit stock alert event
  */
 export function emitStockAlert(alert: any): void {
@@ -236,5 +263,40 @@ export function emitUserUpdated(data: {
     }
   } else {
     logger.warn('Socket.io not initialized, cannot emit user_updated event', { userId: data.user.id });
+  }
+}
+
+/**
+ * Emit customer discount updated event (for real-time checkout updates)
+ */
+export function emitCustomerDiscountUpdate(data: {
+  phone: string;
+  customer: {
+    id: string;
+    name: string;
+    phone: string;
+    membershipLevel: string;
+    loyaltyPoints: number;
+    totalSpent: number;
+  };
+  discountRate: number;
+}): void {
+  if (io) {
+    try {
+      // Emit to all clients so checkout pages can update discount rate
+      io.emit('customer_discount_updated', data);
+      logger.debug('Emitted customer_discount_updated event', { 
+        phone: data.phone, 
+        membershipLevel: data.customer.membershipLevel,
+        discountRate: data.discountRate 
+      });
+    } catch (error) {
+      logger.error('Failed to emit customer_discount_updated event', {
+        error: error instanceof Error ? error.message : String(error),
+        phone: data.phone,
+      });
+    }
+  } else {
+    logger.warn('Socket.io not initialized, cannot emit customer_discount_updated event', { phone: data.phone });
   }
 }

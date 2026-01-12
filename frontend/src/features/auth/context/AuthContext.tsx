@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService, type LoginInput, type LoginResponse } from '../services/auth.service';
-import { ROUTES } from '@/constants';
+import { ROUTES, STORAGE_KEYS } from '@/constants';
 import toast from 'react-hot-toast';
 
 export interface AuthContextType {
@@ -115,6 +115,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = useCallback(() => {
     authService.logout();
     setUser(null);
+    
+    // Clear cart data khi logout
+    sessionStorage.removeItem(STORAGE_KEYS.CART);
+    localStorage.removeItem(STORAGE_KEYS.CART);
+    
     navigate('/login');
     toast.success('Đã đăng xuất');
   }, [navigate]);

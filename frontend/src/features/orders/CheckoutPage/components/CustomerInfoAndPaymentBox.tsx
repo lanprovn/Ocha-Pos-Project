@@ -118,12 +118,29 @@ export const CustomerInfoAndPaymentBox: React.FC<CustomerInfoAndPaymentBoxProps>
   }, [onCustomerFound, onDiscountRateChange]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onInputChange(e);
     const phone = e.target.value;
+    onInputChange(e);
 
     // Clear previous timeout
     if (checkTimeout) {
       clearTimeout(checkTimeout);
+    }
+
+    // Nếu xóa số điện thoại (phone rỗng hoặc < 10 ký tự), reset tên và discount rate ngay lập tức
+    if (!phone || phone.length < 10) {
+      setFoundCustomer(null);
+      setDiscountRate(0);
+      if (onDiscountRateChange) {
+        onDiscountRateChange(0);
+      }
+      // Clear name field nếu đã được auto-fill từ customer
+      if (foundCustomer && customerInfo.name === foundCustomer.name) {
+        const event = {
+          target: { name: 'name', value: '' },
+        } as React.ChangeEvent<HTMLInputElement>;
+        onInputChange(event);
+      }
+      return;
     }
 
     // Debounce: Check customer after 500ms of no typing

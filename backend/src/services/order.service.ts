@@ -7,7 +7,7 @@ import stockService from './stock.service';
 import customerService from './customer.service';
 import logger from '@utils/logger';
 import { InsufficientStockError, OrderNotFoundError, ValidationError } from '@core/errors';
-import { emitStockUpdated, emitOrderCreated, emitOrderUpdated, emitOrderStatusChanged, emitOrderVerified } from '@core/socket/socket.io';
+import { emitStockUpdated, emitOrderCreated, emitOrderUpdated, emitOrderStatusChanged, emitOrderVerified, emitDraftOrdersDeleted } from '@core/socket/socket.io';
 import { StockTransactionType, OrderStatus } from '@core/types/common.types';
 import { calculateMembershipLevel } from '@config/membership.config';
 
@@ -159,9 +159,25 @@ export class OrderService {
 
   /**
    * Delete draft orders (CREATING) của cùng orderCreator
+   * Returns deleted order IDs để emit socket event
    */
-  async deleteDraftOrders(orderCreator: 'STAFF' | 'CUSTOMER', orderCreatorName?: string | null) {
+  async deleteDraftOrders(orderCreator: 'STAFF' | 'CUSTOMER', orderCreatorName?: string | null): Promise<string[]> {
     try {
+      // Find draft orders first để lấy IDs
+      const draftOrders = await prisma.order.findMany({
+        where: {
+          status: 'CREATING',
+          orderCreator,
+          orderCreatorName: orderCreatorName || null,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      const deletedIds = draftOrders.map(order => order.id);
+
+      // Delete draft orders
       await prisma.order.deleteMany({
         where: {
           status: 'CREATING',
@@ -169,12 +185,83 @@ export class OrderService {
           orderCreatorName: orderCreatorName || null,
         },
       });
+
+      // Emit socket event để realtime update
+      if (deletedIds.length > 0) {
+        emitDraftOrdersDeleted(deletedIds, orderCreator, orderCreatorName);
+      }
+
+      return deletedIds;
     } catch (error) {
       logger.error('Error deleting draft orders', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
       });
       // Không throw error để không block flow
+      return [];
+    }
+  }
+
+  /**
+   * Delete ALL CREATING orders (Admin only - for cleanup)
+   * Returns deleted order IDs để emit socket event
+   */
+  async deleteAllDraftOrders(): Promise<string[]> {
+    try {
+      // Find all CREATING orders
+      const draftOrders = await prisma.order.findMany({
+        where: {
+          status: 'CREATING',
+        },
+        select: {
+          id: true,
+          orderCreator: true,
+          orderCreatorName: true,
+        },
+      });
+
+      const deletedIds = draftOrders.map(order => order.id);
+
+      if (deletedIds.length === 0) {
+        return [];
+      }
+
+      // Delete all CREATING orders
+      await prisma.order.deleteMany({
+        where: {
+          status: 'CREATING',
+        },
+      });
+
+      // Emit socket events for each orderCreator group
+      const groupedByCreator = draftOrders.reduce((acc, order) => {
+        const key = `${order.orderCreator || 'STAFF'}_${order.orderCreatorName || 'null'}`;
+        if (!acc[key]) {
+          acc[key] = {
+            orderCreator: (order.orderCreator || 'STAFF') as 'STAFF' | 'CUSTOMER',
+            orderCreatorName: order.orderCreatorName,
+            ids: [],
+          };
+        }
+        acc[key].ids.push(order.id);
+        return acc;
+      }, {} as Record<string, { orderCreator: 'STAFF' | 'CUSTOMER'; orderCreatorName: string | null; ids: string[] }>);
+
+      // Emit socket events
+      Object.values(groupedByCreator).forEach((group) => {
+        if (group.ids.length > 0) {
+          emitDraftOrdersDeleted(group.ids, group.orderCreator, group.orderCreatorName);
+        }
+      });
+
+      logger.info(`Deleted ${deletedIds.length} CREATING orders`);
+      return deletedIds;
+    } catch (error) {
+      logger.error('Error deleting all draft orders', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      return [];
     }
   }
 
@@ -552,67 +639,28 @@ export class OrderService {
         },
       });
 
-      // 6. Process loyalty points and update customer totalSpent if payment is successful
-      if (order.paymentStatus === 'SUCCESS' && order.customerId) {
-        const orderTotal = parseFloat(order.totalAmount.toString());
-        const pointsToEarn = Math.floor(orderTotal / 1000);
-        
-        if (pointsToEarn > 0) {
-          // Get current customer to calculate new points
-          const currentCustomer = await tx.customers.findUnique({
-            where: { id: order.customerId },
-          });
-          
-          if (currentCustomer) {
-            const newLoyaltyPoints = currentCustomer.loyaltyPoints + pointsToEarn;
-            const newMembershipLevel = calculateMembershipLevel(newLoyaltyPoints);
-            
-            // Update customer totalSpent, loyaltyPoints, and membership level
-            await tx.customers.update({
-              where: { id: order.customerId },
-              data: {
-                totalSpent: {
-                  increment: new Decimal(orderTotal),
-                },
-                loyaltyPoints: newLoyaltyPoints,
-                membershipLevel: newMembershipLevel,
-                lastVisitAt: new Date(),
-              },
-            });
-          }
-
-          // Create loyalty transaction record
-          await tx.loyalty_transactions.create({
-            data: {
-              id: `lt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-              customerId: order.customerId,
-              orderId: order.id,
-              type: 'EARN',
-              points: pointsToEarn,
-              reason: `Tích điểm từ đơn hàng ${order.orderNumber}`,
-            },
-          });
-        } else {
-          // Still update totalSpent and lastVisitAt even if no points earned
-          await tx.customers.update({
-            where: { id: order.customerId },
-            data: {
-              totalSpent: {
-                increment: new Decimal(orderTotal),
-              },
-              lastVisitAt: new Date(),
-            },
-          });
-        }
+      // 6. Trừ tồn kho khi order được CONFIRMED (để tránh overselling)
+      // Loyalty points sẽ được xử lý khi order chuyển sang COMPLETED
+      let stockUpdates: Array<{ type: 'product' | 'ingredient'; id: string; productId?: string; ingredientId?: string; quantity: number }> = [];
+      
+      // Nếu order được tạo với status CONFIRMED (STAFF orders), trừ tồn kho ngay
+      if (initialStatus === 'CONFIRMED') {
+        stockUpdates = await this.deductIngredientsFromOrder(order, tx);
       }
 
       // ✅ Tất cả operations atomic - hoặc thành công hết hoặc rollback hết
       const transformedOrder = this.transformOrder(order);
       
-      // Emit Socket.io event for real-time updates (after successful transaction commit)
-      emitOrderCreated(transformedOrder);
+      return { order: transformedOrder, stockUpdates };
+    }).then(async ({ order, stockUpdates }) => {
+      // ✅ Emit socket events và check alerts SAU KHI transaction commit thành công
+      if (stockUpdates.length > 0) {
+        await this.emitStockUpdatesAndCheckAlerts(stockUpdates);
+      }
       
-      return transformedOrder;
+      // Emit Socket.io event for real-time updates (AFTER transaction commits successfully)
+      emitOrderCreated(order);
+      return order;
     });
   }
 
@@ -775,7 +823,8 @@ export class OrderService {
 
   /**
    * Get today's orders
-   * Chỉ load draft orders (CREATING) được tạo trong 1 giờ gần nhất để tránh load draft orders cũ
+   * Load tất cả orders của hôm nay, bao gồm cả CREATING orders
+   * Frontend sẽ tự filter CREATING orders không có items
    */
   async findToday() {
     const today = new Date();
@@ -783,26 +832,14 @@ export class OrderService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Thời gian 1 giờ trước (để filter draft orders cũ)
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-
     const orders = await prisma.order.findMany({
       where: {
         createdAt: {
           gte: today,
           lt: tomorrow,
         },
-        // Chỉ load draft orders (CREATING) được tạo trong 1 giờ gần nhất
-        // Các orders khác (PENDING, COMPLETED, etc.) load bình thường
-        OR: [
-          { status: { not: 'CREATING' } },
-          {
-            status: 'CREATING',
-            createdAt: {
-              gte: oneHourAgo,
-            },
-          },
-        ],
+        // Load tất cả orders của hôm nay, không filter CREATING theo thời gian
+        // Frontend sẽ tự filter CREATING orders không có items
       },
       include: {
         items: {
@@ -873,8 +910,102 @@ export class OrderService {
   }
 
   /**
+   * Find order by phone number or order number
+   * Used for customer order tracking
+   */
+  async findByPhoneOrOrderNumber(phoneOrOrderNumber: string) {
+    if (!phoneOrOrderNumber || phoneOrOrderNumber.trim() === '') {
+      throw new ValidationError('Vui lòng nhập số điện thoại hoặc mã đơn hàng');
+    }
+
+    const searchTerm = phoneOrOrderNumber.trim();
+
+    // Normalize phone number (remove spaces, dashes, parentheses)
+    const normalizedPhone = searchTerm.replace(/[\s\-\(\)]/g, '');
+
+    // Try to find by orderNumber first (exact match)
+    let order = await prisma.order.findUnique({
+      where: { orderNumber: searchTerm },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    // If not found by orderNumber, try to find by phone number
+    // Phone numbers in DB might be stored in different formats, so we try multiple approaches
+    if (!order) {
+      // Get all orders with phone numbers (excluding CREATING status)
+      const orders = await prisma.order.findMany({
+        where: {
+          customerPhone: {
+            not: null,
+          },
+          status: {
+            not: 'CREATING', // Exclude draft orders
+          },
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc', // Most recent first
+        },
+      });
+
+      // Find order by matching normalized phone numbers
+      order = orders.find((o) => {
+        if (!o.customerPhone) return false;
+        // Normalize phone from database
+        const dbPhoneNormalized = o.customerPhone.replace(/[\s\-\(\)]/g, '');
+        // Compare normalized versions
+        return dbPhoneNormalized === normalizedPhone || 
+               dbPhoneNormalized.includes(normalizedPhone) ||
+               normalizedPhone.includes(dbPhoneNormalized);
+      }) || null;
+    }
+
+    if (!order) {
+      throw new OrderNotFoundError(`Không tìm thấy đơn hàng với số điện thoại hoặc mã đơn hàng: ${searchTerm}`);
+    }
+
+    return this.transformOrder(order);
+  }
+
+  /**
    * Update order status
    */
+  /**
+   * Validate order status transition
+   */
+  private validateStatusTransition(currentStatus: string, newStatus: string): void {
+    const validTransitions: Record<string, string[]> = {
+      CREATING: ['PENDING', 'CONFIRMED', 'HOLD', 'CANCELLED'],
+      PENDING: ['CONFIRMED', 'HOLD', 'CANCELLED'],
+      HOLD: ['PENDING', 'CONFIRMED', 'CANCELLED'],
+      CONFIRMED: ['PREPARING', 'HOLD', 'CANCELLED'],
+      PREPARING: ['READY', 'CANCELLED'],
+      READY: ['COMPLETED', 'CANCELLED'],
+      COMPLETED: [], // Final state - no transitions allowed
+      CANCELLED: [], // Final state - no transitions allowed
+    };
+
+    const allowedStatuses = validTransitions[currentStatus] || [];
+    if (!allowedStatuses.includes(newStatus)) {
+      throw new ValidationError(
+        `Không thể chuyển đơn hàng từ trạng thái ${currentStatus} sang ${newStatus}. Các trạng thái hợp lệ: ${allowedStatuses.join(', ')}`,
+        { currentStatus, newStatus, allowedStatuses }
+      );
+    }
+  }
+
   async updateStatus(id: string, data: UpdateOrderStatusInput) {
     return await prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({
@@ -890,6 +1021,29 @@ export class OrderService {
 
       if (!order) {
         throw new OrderNotFoundError(id);
+      }
+
+      // Validate status transition
+      if (order.status !== data.status) {
+        this.validateStatusTransition(order.status, data.status);
+      }
+
+      // Trừ tồn kho khi chuyển sang CONFIRMED (nếu chưa trừ)
+      let stockUpdates: Array<{ type: 'product' | 'ingredient'; id: string; productId?: string; ingredientId?: string; quantity: number }> = [];
+      
+      if (data.status === 'CONFIRMED' && order.status !== 'CONFIRMED') {
+        // Kiểm tra xem đã trừ tồn kho chưa bằng cách check stock transactions
+        const hasStockTransaction = await tx.stockTransaction.findFirst({
+          where: {
+            productId: { in: order.items.map(item => item.productId) },
+            reason: { contains: order.orderNumber },
+          },
+        });
+
+        // Nếu chưa trừ tồn kho, trừ ngay khi CONFIRMED
+        if (!hasStockTransaction) {
+          stockUpdates = await this.deductIngredientsFromOrder(order, tx);
+        }
       }
 
       const updated = await tx.order.update({
@@ -910,68 +1064,11 @@ export class OrderService {
         },
       });
 
-      // Nếu order chuyển sang COMPLETED và chưa xử lý loyalty:
-      // 1. Xóa draft orders của cùng orderCreator trong transaction
-      // 2. Tự động trừ nguyên liệu theo recipe trong transaction
-      // 3. Tự động tích điểm và cập nhật totalSpent cho customer
-      let stockUpdates: Array<{ type: 'product' | 'ingredient'; id: string; productId?: string; ingredientId?: string; quantity: number }> = [];
-
+      // Xử lý khi order chuyển sang COMPLETED:
+      // 1. Xóa draft orders của cùng orderCreator
+      // 2. Tích điểm loyalty (CHỈ KHI COMPLETED, không trùng lặp)
       if (data.status === 'COMPLETED') {
-        // Process loyalty points if order is paid and has customer
-        if (updated.paymentStatus === 'SUCCESS' && updated.customerId && !order.paidAt) {
-          const orderTotal = parseFloat(updated.totalAmount.toString());
-          
-          // Calculate loyalty points (1 point per 1000 VND, rounded down)
-          const pointsToEarn = Math.floor(orderTotal / 1000);
-          
-          // Get current customer to calculate new points and membership level
-          const currentCustomer = await tx.customers.findUnique({
-            where: { id: updated.customerId },
-          });
-          
-          if (currentCustomer) {
-            const newLoyaltyPoints = currentCustomer.loyaltyPoints + (pointsToEarn > 0 ? pointsToEarn : 0);
-            const newMembershipLevel = calculateMembershipLevel(newLoyaltyPoints);
-            
-            if (pointsToEarn > 0) {
-              // Update customer totalSpent, loyaltyPoints, and membership level
-              await tx.customers.update({
-                where: { id: updated.customerId },
-                data: {
-                  totalSpent: {
-                    increment: new Decimal(orderTotal),
-                  },
-                  loyaltyPoints: newLoyaltyPoints,
-                  membershipLevel: newMembershipLevel,
-                  lastVisitAt: new Date(),
-                },
-              });
-
-              // Create loyalty transaction record
-              await tx.loyalty_transactions.create({
-                data: {
-                  id: `lt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                  customerId: updated.customerId,
-                  orderId: updated.id,
-                  type: 'EARN',
-                  points: pointsToEarn,
-                  reason: `Tích điểm từ đơn hàng ${updated.orderNumber}`,
-                },
-              });
-            } else {
-              // Still update totalSpent and lastVisitAt even if no points earned
-              await tx.customers.update({
-                where: { id: updated.customerId },
-                data: {
-                  totalSpent: {
-                    increment: new Decimal(orderTotal),
-                  },
-                  lastVisitAt: new Date(),
-                },
-              });
-            }
-          }
-        }
+        // Xóa draft orders
         if (order.orderCreator) {
           await tx.order.deleteMany({
             where: {
@@ -982,9 +1079,55 @@ export class OrderService {
           });
         }
 
-        // Tự động trừ nguyên liệu theo recipe trong transaction
-        // Lưu lại thông tin stock updates để emit events sau transaction commit
-        stockUpdates = await this.deductIngredientsFromOrder(updated, tx);
+        // Process loyalty points CHỈ KHI order chuyển sang COMPLETED và đã thanh toán
+        // Kiểm tra xem đã tích điểm chưa bằng cách check loyalty_transactions
+        const hasLoyaltyTransaction = await tx.loyalty_transactions.findFirst({
+          where: {
+            orderId: updated.id,
+            type: 'EARN',
+          },
+        });
+
+        if (!hasLoyaltyTransaction && updated.paymentStatus === 'SUCCESS' && updated.customerId) {
+          const orderTotal = parseFloat(updated.totalAmount.toString());
+          const pointsToEarn = Math.floor(orderTotal / 1000);
+          
+          const currentCustomer = await tx.customers.findUnique({
+            where: { id: updated.customerId },
+          });
+          
+          if (currentCustomer) {
+            const newLoyaltyPoints = currentCustomer.loyaltyPoints + pointsToEarn;
+            const newMembershipLevel = calculateMembershipLevel(newLoyaltyPoints);
+            
+            // Update customer totalSpent, loyaltyPoints, và membership level
+            await tx.customers.update({
+              where: { id: updated.customerId },
+              data: {
+                totalSpent: {
+                  increment: new Decimal(orderTotal),
+                },
+                loyaltyPoints: newLoyaltyPoints,
+                membershipLevel: newMembershipLevel,
+                lastVisitAt: new Date(),
+              },
+            });
+
+            // Create loyalty transaction record
+            if (pointsToEarn > 0) {
+              await tx.loyalty_transactions.create({
+                data: {
+                  id: `lt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                  customerId: updated.customerId,
+                  orderId: updated.id,
+                  type: 'EARN',
+                  points: pointsToEarn,
+                  reason: `Tích điểm từ đơn hàng ${updated.orderNumber}`,
+                },
+              });
+            }
+          }
+        }
       }
 
       // ✅ Tất cả operations atomic
@@ -1025,57 +1168,13 @@ export class OrderService {
       if (data.paymentDate !== undefined) updateData.paymentDate = data.paymentDate;
       if (data.status !== undefined) updateData.status = data.status;
 
-      // If payment status changes to SUCCESS and order has customer, process loyalty
-      if (data.paymentStatus === 'SUCCESS' && order.paymentStatus !== 'SUCCESS' && order.customerId) {
-        const orderTotal = parseFloat(order.totalAmount.toString());
-        const pointsToEarn = Math.floor(orderTotal / 1000);
-        
-        // Get current customer to calculate new points and membership level
-        const currentCustomer = await tx.customers.findUnique({
-          where: { id: order.customerId },
-        });
-        
-        if (currentCustomer) {
-          const newLoyaltyPoints = currentCustomer.loyaltyPoints + (pointsToEarn > 0 ? pointsToEarn : 0);
-          const newMembershipLevel = calculateMembershipLevel(newLoyaltyPoints);
-          
-          if (pointsToEarn > 0) {
-            await tx.customers.update({
-              where: { id: order.customerId },
-              data: {
-                totalSpent: {
-                  increment: new Decimal(orderTotal),
-                },
-                loyaltyPoints: newLoyaltyPoints,
-                membershipLevel: newMembershipLevel,
-                lastVisitAt: new Date(),
-              },
-            });
-
-            await tx.loyalty_transactions.create({
-              data: {
-                id: `lt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                customerId: order.customerId,
-                orderId: order.id,
-                type: 'EARN',
-                points: pointsToEarn,
-                reason: `Tích điểm từ đơn hàng ${order.orderNumber}`,
-              },
-            });
-          } else {
-            // Still update totalSpent and lastVisitAt
-            await tx.customers.update({
-              where: { id: order.customerId },
-              data: {
-                totalSpent: {
-                  increment: new Decimal(orderTotal),
-                },
-                lastVisitAt: new Date(),
-              },
-            });
-          }
-        }
+      // Set paidAt when paymentStatus changes to SUCCESS
+      if (data.paymentStatus === 'SUCCESS' && order.paymentStatus !== 'SUCCESS') {
+        updateData.paidAt = new Date();
       }
+
+      // NOTE: Loyalty points are processed ONLY when order status changes to COMPLETED
+      // NOT here when paymentStatus changes, to avoid double processing
 
       const updated = await tx.order.update({
         where: { id },
@@ -1146,16 +1245,36 @@ export class OrderService {
         },
       });
 
+      // Trừ tồn kho khi order được verify (chuyển từ PENDING → CONFIRMED)
+      let stockUpdates: Array<{ type: 'product' | 'ingredient'; id: string; productId?: string; ingredientId?: string; quantity: number }> = [];
+      const hasStockTransaction = await tx.stockTransaction.findFirst({
+        where: {
+          productId: { in: order.items.map(item => item.productId) },
+          reason: { contains: order.orderNumber },
+        },
+      });
+
+      if (!hasStockTransaction) {
+        stockUpdates = await this.deductIngredientsFromOrder(updated, tx);
+      }
+
       const transformedOrder = this.transformOrder(updated);
       
+      return { order: transformedOrder, stockUpdates };
+    }).then(async ({ order, stockUpdates }) => {
+      // Emit stock updates if any
+      if (stockUpdates.length > 0) {
+        await this.emitStockUpdatesAndCheckAlerts(stockUpdates);
+      }
+      
       // Emit Socket.io event for real-time updates
-      emitOrderUpdated(transformedOrder);
-      emitOrderStatusChanged(transformedOrder.id, transformedOrder.status);
+      emitOrderUpdated(order);
+      emitOrderStatusChanged(order.id, order.status);
       
       // Emit special event for customer notification
-      emitOrderVerified(transformedOrder);
+      emitOrderVerified(order);
       
-      return transformedOrder;
+      return order;
     });
   }
 
@@ -1341,7 +1460,9 @@ export class OrderService {
 
   /**
    * Resume hold order (Khôi phục đơn hàng đã lưu)
-   * Chuyển đơn hàng từ HOLD về PENDING
+   * Logic: 
+   * - CUSTOMER orders → resume to PENDING (cần verification)
+   * - STAFF orders → resume to CONFIRMED (đã được auto-confirm)
    */
   async resumeHoldOrder(id: string, userId: string) {
     return await prisma.$transaction(async (tx) => {
@@ -1361,13 +1482,21 @@ export class OrderService {
       }
 
       if (order.status !== 'HOLD') {
-        throw new Error(`Cannot resume order with status: ${order.status}`);
+        throw new ValidationError(
+          `Không thể khôi phục đơn hàng với trạng thái: ${order.status}. Chỉ có thể khôi phục đơn hàng đang ở trạng thái HOLD.`,
+          { orderId: id, currentStatus: order.status }
+        );
       }
+
+      // Xác định status khi resume dựa trên orderCreator
+      // CUSTOMER orders → PENDING (cần staff verification)
+      // STAFF orders → CONFIRMED (đã được auto-confirm khi tạo)
+      const resumeStatus = order.orderCreator === 'CUSTOMER' ? 'PENDING' : 'CONFIRMED';
 
       const updated = await tx.order.update({
         where: { id },
         data: {
-          status: 'PENDING',
+          status: resumeStatus,
         },
         include: {
           items: {
@@ -1378,11 +1507,34 @@ export class OrderService {
         },
       });
 
-      const transformedOrder = this.transformOrder(updated);
-      emitOrderUpdated(transformedOrder);
-      emitOrderStatusChanged(transformedOrder.id, transformedOrder.status);
+      // Nếu resume về CONFIRMED và chưa trừ tồn kho, trừ ngay
+      let stockUpdates: Array<{ type: 'product' | 'ingredient'; id: string; productId?: string; ingredientId?: string; quantity: number }> = [];
+      if (resumeStatus === 'CONFIRMED') {
+        const hasStockTransaction = await tx.stockTransaction.findFirst({
+          where: {
+            productId: { in: order.items.map(item => item.productId) },
+            reason: { contains: order.orderNumber },
+          },
+        });
 
-      return transformedOrder;
+        if (!hasStockTransaction) {
+          stockUpdates = await this.deductIngredientsFromOrder(updated, tx);
+        }
+      }
+
+      const transformedOrder = this.transformOrder(updated);
+      
+      return { order: transformedOrder, stockUpdates };
+    }).then(async ({ order, stockUpdates }) => {
+      // Emit stock updates if any
+      if (stockUpdates.length > 0) {
+        await this.emitStockUpdatesAndCheckAlerts(stockUpdates);
+      }
+      
+      emitOrderUpdated(order);
+      emitOrderStatusChanged(order.id, order.status);
+
+      return order;
     });
   }
 

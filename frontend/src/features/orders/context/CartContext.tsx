@@ -25,22 +25,37 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   // Debounce ref để tránh gọi API quá nhiều
   const draftOrderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load cart from localStorage on mount
+  // Load cart from sessionStorage on mount (sessionStorage tự động clear khi đóng tab)
   useEffect(() => {
-    const savedCart = localStorage.getItem(STORAGE_KEYS.CART);
+    const savedCart = sessionStorage.getItem(STORAGE_KEYS.CART);
     if (savedCart) {
       try {
         setItems(JSON.parse(savedCart));
       } catch (error) {
-        console.error('Error loading cart from localStorage:', error);
+        console.error('Error loading cart from sessionStorage:', error);
       }
     }
   }, []);
 
-  // Save cart to localStorage whenever items change
+  // Save cart to sessionStorage whenever items change (tự động clear khi đóng tab)
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(items));
+    sessionStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(items));
   }, [items]);
+
+  // Clear cart when tab is closed (beforeunload event)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Clear cart data khi đóng tab
+      sessionStorage.removeItem(STORAGE_KEYS.CART);
+      // Clear localStorage backup nếu có
+      localStorage.removeItem(STORAGE_KEYS.CART);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   // Sync to Customer Display whenever cart changes
   useEffect(() => {
@@ -53,6 +68,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   }, [items, sendToDisplay]);
 
   // Sync draft order to backend whenever cart changes (real-time)
+  // CRITICAL: If cart is empty, delete draft orders instead of syncing empty items
   useEffect(() => {
     // Clear previous timeout
     if (draftOrderTimeoutRef.current) {
@@ -67,6 +83,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     // Sync function
     const syncDraftOrder = async () => {
       try {
+        // If cart is empty, delete draft orders instead of syncing empty items
+        if (items.length === 0) {
+          await orderService.deleteDraftOrders(
+            orderCreator.type.toUpperCase() as 'STAFF' | 'CUSTOMER',
+            orderCreator.name || null
+          );
+          return;
+        }
+
         // Map items to order items format
         const orderItems = items.map((item) => ({
           productId: String(item.productId), // Convert number to string
@@ -79,27 +104,24 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           note: item.note || null,
         }));
 
-        // Tính VAT 10% và thêm vào subtotal của item cuối cùng (chỉ khi có items)
+        // Tính VAT 10% và thêm vào subtotal của item cuối cùng
         let orderItemsWithVAT = [...orderItems];
-        if (orderItemsWithVAT.length > 0) {
-          const currentTotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
-          const vat = currentTotal * 0.1;
-          const finalTotal = currentTotal + vat;
-          
-          // Thêm VAT vào item cuối cùng để tổng = finalTotal
-          const lastItem = orderItemsWithVAT[orderItemsWithVAT.length - 1];
-          const vatToAdd = finalTotal - currentTotal;
-          orderItemsWithVAT[orderItemsWithVAT.length - 1] = {
-            ...lastItem,
-            subtotal: lastItem.subtotal + vatToAdd,
-          };
-        }
-        // Nếu cart rỗng, orderItemsWithVAT sẽ là [] - backend sẽ update draft order với items rỗng
+        const currentTotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
+        const vat = currentTotal * 0.1;
+        const finalTotal = currentTotal + vat;
+        
+        // Thêm VAT vào item cuối cùng để tổng = finalTotal
+        const lastItem = orderItemsWithVAT[orderItemsWithVAT.length - 1];
+        const vatToAdd = finalTotal - currentTotal;
+        orderItemsWithVAT[orderItemsWithVAT.length - 1] = {
+          ...lastItem,
+          subtotal: lastItem.subtotal + vatToAdd,
+        };
 
         await orderService.createOrUpdateDraft({
           orderCreator: orderCreator.type.toUpperCase() as 'STAFF' | 'CUSTOMER',
           orderCreatorName: orderCreator.name || null,
-          items: orderItemsWithVAT, // Có thể là [] nếu cart rỗng
+          items: orderItemsWithVAT,
         });
       } catch (error: any) {
         console.error('Failed to sync draft order to backend:', error);
@@ -225,6 +247,24 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   const clearCart = () => {
     setItems([]);
+    // Clear sessionStorage và localStorage
+    sessionStorage.removeItem(STORAGE_KEYS.CART);
+    localStorage.removeItem(STORAGE_KEYS.CART);
+    
+    // Delete draft orders from backend nếu có orderCreator (fire and forget)
+    if (orderCreator) {
+      // Gọi async nhưng không await để không block UI
+      orderService.deleteDraftOrders(
+        orderCreator.type.toUpperCase() as 'STAFF' | 'CUSTOMER',
+        orderCreator.name || null
+      ).then(() => {
+        console.log('✅ Deleted draft orders when clearing cart');
+      }).catch((error: any) => {
+        console.error('Failed to delete draft orders:', error);
+        // Không hiển thị error để không làm phiền user
+      });
+    }
+    
     // Move toast outside of setState callback
     setTimeout(() => toast.success('Đã xóa tất cả giỏ hàng!'), 0);
   };
@@ -233,10 +273,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const setCartItems = (newItems: Omit<CartItem, 'id'>[]) => {
     const itemsWithIds = newItems.map(item => ({ ...item, id: uuidv4() }));
     setItems(itemsWithIds);
-    // Clear localStorage cart to prevent reload
+    // Clear sessionStorage và localStorage cart to prevent reload
+    sessionStorage.removeItem(STORAGE_KEYS.CART);
     localStorage.removeItem(STORAGE_KEYS.CART);
-    // Set new items to localStorage
-    localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(itemsWithIds));
+    // Set new items to sessionStorage
+    sessionStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(itemsWithIds));
   };
 
   // Function to update order status and sync to display
@@ -264,6 +305,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     setIsCartOpen,
     updateOrderStatus,
     setOrderCreator,
+    orderCreator,
   };
 
   return (

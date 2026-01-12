@@ -233,6 +233,20 @@ export class OrderController {
     }
   }
 
+  /**
+   * Find order by phone number or order number
+   * Public endpoint for customer order tracking
+   */
+  async findByPhoneOrOrderNumber(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { phoneOrOrderNumber } = req.params;
+      const order = await orderService.findByPhoneOrOrderNumber(phoneOrOrderNumber);
+      res.json(order);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async updateStatus(req: Request, res: Response, next: NextFunction) {
     try {
       const validated = updateOrderStatusSchema.parse({
@@ -478,6 +492,54 @@ export class OrderController {
       );
 
       res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Delete draft orders (CREATING) của cùng orderCreator
+   */
+  async deleteDraftOrders(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { orderCreator, orderCreatorName } = req.body;
+      
+      if (!orderCreator || !['STAFF', 'CUSTOMER'].includes(orderCreator)) {
+        res.status(400).json({
+          error: 'Invalid orderCreator. Must be STAFF or CUSTOMER',
+          errorCode: 'VALIDATION_ERROR',
+        });
+        return;
+      }
+
+      const deletedIds = await orderService.deleteDraftOrders(
+        orderCreator as 'STAFF' | 'CUSTOMER',
+        orderCreatorName || null
+      );
+
+      res.json({
+        success: true,
+        deletedCount: deletedIds.length,
+        deletedIds,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Delete ALL CREATING orders (Admin only - for cleanup)
+   */
+  async deleteAllDraftOrders(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const deletedIds = await orderService.deleteAllDraftOrders();
+
+      res.json({
+        success: true,
+        deletedCount: deletedIds.length,
+        deletedIds,
+        message: `Đã xóa ${deletedIds.length} đơn đang tạo`,
+      });
     } catch (error) {
       next(error);
     }

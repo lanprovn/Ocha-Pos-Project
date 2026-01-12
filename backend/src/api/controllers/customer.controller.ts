@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import customerService from '@services/customer.service';
 import { z } from 'zod';
 import { MEMBERSHIP_CONFIGS, getMembershipConfig, getDiscountRate } from '@config/membership.config';
+import { emitCustomerDiscountUpdate } from '@core/socket/socket.io';
 
 const getAllCustomersSchema = z.object({
   query: z.object({
@@ -149,6 +150,22 @@ export class CustomerController {
       if (!customer) {
         return res.json({ customer: null, exists: false });
       }
+      
+      // Emit socket event for real-time discount update
+      const discountRate = getDiscountRate(customer.membershipLevel as 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM');
+      emitCustomerDiscountUpdate({
+        phone: customer.phone,
+        customer: {
+          id: customer.id,
+          name: customer.name,
+          phone: customer.phone,
+          membershipLevel: customer.membershipLevel,
+          loyaltyPoints: customer.loyaltyPoints,
+          totalSpent: customer.totalSpent,
+        },
+        discountRate,
+      });
+      
       res.json({ customer, exists: true });
     } catch (error) {
       next(error);
@@ -176,6 +193,21 @@ export class CustomerController {
           created: false 
         });
       }
+
+      // Emit socket event for real-time discount update
+      const discountRate = getDiscountRate(result.customer.membershipLevel as 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM');
+      emitCustomerDiscountUpdate({
+        phone: result.customer.phone,
+        customer: {
+          id: result.customer.id,
+          name: result.customer.name,
+          phone: result.customer.phone,
+          membershipLevel: result.customer.membershipLevel,
+          loyaltyPoints: result.customer.loyaltyPoints,
+          totalSpent: result.customer.totalSpent,
+        },
+        discountRate,
+      });
 
       res.json({
         customer: result.customer,
