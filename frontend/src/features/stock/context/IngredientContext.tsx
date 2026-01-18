@@ -102,10 +102,19 @@ export const IngredientProvider: React.FC<IngredientProviderProps> = ({ children
       console.log('📊 Ingredient stocks count:', stocks?.length || 0);
 
       const ingredientStocks = stocks.map(mapIngredientStock);
-      const ingredientTransactions = transactionsResponse
-        .filter((txn) => txn.ingredientId)
-        .map(mapIngredientTransaction);
-      const ingredientAlerts = alertsResponse.filter((alert) => alert.ingredientId).map(mapIngredientAlert);
+      // ✅ OPTIMIZED: Combined filter and map into single iteration
+      const ingredientTransactions: IngredientTransaction[] = [];
+      for (const txn of transactionsResponse) {
+        if (txn.ingredientId) {
+          ingredientTransactions.push(mapIngredientTransaction(txn));
+        }
+      }
+      const ingredientAlerts: IngredientAlert[] = [];
+      for (const alert of alertsResponse) {
+        if (alert.ingredientId) {
+          ingredientAlerts.push(mapIngredientAlert(alert));
+        }
+      }
 
       console.log('✅ Mapped ingredient stocks:', ingredientStocks);
       console.log('✅ Total ingredients loaded:', ingredientStocks.length);

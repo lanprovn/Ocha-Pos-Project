@@ -60,8 +60,8 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       );
     }
 
-    // Sort products
-    filtered.sort((a, b) => {
+    // Sort products - use toSorted() for immutability
+    return filtered.toSorted((a, b) => {
       switch (sortBy) {
         case 'name':
           return a.name.localeCompare(b.name);
@@ -76,8 +76,6 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
           return b.rating - a.rating;
       }
     });
-
-    return filtered;
   }, [products, searchQuery, selectedCategory, selectedTags, sortBy]);
 
   const loadProducts = useCallback(async (): Promise<void> => {

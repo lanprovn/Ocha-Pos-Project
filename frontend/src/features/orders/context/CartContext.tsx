@@ -226,23 +226,27 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   };
 
   const updateCartItemNote = (id: string, note: string) => {
-    setItems(prevItems =>
-      prevItems.map(item => {
+    // ✅ OPTIMIZED: Use functional update and get item from prevItems to avoid stale closure
+    setItems(prevItems => {
+      const item = prevItems.find(item => item.id === id);
+      
+      // Show toast notification using item from current state
+      if (item) {
+        setTimeout(() => {
+          toast.success(note.trim() ? `Đã cập nhật ghi chú cho ${item.name}!` : `Đã xóa ghi chú cho ${item.name}!`, {
+            id: `note-${id}`
+          });
+        }, 0);
+      }
+      
+      // Update item with new note
+      return prevItems.map(item => {
         if (item.id === id) {
           return { ...item, note: note.trim() || undefined };
         }
         return item;
-      })
-    );
-    // Show toast notification
-    const item = items.find(item => item.id === id);
-    if (item) {
-      setTimeout(() => {
-        toast.success(note.trim() ? `Đã cập nhật ghi chú cho ${item.name}!` : `Đã xóa ghi chú cho ${item.name}!`, {
-          id: `note-${id}`
-        });
-      }, 0);
-    }
+      });
+    });
   };
 
   const clearCart = () => {

@@ -1,5 +1,5 @@
 // Dashboard data hook
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, startTransition } from 'react';
 import toast from 'react-hot-toast';
 import dashboardService from '@features/dashboard/services/dashboard.service';
 import stockService from '@features/stock/services/stock.service';
@@ -31,9 +31,17 @@ export const useDashboardData = () => {
     const errors: string[] = [];
     
     try {
-      // Load each API call separately to handle errors gracefully
-      try {
-        const statsResponse = await dashboardService.getStats();
+      // ✅ OPTIMIZED: Parallel API calls using Promise.allSettled for graceful error handling
+      const [statsResult, todaySalesResult, yesterdaySalesResult, alertsResult] = await Promise.allSettled([
+        dashboardService.getStats(),
+        dashboardService.getDailySales(),
+        dashboardService.getDailySales(getYesterdayISO()),
+        stockService.getAlerts(),
+      ]);
+
+      // Process stats response
+      if (statsResult.status === 'fulfilled') {
+        const statsResponse = statsResult.value;
         setStats(statsResponse);
 
         const lowStockProducts = statsResponse.lowStock?.products || [];
@@ -50,35 +58,34 @@ export const useDashboardData = () => {
           (item) => item.quantity > 0 && item.quantity <= item.minStock,
         ).length;
         setLowStockCount(lowProducts + lowIngredients);
-      } catch (error: any) {
-        console.error('Error loading dashboard stats:', error);
+      } else {
+        console.error('Error loading dashboard stats:', statsResult.reason);
         errors.push('Thống kê');
         setStats(null);
       }
 
-      try {
-        const todaySalesResponse = await dashboardService.getDailySales();
-        setDailySales(todaySalesResponse);
-      } catch (error: any) {
-        console.error('Error loading today sales:', error);
+      // Process today sales response
+      if (todaySalesResult.status === 'fulfilled') {
+        setDailySales(todaySalesResult.value);
+      } else {
+        console.error('Error loading today sales:', todaySalesResult.reason);
         errors.push('Doanh số hôm nay');
         setDailySales(null);
       }
 
-      try {
-        const yesterdaySalesResponse = await dashboardService.getDailySales(getYesterdayISO());
-        setYesterdaySales(yesterdaySalesResponse);
-      } catch (error: any) {
-        console.error('Error loading yesterday sales:', error);
-        // Don't add to errors, yesterday sales is optional
+      // Process yesterday sales response (optional, don't add to errors)
+      if (yesterdaySalesResult.status === 'fulfilled') {
+        setYesterdaySales(yesterdaySalesResult.value);
+      } else {
+        console.error('Error loading yesterday sales:', yesterdaySalesResult.reason);
         setYesterdaySales(null);
       }
 
-      try {
-        const alertsResponse = await stockService.getAlerts();
-        setStockAlerts(alertsResponse);
-      } catch (error: any) {
-        console.error('Error loading stock alerts:', error);
+      // Process alerts response
+      if (alertsResult.status === 'fulfilled') {
+        setStockAlerts(alertsResult.value);
+      } else {
+        console.error('Error loading stock alerts:', alertsResult.reason);
         errors.push('Cảnh báo tồn kho');
         setStockAlerts([]);
       }
@@ -106,10 +113,12 @@ export const useDashboardData = () => {
     }
   }, []);
 
-  // Update time every second
+  // Update time every second - use startTransition for non-blocking updates
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(new Date());
+      startTransition(() => {
+        setCurrentTime(new Date());
+      });
     }, 1000);
 
     return () => clearInterval(timer);

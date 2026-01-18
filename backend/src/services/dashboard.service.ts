@@ -5,40 +5,131 @@ export class DashboardService {
    * Get dashboard statistics
    */
   async getStats() {
-    // Overview stats
-    const totalProducts = await prisma.product.count();
-    const totalIngredients = await prisma.ingredient.count();
-    const totalOrders = await prisma.order.count();
-
-    // Today's stats
+    // Today's date range
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const todayOrders = await prisma.order.findMany({
-      where: {
-        createdAt: {
-          gte: today,
-          lt: tomorrow,
-        },
-      },
-      include: {
-        items: true,
-      },
-    });
+    // Hourly revenue date range
+    const last24Hours = new Date();
+    last24Hours.setHours(last24Hours.getHours() - 24);
 
+    // ✅ OPTIMIZED: Parallelize independent DB queries
+    const [
+      totalProducts,
+      totalIngredients,
+      totalOrders,
+      todayOrders,
+      allOrders,
+      statusCounts,
+      paymentGroups,
+      topProductsData,
+      recentOrdersForHourly,
+      allProductStocks,
+      allIngredientStocks,
+      recentOrdersList,
+    ] = await Promise.all([
+      prisma.product.count(),
+      prisma.ingredient.count(),
+      prisma.order.count(),
+      prisma.order.findMany({
+        where: {
+          createdAt: {
+            gte: today,
+            lt: tomorrow,
+          },
+        },
+        include: {
+          items: true,
+        },
+      }),
+      prisma.order.findMany({
+        select: {
+          totalAmount: true,
+        },
+      }),
+      prisma.order.groupBy({
+        by: ['status'],
+        _count: {
+          id: true,
+        },
+      }),
+      prisma.order.groupBy({
+        by: ['paymentMethod'],
+        _count: {
+          id: true,
+        },
+        _sum: {
+          totalAmount: true,
+        },
+        where: {
+          paymentMethod: { not: null },
+        },
+      }),
+      prisma.orderItem.groupBy({
+        by: ['productId'],
+        _sum: {
+          quantity: true,
+        },
+        _count: {
+          id: true,
+        },
+        orderBy: {
+          _sum: {
+            quantity: 'desc',
+          },
+        },
+        take: 10,
+      }),
+      prisma.order.findMany({
+        where: {
+          createdAt: {
+            gte: last24Hours,
+          },
+        },
+        select: {
+          totalAmount: true,
+          createdAt: true,
+        },
+      }),
+      prisma.stock.findMany({
+        where: {
+          isActive: true,
+        },
+        include: {
+          product: true,
+        },
+      }),
+      prisma.ingredientStock.findMany({
+        where: {
+          isActive: true,
+        },
+        include: {
+          ingredient: true,
+        },
+      }),
+      prisma.order.findMany({
+        take: 10,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Process today revenue
     const todayRevenue = todayOrders.reduce((sum, order) => {
       return sum + parseFloat(order.totalAmount.toString());
     }, 0);
 
-    // Total revenue
-    const allOrders = await prisma.order.findMany({
-      select: {
-        totalAmount: true,
-      },
-    });
-
+    // Process total revenue
     const totalRevenue = allOrders.reduce((sum, order) => {
       return sum + parseFloat(order.totalAmount.toString());
     }, 0);
@@ -46,34 +137,14 @@ export class DashboardService {
     // Average order value
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-    // Orders by status
+    // Process orders by status
     const ordersByStatus: Record<string, number> = {};
-    const statusCounts = await prisma.order.groupBy({
-      by: ['status'],
-      _count: {
-        id: true,
-      },
-    });
-
     statusCounts.forEach((item) => {
       ordersByStatus[item.status] = item._count.id;
     });
 
-    // Payment stats
+    // Process payment stats
     const paymentStats: Record<string, { count: number; total: string }> = {};
-    const paymentGroups = await prisma.order.groupBy({
-      by: ['paymentMethod'],
-      _count: {
-        id: true,
-      },
-      _sum: {
-        totalAmount: true,
-      },
-      where: {
-        paymentMethod: { not: null },
-      },
-    });
-
     paymentGroups.forEach((item) => {
       if (item.paymentMethod) {
         paymentStats[item.paymentMethod] = {
@@ -83,39 +154,23 @@ export class DashboardService {
       }
     });
 
-    // Top products (by quantity sold)
-    const topProductsData = await prisma.orderItem.groupBy({
-      by: ['productId'],
-      _sum: {
-        quantity: true,
-      },
-      _count: {
-        id: true,
-      },
-      orderBy: {
-        _sum: {
-          quantity: 'desc',
-        },
-      },
-      take: 10,
-    });
-
+    // ✅ OPTIMIZED: Process top products in parallel
     const topProducts = await Promise.all(
       topProductsData.map(async (item) => {
-        const product = await prisma.product.findUnique({
-          where: { id: item.productId },
-          include: {
-            category: true,
-          },
-        });
-
-        // Calculate revenue for this product
-        const productOrders = await prisma.orderItem.findMany({
-          where: { productId: item.productId },
-          select: {
-            subtotal: true,
-          },
-        });
+        const [product, productOrders] = await Promise.all([
+          prisma.product.findUnique({
+            where: { id: item.productId },
+            include: {
+              category: true,
+            },
+          }),
+          prisma.orderItem.findMany({
+            where: { productId: item.productId },
+            select: {
+              subtotal: true,
+            },
+          }),
+        ]);
 
         const revenue = productOrders.reduce((sum, order) => {
           return sum + parseFloat(order.subtotal.toString());
@@ -131,28 +186,13 @@ export class DashboardService {
       })
     );
 
-    // Hourly revenue (last 24 hours)
-    const last24Hours = new Date();
-    last24Hours.setHours(last24Hours.getHours() - 24);
-
-    const recentOrders = await prisma.order.findMany({
-      where: {
-        createdAt: {
-          gte: last24Hours,
-        },
-      },
-      select: {
-        totalAmount: true,
-        createdAt: true,
-      },
-    });
-
+    // Process hourly revenue (last 24 hours)
     const hourlyRevenue: Record<number, { revenue: number; orderCount: number }> = {};
     for (let i = 0; i < 24; i++) {
       hourlyRevenue[i] = { revenue: 0, orderCount: 0 };
     }
 
-    recentOrders.forEach((order) => {
+    recentOrdersForHourly.forEach((order) => {
       const hour = order.createdAt.getHours();
       hourlyRevenue[hour].revenue += parseFloat(order.totalAmount.toString());
       hourlyRevenue[hour].orderCount += 1;
@@ -164,49 +204,14 @@ export class DashboardService {
       orderCount: data.orderCount,
     }));
 
-    // Low stock alerts
-    // Low stock products - quantity <= minStock
-    const allProductStocks = await prisma.stock.findMany({
-      where: {
-        isActive: true,
-      },
-      include: {
-        product: true,
-      },
-    });
-
+    // Process low stock alerts
     const lowStockProducts = allProductStocks.filter(
       (stock) => stock.quantity <= stock.minStock
     );
 
-    // Low stock ingredients - quantity <= minStock
-    const allIngredientStocks = await prisma.ingredientStock.findMany({
-      where: {
-        isActive: true,
-      },
-      include: {
-        ingredient: true,
-      },
-    });
-
     const lowStockIngredients = allIngredientStocks.filter(
       (stock) => stock.quantity <= stock.minStock
     );
-
-    // Recent orders
-    const recentOrdersList = await prisma.order.findMany({
-      take: 10,
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
-    });
 
     return {
       overview: {

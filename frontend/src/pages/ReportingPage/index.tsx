@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, startTransition } from 'react';
 import { useReportingData } from './hooks/useReportingData';
 import { ReportingHeader } from './components/ReportingHeader';
 import { ReportFiltersComponent } from './components/ReportFilters';
@@ -20,7 +20,9 @@ const ReportingPage: React.FC = () => {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(new Date());
+      startTransition(() => {
+        setCurrentTime(new Date());
+      });
     }, 1000);
 
     return () => clearInterval(timer);

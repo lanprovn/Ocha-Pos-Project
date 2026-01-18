@@ -215,10 +215,8 @@ const RecipeCheckTab: React.FC = () => {
         }
 
         try {
-          // Create all recipes for this product
-          for (const recipe of defaultRecipes) {
-            await recipeService.create(recipe);
-          }
+          // ✅ OPTIMIZED: Create all recipes for this product in parallel
+          await Promise.all(defaultRecipes.map(recipe => recipeService.create(recipe)));
           successCount++;
         } catch (error) {
           console.error(`Error creating recipes for ${product.name}:`, error);

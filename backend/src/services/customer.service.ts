@@ -212,7 +212,8 @@ export class CustomerService {
       customer.tags.forEach((tag) => allTags.add(tag));
     });
 
-    return Array.from(allTags).sort();
+    // ✅ OPTIMIZED: Use spread operator for immutability
+    return [...Array.from(allTags)].sort();
   }
 
   /**

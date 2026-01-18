@@ -113,7 +113,14 @@ export function isValidCreatingOrder(order: Order): boolean {
 
 /**
  * Transform and filter orders from backend
+ * ✅ OPTIMIZED: Combined filter and map into single iteration
  */
 export function transformOrders(backendOrders: Order[]): OrderTracking[] {
-  return backendOrders.filter(isValidCreatingOrder).map(transformOrderToTracking);
+  const result: OrderTracking[] = [];
+  for (const order of backendOrders) {
+    if (isValidCreatingOrder(order)) {
+      result.push(transformOrderToTracking(order));
+    }
+  }
+  return result;
 }

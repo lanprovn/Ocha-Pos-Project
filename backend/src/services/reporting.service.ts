@@ -130,7 +130,8 @@ export class ReportingService {
       ).toString();
     });
 
-    const dailyData = Object.values(dailyDataMap).sort((a, b) =>
+    // ✅ OPTIMIZED: Use spread operator for immutability
+    const dailyData = [...Object.values(dailyDataMap)].sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 

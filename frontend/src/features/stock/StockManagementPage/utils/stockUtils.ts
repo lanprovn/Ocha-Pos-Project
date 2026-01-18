@@ -34,7 +34,7 @@ export const useProductInfo = () => {
         categories.add(product.category);
       }
     });
-    return Array.from(categories).sort();
+    return Array.from(categories).toSorted();
   };
 
   return { getProductInfo, getCategories, products };
