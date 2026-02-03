@@ -1,0 +1,32 @@
+{
+    "name": "ocha-pos-next",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev -p 3001",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint"
+    },
+    "dependencies": {
+        "next": "latest",
+        "react": "latest",
+        "react-dom": "latest",
+        "lucide-react": "latest",
+        "framer-motion": "latest",
+        "clsx": "latest",
+        "tailwind-merge": "latest",
+        "axios": "latest",
+        "socket.io-client": "latest",
+        "react-hot-toast": "latest"
+    },
+    "devDependencies": {
+        "typescript": "latest",
+        "@types/node": "latest",
+        "@types/react": "latest",
+        "@types/react-dom": "latest",
+        "tailwindcss": "latest",
+        "postcss": "latest",
+        "autoprefixer": "latest"
+    }
+}

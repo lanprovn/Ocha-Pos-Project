@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --primary: #10b981;
+    --primary-hover: #059669;
+    --bg-main: #f8fafc;
+}
+
+@layer base {
+    body {
+        @apply bg-slate-50 text-slate-900;
+        font-family: var(--font-poppins), sans-serif;
+    }
+
+    /* GPU Acceleration for smooth animations */
+    .motion-gpu {
+        backface-visibility: hidden;
+        perspective: 1000px;
+        transform: translateZ(0);
+    }
+
+    /* Professional Scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #e2e8f0;
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #cbd5e1;
+    }
+
+    /* High-Performance Smooth Div Scrolling */
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    input,
+    button {
+        @apply outline-none ring-0;
+    }
+}
+
+@layer components {
+    .hardware-accelerated {
+        @apply motion-gpu;
+        will-change: transform, opacity;
+    }
+}
