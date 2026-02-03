@@ -1,9 +1,11 @@
 "use client";
+
 import React, { useState } from 'react';
 import type { Product } from '@/types/product';
 import { Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 interface ProductCardImageProps {
   product: Product;
@@ -12,10 +14,10 @@ interface ProductCardImageProps {
 
 export const ProductCardImage: React.FC<ProductCardImageProps> = ({ product, onInfoClick }) => {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [imgSrc, setImgSrc] = useState(product.image);
 
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const target = e.target as HTMLImageElement;
-    target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=300&auto=format&fit=crop';
+  const handleImageError = () => {
+    setImgSrc('https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=300&auto=format&fit=crop');
   };
 
   return (
@@ -31,17 +33,18 @@ export const ProductCardImage: React.FC<ProductCardImageProps> = ({ product, onI
         )}
       </AnimatePresence>
 
-      <motion.img
-        initial={{ filter: 'blur(10px)', scale: 1.1 }}
-        animate={{ filter: isLoaded ? 'blur(0px)' : 'blur(10px)', scale: isLoaded ? 1 : 1.1 }}
-        transition={{ duration: 0.5 }}
-        src={product.image}
+      <Image
+        src={imgSrc}
         alt={product.name}
-        loading="lazy"
-        decoding="async"
+        fill
+        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+        className={cn(
+          "object-cover transition-all duration-700 group-hover:scale-110",
+          !isLoaded ? "blur-xl" : "blur-0"
+        )}
         onLoad={() => setIsLoaded(true)}
-        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         onError={handleImageError}
+        priority={false}
       />
 
       {/* Modern Overlay */}
@@ -61,3 +64,8 @@ export const ProductCardImage: React.FC<ProductCardImageProps> = ({ product, onI
     </div>
   );
 };
+
+// Helper function for cn
+function cn(...inputs: any[]) {
+  return inputs.filter(Boolean).join(' ');
+}
