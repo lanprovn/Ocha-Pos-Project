@@ -1,114 +1,69 @@
-# Google Antigravity
+# 💎 Ocha POS - Luxury Terminal Experience
 
-[English](./README.md) | [Tiếng Việt](./README.vi.md)
+Ocha POS là hệ thống quản lý bán hàng (Point of Sale) cao cấp được thiết kế chuyên biệt cho các mô hình kinh doanh F&B (Nhà hàng, Cà phê, Bakery). Dự án tập trung vào trải nghiệm người dùng tinh tế (Luxury UI), hiệu năng xử lý tốc độ cao và khả năng đồng bộ thời gian thực mạnh mẽ.
 
-> **Antigravity IDE: The Intelligent Operating System for AI Engineers & Project Squads.**  
-> *Transform your AI from a chatbot into a professional Specialist Squad with standard operating procedures.*
+## ✨ Tính năng nổi bật
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![npm version](https://badge.fury.io/js/antigravity-ide.svg)](https://badge.fury.io/js/antigravity-ide)
+### 🎨 Giao diện "Luxury Terminal"
+* Thiết kế hiện đại theo phong cách tối giản, sang trọng với các bo góc siêu lớn (32px-48px).
+* Hiệu ứng Glassmorphism và Backdrop Blur tạo chiều sâu cho không gian làm việc.
+* Tối ưu hóa trải nghiệm trên cả màn hình máy tính và máy tính bảng (Tablet).
 
-**Google Antigravity** is more than just a skill collection; it is a comprehensive **Orchestration Framework**. it provides an "AI Battlefield" environment where AI agents collaborate through a professional production line (PDCA), ensuring every line of code is audited and optimized.
+### 📋 Quản lý Đơn hàng Thông minh
+* **Lưu đơn chờ (Parked Orders)**: Cho phép tạm dừng đơn hàng đang dở để phục vụ khách khác và khôi phục lại tức thì.
+* **Sơ đồ bàn (Floor Plan)**: Quản lý trạng thái bàn (Trống/Đang ngồi) theo sơ đồ trực quan, hiển thị tổng tiền và thời gian khách đã ngồi theo thời gian thực.
+* **Quy trình Thanh toán tối ưu**: Tích hợp chọn hình thức phục vụ (Dùng tại quán/Mang về) và gán số bàn/thẻ rung ngay trong luồng thanh toán.
 
-| **27** Master Skills | **15** Specialist Agents | **21** Workflows | **17** Shared DNA Modules |
-| :---: | :---: | :---: | :---: |
-| Containing 600+ Capabilities | Role-Based Personas | PDCA Cycle | Industry Blueprints |
+### ⚡ Hiệu năng & Đồng bộ
+* **Real-time Sync**: Sử dụng WebSockets (Socket.io) để đồng bộ trạng thái đơn hàng giữa màn hình nhân viên và màn hình hiển thị cho khách hàng.
+* **Single-Pass Algorithm**: Thuật toán lọc đơn hàng tối ưu, đảm bảo tìm kiếm và phân loại hàng ngàn đơn hàng trong tích tắc mà không gây giật lag UI.
+* **Offline Persistence**: Lưu trữ giỏ hàng và đơn chờ thông qua SessionStorage, đảm bảo không mất dữ liệu khi trình duyệt được tải lại.
 
----
+### 💳 Thanh toán & Bảo mật
+* Tích hợp thanh toán QR Code hiện đại với giao diện "Luxury Banking".
+* Quản lý trạng thái xác thực và phân quyền nhân viên (Staff/Admin).
 
-## 🚀 1. Quick Scaffolding
+## 🛠 Công nghệ sử dụng
 
-Set up your mission-critical environment in 30 seconds using the CLI:
+*   **Frontend**: React 18+, TypeScript, Tailwind CSS.
+*   **UI Components**: Shadcn/UI, Lucide Icons, Framer Motion.
+*   **State Management**: React Context API & Custom Hooks.
+*   **Backend Backend**: Node.js/Express (API phục vụ POS).
+*   **Real-time**: Socket.io.
 
-```sh
-# 1. Create a new project (Recommended)
-npx antigravity-ide my_project
+## 🚀 Hướng dẫn cài đặt
 
-# 2. Smart install in current directory
-npx antigravity-ide
+### 1. Yêu cầu hệ thống
+* Node.js v18.0.0 trở lên.
+* npm hoặc yarn.
+
+### 2. Cài đặt Dependencies
+```bash
+# Cài đặt cho toàn bộ dự án
+npm install
+
+# Hoặc cài đặt riêng cho frontend/backend
+cd frontend && npm install
+cd ../backend && npm install
 ```
 
-### ✨ Setup Wizard Features (v4.0.0 - Big Update)
-The new interactive CLI puts you in control with a **Scale-Adaptive Engine**:
+### 3. Cấu hình môi trường (Environment Variables)
+Sao chép file `.env.example` thành `.env` trong cả hai thư mục `frontend` và `backend` và cấu hình các thông số API URL, Port.
 
-1.  **Scale-Adaptive Architecture**:
-    - **Flexible (Solo-Ninja)**: Optimized for speed. Hybrid agents with cross-domain capabilities. Fast-track execution.
-    - **Balanced (Agile-Squad)**: Coordinated workflow with plan verification. Focused specialist agents.
-    - **Strict (Software-Factory)**: Enterprise-grade standardization. Mandatory security audits and quality gates.
-
-2.  **Scientific Metadata Linkage**:
-    - **Unified Connection**: Every file in `.agent` is linked via YAML metadata to its **DNA** (`.shared`), **Rules** (`rules/`), and **Skills** (`skills/`).
-    - **Context-Aware Invocations**: Agents automatically summon the right knowledge based on the file domain and project scale.
-
-3.  **Smart Allocation Logic**:
-    - **Scale (Quy mô)**: Determines the **Operation Mode** (Ninja vs Squad vs Factory) and **Compliance Depth**.
-    - **Product Type**: Automatically loads the exact **Skills & Workflows** you need:
-        - 📱 **User Application**: App/Web/Mobile/Desktop (Activates *WebDev/Mobile/Testing/UIUX* Skills).
-        - 🛠️ **Developer Tool**: CLI/Library/API (Activates *DevOps/Testing* Skills).
-        - 🤖 **AI Agent**: Chatbot/Automation (Activates *AI/Maker/Research* Skills).
-        - 🎨 **Digital Asset**: Game/Template/Media (Activates *GameDev/SEO/UIUX* Skills).
-
-4.  **Context Injection**:
-    - **Name your Agent**: Personalize your AI (e.g., *Jarvis*, *Friday*).
-    - **Multi-Persona Orchestration**: Coordinate up to 15 specialist agents through a unified command.
-    - *Auto-Injection*: These details are deeply embedded into `.agent/rules/GEMINI.md`.
-
-5.  **Security & Learning Systems (v4.0.x)**:
-    - **🛡️ Malware Protection**: Automatic scanning of malicious URLs and links before loading external resources.
-    - **🔄 Auto-Update Chat**: AI proactively checks NPM for new versions and offers to upgrade via chat.
-    - **🐛 Error Logging**: AI automatically logs all errors to `ERRORS.md` for analysis and learning (v4.0.2).
-    - **📊 Smart Prevention**: Classifies errors by Type/Severity, suggests fixes, and prevents recurrence.
-    - **🎓 Self-Learning**: Errors repeated ≥ 2 times → AI auto-creates new Rules or Test cases.
-
-### Engine Modes
-- **⚡ Standard (Node.js)**: High-speed, lightweight, perfect for Web/SaaS projects.
-- **🧠 Advanced (Python)**: Deep AI integration, Data Science, and automated Security Scanners.
-
-### Identity Awareness & Brain-Drop Protection
-You can assign a unique name to your Agent (e.g., *Jarvis*). This acts as an "Identity Anchor" to verify if the AI is still adhering to the system rules and operational flow.
-
----
-
-## 🧠 2. The Core Brain: `.agent` Folder
-
-The `.agent` directory is where the system's intelligence resides:
-
-- **Specialist Agent System**: Includes the Project Planner, Backend/Frontend Specialists, Security Auditor, and the Orchestrator (Captain).
-- **PDCA Cycle (Plan-Do-Check-Act)**: AI doesn't just "write code." It follows a rigorous Plan -> Implement -> Inspect -> Approve cycle.
-- **Shared Knowledge DNA (`.shared/`)**: Contains the project's core principles, including API Standards, DB Schemas, Compliance docs, and Domain Blueprints (Fintech, Edtech, etc.).
-
----
-
-## ⚡ 3. Slash Commands (`/`) & Updates
-
-Trigger deep workflows directly within your AI chat interface:
-
-- `/plan`: Outline requirements and break down tasks (Project Planner).
-- `/create`: Scaffold the project's foundation.
-- `/ui-ux-pro-max`: Design premium interfaces & micro-interactions.
-- `/orchestrate`: Coordinate multiple agents to solve complex problems.
-- `/update`: Check for updates and upgrade Antigravity IDE to the latest version.
-- `/log-error`: Auto error logging (runs in background, no manual invocation needed).
-
-### System Updates
-Update the Antigravity Brain to the latest version while preserving your custom configurations:
-```sh
-npx antigravity-ide update
+### 4. Chạy ứng dụng
+```bash
+# Tại thư mục gốc (Root)
+npm run dev
 ```
+Ứng dụng sẽ khả dụng tại:
+* **POS Terminal**: `http://localhost:3000`
+* **Màn hình khách hàng**: `http://localhost:3000/customer`
+
+## 📂 Cấu trúc dự án
+* `frontend/src/features/orders`: Chứa toàn bộ logic xử lý đơn hàng, thanh toán và sơ đồ bàn.
+* `frontend/src/features/products`: Quản lý danh mục và hiển thị sản phẩm.
+* `frontend/src/components/layout`: Chứa giao diện POS Layout và Sidebar.
+* `shared-types/`: Chứa các định nghĩa kiểu dữ liệu (TypeScript Interfaces) dùng chung cho toàn hệ thống.
 
 ---
-
-## 📂 Project Structure
-
-```text
-my-project/
-├── .agent/           # 🧠 THE BRAIN: DNA, Skills & Rules
-│   ├── .shared/      # ⛩️ Master Knowledge (API, DB, Design)
-│   ├── agents/       # 🎭 Specialist Agent Personas
-│   └── skills/       # 🛠️ 600+ Mission-Ready Skills
-└── cli/              # ⚡ CLI: Scaffolding management
-```
-
----
-
-**Antigravity IDE** - Breaking the laws of gravity to elevate your projects. 🛰️🚀
+*Phát triển bởi LanProVN Core Team.*
