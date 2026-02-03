@@ -1,10 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { formatPrice } from '@/utils/formatPrice';
+import {
+  X,
+  Timer,
+  Info,
+  ShieldCheck,
+  Copy,
+  Banknote,
+  Smartphone,
+  CheckCircle2,
+  AlertCircle,
+  Loader2
+} from 'lucide-react';
+
+// Shadcn UI
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 export interface QRPaymentData {
-  qrUrl: string; // URL để generate QR code (backup)
-  qrImageUrl?: string; // URL image từ VietQR API (QR code thật - dùng chính)
+  qrUrl: string;
+  qrImageUrl?: string;
   qrData: {
     bankCode: string;
     accountNumber: string;
@@ -38,23 +56,15 @@ const QRPaymentModal: React.FC<QRPaymentModalProps> = ({
 
   useEffect(() => {
     if (!isOpen || !qrData) return;
-
-    // Reset countdown khi mở modal
     setCountdown(300);
 
-    // Tính toán kích thước QR code dựa trên màn hình
     const updateQrSize = () => {
-      if (window.innerWidth < 640) {
-        setQrSize(220);
-      } else {
-        setQrSize(260);
-      }
+      setQrSize(window.innerWidth < 640 ? 220 : 260);
     };
 
     updateQrSize();
     window.addEventListener('resize', updateQrSize);
 
-    // Countdown timer
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -76,203 +86,195 @@ const QRPaymentModal: React.FC<QRPaymentModalProps> = ({
   const minutes = Math.floor(countdown / 60);
   const seconds = countdown % 60;
 
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    alert(`Đã sao chép ${label}`);
+  };
+
   return (
-    <>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
+      {/* Super Glass Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity"
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-xl"
         onClick={onClose}
       />
-      <div className="fixed inset-0 flex items-center justify-center z-50 p-3 sm:p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[95vh] max-h-[900px] mx-auto border border-white/50 transform animate-scale-in flex flex-col overflow-hidden">
-          {/* Header */}
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900">Thanh toán qua QR Code</h3>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
-              aria-label="Close"
-            >
-              ×
-            </button>
+
+      {/* Luxury QR Content */}
+      <div className="relative w-full max-w-5xl bg-white rounded-[40px] shadow-2xl flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-500 max-h-[90vh]">
+
+        {/* Left: QR Display Area */}
+        <div className="md:w-[45%] bg-slate-50 p-8 sm:p-12 flex flex-col items-center justify-center border-r border-slate-100">
+          <div className="mb-8 text-center space-y-2">
+            <Badge className="bg-emerald-500 text-white border-none font-black text-[10px] uppercase tracking-widest px-3 py-1">
+              Secure Gateway
+            </Badge>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Quét mã QR</h2>
+            <div className="flex items-center justify-center gap-2 text-slate-400">
+              <Timer className="w-4 h-4" />
+              <span className="text-sm font-bold">{minutes}:{seconds.toString().padStart(2, '0')}</span>
+            </div>
           </div>
 
-          {/* Content - Horizontal Layout - Scrollable */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 h-full">
-              {/* Left Side - QR Code */}
-              <div className="flex flex-col items-center justify-center space-y-3 sm:space-y-4">
-                <div className="bg-white p-3 sm:p-4 rounded-lg border-2 border-gray-200 shadow-lg">
-                  {qrData.qrImageUrl ? (
-                    // Sử dụng QR code image từ VietQR API (QR code thật)
-                    <img
-                      src={qrData.qrImageUrl}
-                      alt="QR Code Thanh Toán"
-                      className="w-full h-auto max-w-[280px] max-h-[280px]"
-                      onError={(e) => {
-                        // Fallback: nếu image không load được, dùng QR code generator
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        const fallback = target.nextElementSibling as HTMLElement;
-                        if (fallback) fallback.style.display = 'block';
-                      }}
-                    />
-                  ) : null}
-                  {/* Fallback: Generate QR code từ URL nếu image không có */}
-                  <div style={{ display: qrData.qrImageUrl ? 'none' : 'block' }}>
-                    <QRCodeSVG
-                      value={qrData.qrUrl}
-                      size={qrSize}
-                      level="H"
-                      includeMargin={true}
-                    />
+          <div className="relative group">
+            <div className="absolute inset-0 bg-primary/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+            <div className="relative bg-white p-6 rounded-[32px] shadow-2xl border border-slate-100 transition-transform duration-500 hover:scale-105">
+              {qrData.qrImageUrl ? (
+                <img
+                  src={qrData.qrImageUrl}
+                  alt="QR Code"
+                  className="w-full max-w-[280px] h-auto rounded-xl"
+                />
+              ) : (
+                <QRCodeSVG value={qrData.qrUrl} size={qrSize} level="H" includeMargin={true} />
+              )}
+            </div>
+          </div>
+
+          {countdown === 0 && (
+            <div className="mt-8 p-4 bg-rose-50 rounded-2xl border border-rose-100 text-center animate-bounce">
+              <p className="text-xs text-rose-600 font-black uppercase tracking-widest flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" /> Mã QR đã hết hạn
+              </p>
+            </div>
+          )}
+
+          <div className="mt-10 flex items-center gap-4 opacity-40">
+            <img src="https://vietqr.net/portal-v2/images/img/vietqr-logo.png" alt="VietQR" className="h-6 object-contain" />
+            <div className="h-4 w-px bg-slate-300" />
+            <img src="https://napas.com.vn/Styles/img/logo.png" alt="Napas" className="h-4 object-contain" />
+          </div>
+        </div>
+
+        {/* Right: Payment Details */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-white">
+          {/* Header */}
+          <div className="p-8 pb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-50 rounded-xl">
+                <Banknote className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight leading-none">Thông tin chuyển khoản</h3>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Double check before pay</span>
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full text-slate-300">
+              <X className="w-6 h-6" />
+            </Button>
+          </div>
+
+          {/* Details Scroll */}
+          <div className="flex-1 overflow-y-auto px-8 pb-32 space-y-6 no-scrollbar">
+
+            {/* Info Cards */}
+            <div className="grid grid-cols-1 gap-4">
+              {/* Bank Account Details */}
+              <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Tài khoản thụ hưởng</span>
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between group">
+                    <div>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-tight">Ngân hàng</p>
+                      <p className="font-black text-slate-800 tracking-tight">
+                        {qrData.qrData.bankCode === 'CTG' ? 'VietinBank' : qrData.qrData.bankCode}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleCopy(qrData.qrData.bankCode, 'Tên ngân hàng')}>
+                      <Copy className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center justify-between group">
+                    <div>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-tight">Số tài khoản</p>
+                      <p className="font-black text-xl text-slate-900 font-mono tracking-widest">
+                        {qrData.qrData.accountNumber}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleCopy(qrData.qrData.accountNumber, 'Số tài khoản')}>
+                      <Copy className="w-3.5 h-3.5" />
+                    </Button>
                   </div>
                 </div>
-                
-                {/* Countdown */}
-                {countdown > 0 && (
-                  <div className="text-center">
-                    <p className="text-xs sm:text-sm text-gray-600">
-                      Mã QR sẽ hết hạn sau:{' '}
-                      <span className="font-bold text-orange-500 text-base sm:text-lg">
-                        {minutes}:{seconds.toString().padStart(2, '0')}
-                      </span>
-                    </p>
-                  </div>
-                )}
-
-                {countdown === 0 && (
-                  <div className="bg-red-50 rounded-lg p-3 sm:p-4 border border-red-200 text-center w-full">
-                    <p className="text-xs sm:text-sm text-red-600 font-semibold">
-                      Mã QR đã hết hạn. Vui lòng tạo lại.
-                    </p>
-                  </div>
-                )}
               </div>
 
-              {/* Right Side - Information */}
-              <div className="space-y-3 sm:space-y-4 flex flex-col justify-center">
-                {/* Order Info */}
-                <div className="bg-gray-50 rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3">
-                  <h4 className="font-semibold text-gray-900 text-base sm:text-lg border-b border-gray-200 pb-2">
-                    Thông tin đơn hàng
-                  </h4>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 text-sm sm:text-base">Mã đơn hàng:</span>
-                    <span className="font-semibold text-gray-900 text-base sm:text-lg">{qrData.orderNumber}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 text-sm sm:text-base">Số tiền:</span>
-                    <span className="font-bold text-orange-500 text-lg sm:text-xl">
-                      {formatPrice(qrData.totalAmount)}
-                    </span>
-                  </div>
+              {/* Amount & Description */}
+              <div className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">Nội dung thanh toán</span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                 </div>
-
-                {/* Bank Info */}
-                <div className="bg-blue-50 rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 border border-blue-200">
-                  <h4 className="font-semibold text-gray-900 text-base sm:text-lg border-b border-blue-200 pb-2">
-                    Thông tin chuyển khoản
-                  </h4>
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600 text-sm sm:text-base">Ngân hàng:</span>
-                      <span className="font-semibold text-gray-900 text-sm sm:text-base">
-                        {qrData.qrData.bankCode === 'CTG' ? 'VietinBank (CTG)' : qrData.qrData.bankCode}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600 text-sm sm:text-base">Số tài khoản:</span>
-                      <span className="font-semibold text-gray-900 font-mono text-sm sm:text-base lg:text-lg">
-                        {qrData.qrData.accountNumber}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-start">
-                      <span className="text-gray-600 text-sm sm:text-base">Tên tài khoản:</span>
-                      <span className="font-semibold text-gray-900 text-right max-w-[200px] sm:max-w-[250px] text-xs sm:text-sm">
-                        {qrData.qrData.accountName}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600 text-sm sm:text-base">Số tiền:</span>
-                      <span className="font-bold text-orange-500 text-base sm:text-lg">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between group">
+                    <div>
+                      <p className="text-xs font-bold text-emerald-600/60 uppercase tracking-tight">Số tiền (Amount)</p>
+                      <p className="text-3xl font-black text-emerald-700 tracking-tighter">
                         {formatPrice(qrData.totalAmount)}
-                      </span>
-                    </div>
-                    {/* ✅ THÊM: Hiển thị mã đơn hàng nổi bật trong nội dung chuyển khoản */}
-                    <div className="bg-white rounded-md p-2 sm:p-3 border-2 border-orange-300 mt-3">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-gray-700 text-xs sm:text-sm font-medium">
-                          Nội dung chuyển khoản:
-                        </span>
-                      </div>
-                      <div className="mt-1 flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-orange-600 text-sm sm:text-base font-mono">
-                          {qrData.orderNumber}
-                        </span>
-                        <span className="text-gray-600 text-xs sm:text-sm">
-                          ({formatPrice(qrData.totalAmount)})
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1.5">
-                        ⚠️ Vui lòng nhập đúng nội dung này khi chuyển khoản
                       </p>
                     </div>
                   </div>
+                  <div className="p-4 bg-white/60 rounded-2xl border-2 border-emerald-200 group flex items-center justify-between border-dashed">
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-emerald-600/40 mb-1">Nội dung (Memo)</p>
+                      <p className="font-black text-slate-800 font-mono text-lg">{qrData.orderNumber}</p>
+                    </div>
+                    <Button size="sm" variant="ghost" className="text-emerald-600 hover:bg-emerald-100" onClick={() => handleCopy(qrData.orderNumber, 'Nội dung')}>
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
+              </div>
+            </div>
 
-                {/* Instructions */}
-                <div className="bg-yellow-50 rounded-lg p-3 sm:p-4 border border-yellow-200">
-                  <p className="text-xs sm:text-sm font-semibold text-gray-900 mb-2">
-                    Hướng dẫn:
-                  </p>
-                  <ol className="text-xs sm:text-sm text-gray-700 space-y-1 sm:space-y-1.5 list-decimal list-inside">
-                    <li>Mở ứng dụng ngân hàng trên điện thoại</li>
-                    <li>Quét mã QR code ở bên trái</li>
-                    <li>Kiểm tra thông tin và xác nhận thanh toán</li>
-                    <li>Nhấn "Đã thanh toán" sau khi chuyển khoản thành công</li>
-                  </ol>
-                </div>
+            {/* Simple Guide */}
+            <div className="flex items-start gap-4 p-4 bg-amber-50 rounded-2xl">
+              <div className="p-2 bg-amber-200 rounded-lg shrink-0">
+                <Smartphone className="w-4 h-4 text-amber-700" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-black text-amber-800 uppercase tracking-tight">Hướng dẫn nhanh</p>
+                <p className="text-[11px] text-amber-700/80 font-medium leading-relaxed">
+                  Mở app Banking, chọn quét QR và hướng camera về phía mã bên trái. Sau khi chuyển hoàn tất, hãy nhấn nút "Đã thanh toán" phía dưới.
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex flex-col sm:flex-row gap-2 sm:gap-3 flex-shrink-0">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2 sm:py-2.5 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-semibold text-sm sm:text-base"
-            >
-              Hủy
-            </button>
-            <button
-              onClick={onVerifyPayment}
-              disabled={isVerifying || countdown === 0}
-              className="flex-1 px-4 py-2 sm:py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl hover:from-orange-600 hover:to-amber-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none text-sm sm:text-base"
-            >
-              {isVerifying ? 'Đang xác nhận...' : 'Đã thanh toán'}
-            </button>
+          {/* Action Footer */}
+          <div className="absolute bottom-0 inset-x-0 p-8 pt-4 bg-gradient-to-t from-white via-white to-transparent">
+            <div className="flex gap-4">
+              <Button
+                variant="ghost"
+                onClick={onClose}
+                className="h-16 flex-1 rounded-2xl font-bold uppercase tracking-widest text-xs text-slate-400 hover:bg-slate-50"
+              >
+                Hủy giao dịch
+              </Button>
+              <Button
+                onClick={onVerifyPayment}
+                disabled={isVerifying || countdown === 0}
+                className="h-16 flex-[2] bg-slate-900 hover:bg-black text-white rounded-2xl shadow-xl shadow-slate-200 font-black uppercase tracking-[0.2em] transition-all group active:scale-95"
+              >
+                {isVerifying ? (
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Đang kiểm tra...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="w-5 h-5 text-emerald-400 group-hover:scale-125 transition-transform" />
+                    <span>Đã thanh toán</span>
+                  </div>
+                )}
+              </Button>
+            </div>
           </div>
-
-          <style>{`
-            @keyframes scale-in {
-              from {
-                transform: scale(0.95);
-                opacity: 0;
-              }
-              to {
-                transform: scale(1);
-                opacity: 1;
-              }
-            }
-            .animate-scale-in {
-              animation: scale-in 0.2s ease-out;
-            }
-          `}</style>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
 export default QRPaymentModal;
-

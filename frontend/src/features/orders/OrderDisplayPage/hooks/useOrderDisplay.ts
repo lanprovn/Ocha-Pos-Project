@@ -160,13 +160,20 @@ export const useOrderDisplay = () => {
 
   /**
    * Handle manual status update from OrderCard
-   * Reload orders to ensure consistency
+   * We rely on Socket.io for the actual update, this is just a backup
    */
-  const handleManualStatusUpdate = useCallback(() => {
-    // Small delay to ensure backend has processed
-    setTimeout(() => {
+  const handleManualStatusUpdate = useCallback((orderId: string, newStatus: string) => {
+    // Optimistic status update for instant UI feedback
+    setOrders(prev => prev.map(o =>
+      o.id === orderId ? { ...o, backendStatus: newStatus, lastUpdated: Date.now() } : o
+    ));
+
+    // Set a safety timeout as fallback if socket fails
+    const timeoutId = setTimeout(() => {
       loadOrders();
-    }, 500);
+    }, 2000);
+
+    return () => clearTimeout(timeoutId);
   }, [loadOrders]);
 
   // Subscribe to Socket.io events for real-time updates

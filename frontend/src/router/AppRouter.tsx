@@ -34,9 +34,10 @@ const CustomerDisplayLayout = lazy(() => import('../components/layout/CustomerDi
 const LoginPage = lazy(() => import('@features/auth/LoginPage/index'));
 const CheckoutPage = lazy(() => import('@features/orders/CheckoutPage/index'));
 const OrderDisplayPage = lazy(() => import('@features/orders/OrderDisplayPage/index'));
-const PaymentCallbackPage = lazy(() => import('@/pages/PaymentCallbackPage/index'));
-const AnalyticsPage = lazy(() => import('@/pages/AnalyticsPage/index'));
-const AdminDashboardPage = lazy(() => import('@/pages/AdminDashboardPage/index'));
+const PaymentCallbackPage = lazy(() => import('@features/payment/PaymentCallbackPage/index'));
+const UIShowcase = lazy(() => import('@pages/UIShowcase'));
+const AnalyticsPage = lazy(() => import('@features/analytics/AnalyticsPage/index'));
+const AdminDashboardPage = lazy(() => import('@features/admin/AdminDashboardPage/index'));
 
 // ===== Loader Component =====
 const PageLoader = () => (
@@ -79,12 +80,8 @@ const CheckoutRoute: React.FC = () => {
     return <CheckoutPage />;
   }
 
-  // If from staff, wrap with POSLayoutNew
-  return (
-    <POSLayoutNew>
-      <Outlet />
-    </POSLayoutNew>
-  );
+  // If from staff, use POSLayoutNew (which renders Outlet internally)
+  return <POSLayoutNew />;
 };
 
 /**
@@ -93,7 +90,7 @@ const CheckoutRoute: React.FC = () => {
 function AppRoutes() {
   const location = useLocation();
   const locationState = location.state as OrderSuccessLocationState | null;
-  
+
   const isDisplayPage = location.pathname.startsWith(ROUTES.CUSTOMER);
   const isLoginPage = location.pathname === ROUTES.LOGIN;
   const isOrderSuccessFromCustomer = location.pathname === ROUTES.ORDER_SUCCESS &&
@@ -127,6 +124,9 @@ function AppRoutes() {
         <Routes>
           {/* Login Page - Public */}
           <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+
+          {/* UI Showcase */}
+          <Route path="/ui-showcase" element={<UIShowcase />} />
 
           {/* Protected Routes - Staff Only (POS) */}
           <Route path={ROUTES.HOME} element={

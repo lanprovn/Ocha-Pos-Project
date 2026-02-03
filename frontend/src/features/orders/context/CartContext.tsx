@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import type { CartContextType, CartItem } from '@/types/cart';
+import type { CartContextType, CartItem, ParkedOrder } from '@/types/cart';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { useDisplaySync } from '@/hooks/useDisplaySync';
@@ -18,304 +18,148 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [orderCreator, setOrderCreator] = useState<{ type: 'staff' | 'customer'; name?: string } | null>(null);
-  
+  const [parkedOrders, setParkedOrders] = useState<ParkedOrder[]>([]);
+
   // Real-time display sync
   const { sendToDisplay } = useDisplaySync();
-  
-  // Debounce ref để tránh gọi API quá nhiều
   const draftOrderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load cart from sessionStorage on mount (sessionStorage tự động clear khi đóng tab)
+  // Load from session
   useEffect(() => {
     const savedCart = sessionStorage.getItem(STORAGE_KEYS.CART);
+    const savedParked = sessionStorage.getItem('Ocha_Parked_Orders');
     if (savedCart) {
-      try {
-        setItems(JSON.parse(savedCart));
-      } catch (error) {
-        console.error('Error loading cart from sessionStorage:', error);
-      }
+      try { setItems(JSON.parse(savedCart)); } catch (e) { console.error(e); }
+    }
+    if (savedParked) {
+      try { setParkedOrders(JSON.parse(savedParked)); } catch (e) { console.error(e); }
     }
   }, []);
 
-  // Save cart to sessionStorage whenever items change (tự động clear khi đóng tab)
+  // Save to session
   useEffect(() => {
     sessionStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(items));
   }, [items]);
 
-  // Clear cart when tab is closed (beforeunload event)
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      // Clear cart data khi đóng tab
-      sessionStorage.removeItem(STORAGE_KEYS.CART);
-      // Clear localStorage backup nếu có
-      localStorage.removeItem(STORAGE_KEYS.CART);
-    };
+    sessionStorage.setItem('Ocha_Parked_Orders', JSON.stringify(parkedOrders));
+  }, [parkedOrders]);
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, []);
-
-  // Sync to Customer Display whenever cart changes
+  // Sync to display
   useEffect(() => {
-    // Memoize calculations để tránh tính toán lại không cần thiết
-    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-    const totalPrice = items.reduce((sum, item) => sum + item.totalPrice, 0);
-    
-    // Always sync to display, even when cart is empty
-    sendToDisplay(items, totalPrice, totalItems, 'creating');
+    const totalItms = items.reduce((sum, item) => sum + item.quantity, 0);
+    const totalPrc = items.reduce((sum, item) => sum + item.totalPrice, 0);
+    sendToDisplay(items, totalPrc, totalItms, 'creating');
   }, [items, sendToDisplay]);
 
-  // Sync draft order to backend whenever cart changes (real-time)
-  // CRITICAL: If cart is empty, delete draft orders instead of syncing empty items
+  // Auto-save draft order to backend
   useEffect(() => {
-    // Clear previous timeout
-    if (draftOrderTimeoutRef.current) {
-      clearTimeout(draftOrderTimeoutRef.current);
-    }
+    if (draftOrderTimeoutRef.current) clearTimeout(draftOrderTimeoutRef.current);
+    if (!orderCreator) return;
 
-    // Chỉ sync nếu orderCreator đã được set
-    if (!orderCreator) {
-      return;
-    }
-
-    // Sync function
-    const syncDraftOrder = async () => {
+    draftOrderTimeoutRef.current = setTimeout(async () => {
       try {
-        // If cart is empty, delete draft orders instead of syncing empty items
         if (items.length === 0) {
-          await orderService.deleteDraftOrders(
-            orderCreator.type.toUpperCase() as 'STAFF' | 'CUSTOMER',
-            orderCreator.name || null
-          );
+          await orderService.deleteDraftOrders(orderCreator.type.toUpperCase() as 'STAFF' | 'CUSTOMER', orderCreator.name || null);
           return;
         }
-
-        // Map items to order items format
-        const orderItems = items.map((item) => ({
-          productId: String(item.productId), // Convert number to string
+        const orderItems = items.map(item => ({
+          productId: String(item.productId),
           quantity: item.quantity,
-          price: item.basePrice + (item.selectedSize?.extraPrice || 0) + 
-            item.selectedToppings.reduce((sum, t) => sum + t.extraPrice, 0),
+          price: item.basePrice + (item.selectedSize?.extraPrice || 0) + item.selectedToppings.reduce((sum, t) => sum + t.extraPrice, 0),
           subtotal: item.totalPrice,
           selectedSize: item.selectedSize?.name || null,
           selectedToppings: item.selectedToppings.map(t => t.name),
           note: item.note || null,
         }));
-
-        // Tính VAT 10% và thêm vào subtotal của item cuối cùng
-        let orderItemsWithVAT = [...orderItems];
-        const currentTotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
-        const vat = currentTotal * 0.1;
-        const finalTotal = currentTotal + vat;
-        
-        // Thêm VAT vào item cuối cùng để tổng = finalTotal
-        const lastItem = orderItemsWithVAT[orderItemsWithVAT.length - 1];
-        const vatToAdd = finalTotal - currentTotal;
-        orderItemsWithVAT[orderItemsWithVAT.length - 1] = {
-          ...lastItem,
-          subtotal: lastItem.subtotal + vatToAdd,
-        };
-
         await orderService.createOrUpdateDraft({
           orderCreator: orderCreator.type.toUpperCase() as 'STAFF' | 'CUSTOMER',
           orderCreatorName: orderCreator.name || null,
-          items: orderItemsWithVAT,
+          items: orderItems,
         });
-      } catch (error: any) {
-        console.error('Failed to sync draft order to backend:', error);
-        // Không hiển thị error toast để không làm phiền user
-      }
-    };
-
-    // Debounce ngắn hơn (200ms) cho real-time tốt hơn
-    // Nhưng vẫn debounce để tránh quá nhiều API calls
-    draftOrderTimeoutRef.current = setTimeout(syncDraftOrder, 200);
-
-    return () => {
-      if (draftOrderTimeoutRef.current) {
-        clearTimeout(draftOrderTimeoutRef.current);
-      }
-    };
+      } catch (e) { console.error('Draft sync failed', e); }
+    }, 500);
   }, [items, orderCreator]);
 
+  // Actions
   const addToCart = (item: Omit<CartItem, 'id'>) => {
-    // Create unique toast ID based on product details to prevent duplicates
-    const toastId = `add-${item.productId}-${item.selectedSize?.name || 'default'}-${JSON.stringify(item.selectedToppings)}`;
-    
-    setItems(prevItems => {
-      const existing = prevItems.find(
-        (i) =>
-          i.productId === item.productId &&
-          i.selectedSize?.name === item.selectedSize?.name &&
-          JSON.stringify(i.selectedToppings) === JSON.stringify(item.selectedToppings)
-      );
-      
+    const toastId = `add-${item.productId}-${item.selectedSize?.name || 'default'}`;
+    setItems(prev => {
+      const existing = prev.find(i => i.productId === item.productId && i.selectedSize?.name === item.selectedSize?.name && JSON.stringify(i.selectedToppings) === JSON.stringify(item.selectedToppings));
       if (existing) {
-        const updatedItems = prevItems.map((i) =>
-          i === existing
-            ? { 
-                ...i, 
-                quantity: i.quantity + item.quantity, 
-                totalPrice: i.totalPrice + item.totalPrice 
-              }
-            : i
-        );
-        // Use toast id to prevent duplicate notifications
-        setTimeout(() => {
-          toast.success(`Đã cập nhật số lượng ${item.name}!`, {
-            id: `update-${item.productId}-${item.selectedSize?.name || 'default'}`
-          });
-        }, 0);
-        return updatedItems;
-      } else {
-        const newItem = { ...item, id: uuidv4() };
-        // Use toast id to prevent duplicate notifications - same ID will replace previous toast
-        setTimeout(() => {
-          toast.success(`Đã thêm ${item.name} vào giỏ hàng!`, {
-            id: toastId // Same ID prevents duplicate
-          });
-        }, 0);
-        return [...prevItems, newItem];
+        toast.success(`Cập nhật số lượng!`, { id: toastId });
+        return prev.map(i => i === existing ? { ...i, quantity: i.quantity + item.quantity, totalPrice: i.totalPrice + item.totalPrice } : i);
       }
+      toast.success(`Đã thêm món!`, { id: toastId });
+      return [...prev, { ...item, id: uuidv4() }];
     });
   };
 
-  const removeFromCart = (id: string) => {
-    setItems(prevItems => {
-      const item = prevItems.find(item => item.id === id);
-      const newItems = prevItems.filter(item => item.id !== id);
-      if (item) {
-        // Use toast id to prevent duplicate notifications
-        setTimeout(() => {
-          toast.success(`Đã xóa ${item.name} khỏi giỏ hàng!`, {
-            id: `remove-${id}` // Unique ID for this toast
-          });
-        }, 0);
-      }
-      return newItems;
-    });
-  };
+  const removeFromCart = (id: string) => setItems(prev => prev.filter(i => i.id !== id));
 
   const updateQuantity = (id: string, quantity: number) => {
-    if (quantity <= 0) {
-      // Remove item silently when quantity reaches 0 (no toast)
-      // Toast will only show when user explicitly clicks remove button
-      setItems(prevItems => prevItems.filter(item => item.id !== id));
-      return;
-    }
-
-    setItems(prevItems =>
-      prevItems.map(item => {
-        if (item.id === id) {
-          // If preservePrice is true, maintain the price per item ratio
-          if (item.preservePrice) {
-            const pricePerItem = item.totalPrice / item.quantity;
-            return { ...item, quantity, totalPrice: pricePerItem * quantity };
-          }
-          
-          // Otherwise, recalculate from basePrice + size + toppings
-          const basePrice = item.basePrice + (item.selectedSize?.extraPrice || 0) + 
-            item.selectedToppings.reduce((sum, t) => sum + t.extraPrice, 0);
-          return { ...item, quantity, totalPrice: basePrice * quantity };
-        }
-        return item;
-      })
-    );
+    if (quantity <= 0) { removeFromCart(id); return; }
+    setItems(prev => prev.map(item => {
+      if (item.id === id) {
+        const base = item.basePrice + (item.selectedSize?.extraPrice || 0) + item.selectedToppings.reduce((sum, t) => sum + t.extraPrice, 0);
+        return { ...item, quantity, totalPrice: base * quantity };
+      }
+      return item;
+    }));
   };
 
   const updateCartItemNote = (id: string, note: string) => {
-    // ✅ OPTIMIZED: Use functional update and get item from prevItems to avoid stale closure
-    setItems(prevItems => {
-      const item = prevItems.find(item => item.id === id);
-      
-      // Show toast notification using item from current state
-      if (item) {
-        setTimeout(() => {
-          toast.success(note.trim() ? `Đã cập nhật ghi chú cho ${item.name}!` : `Đã xóa ghi chú cho ${item.name}!`, {
-            id: `note-${id}`
-          });
-        }, 0);
-      }
-      
-      // Update item with new note
-      return prevItems.map(item => {
-        if (item.id === id) {
-          return { ...item, note: note.trim() || undefined };
-        }
-        return item;
-      });
-    });
+    setItems(prev => prev.map(i => i.id === id ? { ...i, note: note || undefined } : i));
   };
 
-  const clearCart = () => {
-    setItems([]);
-    // Clear sessionStorage và localStorage
-    sessionStorage.removeItem(STORAGE_KEYS.CART);
-    localStorage.removeItem(STORAGE_KEYS.CART);
-    
-    // Delete draft orders from backend nếu có orderCreator (fire and forget)
-    if (orderCreator) {
-      // Gọi async nhưng không await để không block UI
-      orderService.deleteDraftOrders(
-        orderCreator.type.toUpperCase() as 'STAFF' | 'CUSTOMER',
-        orderCreator.name || null
-      ).then(() => {
-        console.log('✅ Deleted draft orders when clearing cart');
-      }).catch((error: any) => {
-        console.error('Failed to delete draft orders:', error);
-        // Không hiển thị error để không làm phiền user
-      });
-    }
-    
-    // Move toast outside of setState callback
-    setTimeout(() => toast.success('Đã xóa tất cả giỏ hàng!'), 0);
-  };
+  const clearCart = () => { setItems([]); toast.success('Đã dọn sạch giỏ hàng.'); };
 
-  // Set cart items directly (for restoring orders, no merge, no toast)
   const setCartItems = (newItems: Omit<CartItem, 'id'>[]) => {
-    const itemsWithIds = newItems.map(item => ({ ...item, id: uuidv4() }));
-    setItems(itemsWithIds);
-    // Clear sessionStorage và localStorage cart to prevent reload
-    sessionStorage.removeItem(STORAGE_KEYS.CART);
-    localStorage.removeItem(STORAGE_KEYS.CART);
-    // Set new items to sessionStorage
-    sessionStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(itemsWithIds));
+    setItems(newItems.map(i => ({ ...i, id: uuidv4() })));
   };
 
-  // Function to update order status and sync to display
-  const updateOrderStatus = (status: 'creating' | 'confirmed' | 'paid' | 'completed', customerInfo?: { name?: string; table?: string }, paymentMethod?: 'cash' | 'qr', paymentStatus?: 'success' | 'pending' | 'failed') => {
-    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-    const totalPrice = items.reduce((sum, item) => sum + item.totalPrice, 0);
-    
-    sendToDisplay(items, totalPrice, totalItems, status, customerInfo, paymentMethod, paymentStatus);
+  const updateOrderStatus = (status: any, customerInfo: any, paymentMethod: any, paymentStatus: any) => {
+    const totalItms = items.reduce((sum, item) => sum + item.quantity, 0);
+    const totalPrc = items.reduce((sum, item) => sum + item.totalPrice, 0);
+    sendToDisplay(items, totalPrc, totalItms, status, customerInfo, paymentMethod, paymentStatus);
   };
 
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + item.totalPrice, 0);
+  // Park Methods
+  const parkOrder = (label?: string) => {
+    if (items.length === 0) return;
+    const newOrder: ParkedOrder = {
+      id: uuidv4(), items: [...items],
+      totalPrice: items.reduce((s, i) => s + i.totalPrice, 0),
+      totalItems: items.reduce((s, i) => s + i.quantity, 0),
+      parkedAt: Date.now(),
+      label: label || `Bàn ${Math.floor(Math.random() * 50) + 1}`,
+    };
+    setParkedOrders(prev => [newOrder, ...prev]);
+    setItems([]);
+    toast.success('Đã lưu vào danh sách chờ');
+  };
+
+  const unparkOrder = (id: string) => {
+    const order = parkedOrders.find(o => o.id === id);
+    if (!order) return;
+    if (items.length > 0) {
+      parkOrder('Đơn dang dở');
+    }
+    setItems(order.items);
+    setParkedOrders(prev => prev.filter(o => o.id !== id));
+    toast.success('Đã khôi phục đơn hàng');
+  };
+
+  const deleteParkedOrder = (id: string) => {
+    setParkedOrders(prev => prev.filter(o => o.id !== id));
+  };
 
   const value: CartContextType = {
-    items,
-    totalItems,
-    totalPrice,
-    addToCart,
-    removeFromCart,
-    updateQuantity,
-    updateCartItemNote,
-    clearCart,
-    setCartItems,
-    isCartOpen,
-    setIsCartOpen,
-    updateOrderStatus,
-    setOrderCreator,
-    orderCreator,
+    items, totalItems: items.reduce((s, i) => s + i.quantity, 0), totalPrice: items.reduce((s, i) => s + i.totalPrice, 0),
+    addToCart, removeFromCart, updateQuantity, updateCartItemNote, clearCart, setCartItems,
+    isCartOpen, setIsCartOpen, updateOrderStatus, setOrderCreator, orderCreator,
+    parkedOrders, parkOrder, unparkOrder, deleteParkedOrder
   };
 
-  return (
-    <CartContext.Provider value={value}>
-      {children}
-    </CartContext.Provider>
-  );
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };
-

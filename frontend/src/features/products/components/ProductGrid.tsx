@@ -2,6 +2,7 @@ import React, { memo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { Product } from '@/types/product';
 import ProductCard from './ProductCard';
+import { PackageSearch } from 'lucide-react';
 
 interface ProductGridProps {
   products: Product[];
@@ -15,13 +16,11 @@ const ProductGrid: React.FC<ProductGridProps> = memo(({ products, onProductClick
   const isCustomerDisplay = location.pathname.startsWith('/customer');
 
   const handleProductClick = useCallback((product: Product) => {
-    // If onProductClick callback is provided, use it (for modal)
     if (onProductClick) {
       onProductClick(product);
       return;
     }
-    
-    // Otherwise, navigate to product detail page
+
     if (isCustomerDisplay) {
       navigate(`/customer/product/${product.id}`);
     } else {
@@ -31,22 +30,22 @@ const ProductGrid: React.FC<ProductGridProps> = memo(({ products, onProductClick
 
   if (products.length === 0) {
     return (
-      <div className="text-center py-12">
-        <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-        </svg>
-        <h3 className="text-lg font-semibold text-gray-700 mb-2">
-          Không có sản phẩm nào
+      <div className="flex flex-col items-center justify-center py-24 text-center animate-in fade-in zoom-in duration-500">
+        <div className="w-24 h-24 bg-white rounded-3xl shadow-xl shadow-slate-200 flex items-center justify-center mb-6 border border-slate-50">
+          <PackageSearch className="w-10 h-10 text-slate-300" />
+        </div>
+        <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">
+          Hết món rồi ông chủ ơi!
         </h3>
-        <p className="text-sm text-gray-500">
-          Vui lòng chọn danh mục khác để xem thêm sản phẩm
+        <p className="text-sm text-slate-400 max-w-xs font-medium">
+          Dường như danh mục này đang trống hoặc từ khóa tìm kiếm không khớp. Thử chọn danh mục khác nhé!
         </p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
       {products.map((product) => (
         <ProductCard
           key={product.id}
@@ -62,4 +61,3 @@ const ProductGrid: React.FC<ProductGridProps> = memo(({ products, onProductClick
 ProductGrid.displayName = 'ProductGrid';
 
 export default ProductGrid;
-

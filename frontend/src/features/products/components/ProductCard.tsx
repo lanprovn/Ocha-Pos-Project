@@ -5,6 +5,9 @@ import { ProductCardImage } from './ProductCardImage';
 import { ProductCardBadges } from './ProductCardBadges';
 import { ProductCardInfo } from './ProductCardInfo';
 import { useFavorites } from '@/hooks/useFavorites';
+import { Heart, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface ProductCardProps {
   product: Product;
@@ -13,8 +16,8 @@ interface ProductCardProps {
 }
 
 /**
- * ProductCard - Main component for displaying product cards
- * Refactored to use smaller sub-components for better maintainability
+ * ProductCard - Luxury Product Card Transformation
+ * Premium look and feel for modern POS systems
  */
 const ProductCard: React.FC<ProductCardProps> = memo(({ product, onClick, onQuickAdd }) => {
   const location = useLocation();
@@ -43,51 +46,58 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onClick, onQuic
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden cursor-pointer min-h-[44px] min-w-[44px] group product-card-container hover:shadow-md hover:border-gray-400 transition-all relative"
+      className="group relative flex flex-col bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200 transition-all duration-500 cursor-pointer overflow-hidden active:scale-[0.98]"
     >
-      {/* Product Image Section */}
-      <div className="relative h-48 overflow-hidden bg-gray-100">
-        <ProductCardImage 
-          product={product} 
+      {/* Visual Canvas (Image Area) */}
+      <div className="relative h-44 overflow-hidden bg-slate-100">
+        <ProductCardImage
+          product={product}
           onInfoClick={handleInfoClick}
         />
         <ProductCardBadges product={product} />
-        
-        {/* Favorite Button - Top Right (only for customer display) */}
+
+        {/* Favorite Button (Premium) */}
         {isCustomerDisplay && (
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={handleFavoriteClick}
-            className="absolute top-2 right-2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-md z-10 hover:bg-white transition-colors"
-            title={favorite ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
-            aria-label={favorite ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
+            className={cn(
+              "absolute top-2 right-2 w-8 h-8 rounded-full z-20 backdrop-blur-md transition-all",
+              favorite
+                ? "bg-rose-500 text-white shadow-lg shadow-rose-200"
+                : "bg-white/80 text-slate-400 hover:text-rose-500 hover:bg-white"
+            )}
           >
-            <svg 
-              className={`w-5 h-5 transition-colors ${favorite ? 'text-red-500 fill-current' : 'text-gray-400'}`}
-              fill={favorite ? 'currentColor' : 'none'}
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </button>
+            <Heart className={cn("w-4 h-4", favorite && "fill-current")} />
+          </Button>
         )}
 
-        {/* Quick Add Button - Bottom Right (only for customer display) */}
+        {/* Action Button (Smart POS Style) */}
+        {!isCustomerDisplay && onQuickAdd && (
+          <div className="absolute inset-x-0 bottom-0 p-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-30">
+            <Button
+              onClick={handleQuickAdd}
+              className="w-full bg-slate-900/90 backdrop-blur-md text-white border-none h-9 rounded-xl font-bold text-xs uppercase tracking-widest gap-2 shadow-lg active:scale-95"
+            >
+              <Plus className="w-3 h-3" /> Quick Add
+            </Button>
+          </div>
+        )}
+
+        {/* For Customer Display style quick add */}
         {isCustomerDisplay && onQuickAdd && (
-          <button
+          <Button
             onClick={handleQuickAdd}
-            className="absolute bottom-2 right-2 w-10 h-10 bg-slate-700 hover:bg-slate-800 rounded-md flex items-center justify-center shadow-sm z-10 text-white transition-colors"
-            title="Thêm nhanh vào giỏ"
-            aria-label="Thêm nhanh vào giỏ"
+            size="icon"
+            className="absolute bottom-2 right-2 w-10 h-10 bg-slate-900 hover:bg-black rounded-xl z-20 shadow-xl text-white transition-all active:scale-90"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-          </button>
+            <Plus className="w-5 h-5" />
+          </Button>
         )}
       </div>
 
-      {/* Product Info Section */}
+      {/* Info Canvas */}
       <ProductCardInfo product={product} />
     </div>
   );

@@ -1,10 +1,10 @@
 import React from 'react';
 import { StarIcon, UserGroupIcon, ChartBarIcon } from '@heroicons/react/24/solid';
-import type { CustomerStatistics, MembershipLevel } from '@/types/customer';
+import type { CustomerStatistics as CustomerStatsType, MembershipLevel } from '@/types/customer';
 import { formatPrice } from '@/utils/formatPrice';
 
 interface CustomerStatisticsProps {
-  statistics: CustomerStatistics;
+  statistics: CustomerStatsType;
   isLoading?: boolean;
   onCustomerClick?: (customerId: string) => void;
 }
@@ -131,9 +131,8 @@ const CustomerStatistics: React.FC<CustomerStatisticsProps> = ({
                   <td className="px-4 py-3 text-sm text-gray-900">{customer.name}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
-                        membershipLevelColors[customer.membershipLevel]
-                      }`}
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${membershipLevelColors[customer.membershipLevel]
+                        }`}
                     >
                       {membershipLevelLabels[customer.membershipLevel]}
                     </span>
@@ -175,9 +174,8 @@ const CustomerStatistics: React.FC<CustomerStatisticsProps> = ({
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{customer.name}</td>
                     <td className="px-4 py-3">
                       <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
-                          membershipLevelColors[customer.membershipLevel]
-                        }`}
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${membershipLevelColors[customer.membershipLevel]
+                          }`}
                       >
                         {membershipLevelLabels[customer.membershipLevel]}
                       </span>
@@ -220,9 +218,8 @@ const CustomerStatistics: React.FC<CustomerStatisticsProps> = ({
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{customer.name}</td>
                     <td className="px-4 py-3">
                       <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
-                          membershipLevelColors[customer.membershipLevel]
-                        }`}
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${membershipLevelColors[customer.membershipLevel]
+                          }`}
                       >
                         {membershipLevelLabels[customer.membershipLevel]}
                       </span>

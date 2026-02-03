@@ -3,9 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@features/auth/hooks/useAuth';
 import { ROUTES } from '@constants';
 import toast from 'react-hot-toast';
-import PageWrapper from '@components/layout/PageWrapper';
-import PageContainer from '@components/layout/PageContainer';
 import { authService } from '@features/auth/services/auth.service';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { User, Shield, ArrowLeft, Mail, Lock, LogIn, Info } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<'STAFF' | 'ADMIN' | null>(null);
@@ -15,12 +25,9 @@ const LoginPage: React.FC = () => {
   const { login, isAuthenticated, user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect if already authenticated AND has role context
   useEffect(() => {
     if (!authLoading && isAuthenticated && user) {
       const roleContext = authService.getRoleContext();
-      
-      // Only redirect if this tab has its own role context
       if (roleContext) {
         if (user.role === 'ADMIN' && roleContext === 'ADMIN') {
           navigate(`${ROUTES.ADMIN_DASHBOARD}?tab=overview`, { replace: true });
@@ -28,7 +35,6 @@ const LoginPage: React.FC = () => {
           navigate(ROUTES.HOME, { replace: true });
         }
       }
-      // If no role context, stay on login page (user can choose role)
     }
   }, [isAuthenticated, user, authLoading, navigate]);
 
@@ -46,12 +52,10 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!email || !password) {
       toast.error('Vui lòng nhập đầy đủ thông tin');
       return;
     }
-
     if (!selectedRole) {
       toast.error('Vui lòng chọn vai trò');
       return;
@@ -61,212 +65,180 @@ const LoginPage: React.FC = () => {
     try {
       await login({ email, password }, selectedRole);
     } catch {
-      // Error already handled in login function
+      // Error handled in login
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <PageWrapper background="gradient" fullHeight allowOverflow={false}>
-      <PageContainer maxWidth="90%" centered padding="sm">
-        {/* Logo/Title */}
-        <div className="text-center mb-4 sm:mb-6 md:mb-8">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-2 sm:mb-3 tracking-tight">
-            OCHA POS
+    <div className="w-full min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 relative overflow-hidden font-sans">
+      {/* Premium Background Decor */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-primary" />
+      <div className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-orange-100/50 rounded-full blur-[100px]" />
+      <div className="absolute -bottom-32 -left-32 w-[500px] h-[500px] bg-blue-100/50 rounded-full blur-[100px]" />
+
+      {/* Vertical Content Stack */}
+      <div className="w-full max-w-[420px] flex flex-col gap-8 z-10 animate-fade-in">
+        {/* Branding */}
+        <div className="text-center space-y-2">
+          <h1 className="text-6xl font-black text-primary tracking-tighter drop-shadow-sm italic">
+            OCHA
           </h1>
-          <p className="text-sm sm:text-base text-gray-600 font-medium">Hệ thống quản lý bán hàng</p>
+          <div className="flex items-center justify-center gap-2">
+            <div className="h-[2px] w-8 bg-slate-300" />
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">Smart POS solution</span>
+            <div className="h-[2px] w-8 bg-slate-300" />
+          </div>
         </div>
 
-        {/* Login Card */}
-        <div className="bg-white rounded-md shadow-sm border border-gray-300 p-4 sm:p-6 md:p-8 w-full">
+        {/* Auth Container */}
+        <Card className="border-none shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden bg-white/90 backdrop-blur-md">
           {!selectedRole ? (
-            // Role Selection
-            <div className="space-y-4">
-              <div className="text-center mb-6">
-                <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
-                  Chọn vai trò đăng nhập
-                </h2>
-                <p className="text-sm text-gray-600">Vui lòng chọn vai trò của bạn để tiếp tục</p>
-              </div>
+            <>
+              <CardHeader className="text-center pb-2 pt-8">
+                <CardTitle className="text-2xl font-bold text-slate-800">Chào Mừng Trở Lại</CardTitle>
+                <CardDescription className="text-slate-500">Vui lòng chọn cổng đăng nhập của bạn</CardDescription>
+              </CardHeader>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <button
+              <CardContent className="space-y-4 pt-6 px-8">
+                <Button
                   onClick={() => handleRoleSelect('STAFF')}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 px-4 rounded-md font-semibold text-base transition-colors flex flex-col items-center justify-center gap-2 shadow-md"
+                  variant="outline"
+                  className="w-full h-auto py-6 flex flex-col items-center gap-3 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-300 group"
                 >
-                  <div className="w-12 h-12 rounded-md bg-white/10 flex items-center justify-center">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                  <div className="p-3 bg-blue-100 rounded-2xl group-hover:scale-110 group-hover:rotate-3 transition-all">
+                    <User className="w-8 h-8 text-blue-600" />
                   </div>
-                  <span className="text-base">Nhân Viên</span>
-                  <span className="text-xs opacity-80">Staff</span>
-                </button>
+                  <div className="text-center">
+                    <span className="block font-bold text-lg text-slate-700">Nhân Viên</span>
+                    <span className="block text-[10px] text-slate-400 font-medium">Bán hàng & Gọi món</span>
+                  </div>
+                </Button>
 
-                <button
+                <Button
                   onClick={() => handleRoleSelect('ADMIN')}
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white py-4 px-4 rounded-md font-semibold text-base transition-colors flex flex-col items-center justify-center gap-2 shadow-md"
+                  variant="outline"
+                  className="w-full h-auto py-6 flex flex-col items-center gap-3 border-slate-200 hover:border-orange-400 hover:bg-orange-50/50 transition-all duration-300 group"
                 >
-                  <div className="w-12 h-12 rounded-md bg-white/10 flex items-center justify-center">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
+                  <div className="p-3 bg-orange-100 rounded-2xl group-hover:scale-110 group-hover:-rotate-3 transition-all">
+                    <Shield className="w-8 h-8 text-orange-600" />
                   </div>
-                  <span className="text-base">Quản Trị Viên</span>
-                  <span className="text-xs opacity-80">Admin</span>
-                </button>
-              </div>
-            </div>
+                  <div className="text-center">
+                    <span className="block font-bold text-lg text-slate-700">Quản Trị Viên</span>
+                    <span className="block text-[10px] text-slate-400 font-medium">Thiết lập & Báo cáo</span>
+                  </div>
+                </Button>
+              </CardContent>
+
+              <CardFooter className="flex justify-center pb-8 opacity-40">
+                <p className="text-[9px] font-bold text-slate-800 tracking-widest">OCHA VIET POS v1.1</p>
+              </CardFooter>
+            </>
           ) : (
-            // Login Form
-            <div className="space-y-4">
-              <button
-                onClick={handleBack}
-                className="mb-4 text-gray-600 hover:text-gray-900 flex items-center gap-2 transition-colors font-medium text-sm"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span>Quay lại</span>
-              </button>
-
-              <div className="text-center mb-6">
-                <div className={`inline-flex items-center justify-center w-16 h-16 rounded-md mb-3 ${
-                  selectedRole === 'STAFF' ? 'bg-blue-100' : 'bg-orange-100'
-                }`}>
-                  {selectedRole === 'STAFF' ? (
-                    <svg className={`w-8 h-8 ${selectedRole === 'STAFF' ? 'text-blue-600' : 'text-orange-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                  )}
+            <>
+              <CardHeader className="pt-8 px-8 space-y-1">
+                <div className="flex items-center justify-between mb-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 -ml-3 text-slate-400 hover:text-slate-900 hover:bg-transparent"
+                    onClick={handleBack}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-1" /> Quay lại
+                  </Button>
+                  <Badge className={selectedRole === 'STAFF' ? "bg-blue-500" : "bg-orange-500"}>
+                    {selectedRole}
+                  </Badge>
                 </div>
-                <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-1">
-                  Đăng nhập {selectedRole === 'STAFF' ? 'Nhân Viên' : 'Quản Trị Viên'}
-                </h2>
-                <p className="text-sm text-gray-600">Vui lòng nhập thông tin đăng nhập của bạn</p>
-              </div>
+                <CardTitle className="text-3xl font-black text-slate-800">Đăng Nhập</CardTitle>
+                <CardDescription>Cổng truy cập dành riêng cho {selectedRole === 'STAFF' ? 'Nghiệp vụ' : 'Hệ thống'}</CardDescription>
+              </CardHeader>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                      </svg>
+              <CardContent className="px-8 pb-8 space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">
+                      Email đăng nhập
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+                      <Input
+                        type="email"
+                        placeholder="admin@ocha.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-11 h-12 border-slate-200 focus:ring-2 focus:ring-primary/20 bg-slate-50/30"
+                        required
+                        autoFocus
+                      />
                     </div>
-                    <input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className={`w-full pl-10 pr-4 py-3 text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white ${
-                        selectedRole === 'ADMIN' ? 'focus:ring-orange-500 focus:border-orange-500' : ''
-                      }`}
-                      placeholder="Nhập email của bạn"
-                      required
-                      autoComplete="email"
-                    />
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
-                    Mật khẩu
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center ml-1">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        Mật khẩu bảo mật
+                      </label>
                     </div>
-                    <input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className={`w-full pl-10 pr-4 py-3 text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white ${
-                        selectedRole === 'ADMIN' ? 'focus:ring-orange-500 focus:border-orange-500' : ''
+                    <div className="relative">
+                      <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-11 h-12 border-slate-200 focus:ring-2 focus:ring-primary/20 bg-slate-50/30"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className={`w-full h-12 rounded-xl text-base font-bold shadow-[0_10px_20px_rgba(0,0,0,0.1)] transition-all active:scale-95 ${selectedRole === 'STAFF'
+                        ? 'bg-blue-600 hover:bg-blue-700'
+                        : 'bg-primary hover:bg-primary-hover text-white'
                       }`}
-                      placeholder="Nhập mật khẩu"
-                      required
-                      autoComplete="current-password"
-                    />
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Đang kết nối...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        Xác Nhận Đăng Nhập <LogIn className="w-4 h-4" />
+                      </div>
+                    )}
+                  </Button>
+                </form>
+
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-white p-2 rounded-lg shadow-sm">
+                      <Info className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Demo Credentials</p>
+                      <p className="text-[11px] font-mono text-slate-600 leading-none">
+                        {selectedRole === 'STAFF' ? 'staff@ocha.com / staff123' : 'admin@ocha.com / admin123'}
+                      </p>
+                    </div>
                   </div>
                 </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className={`w-full py-3 px-6 rounded-md font-semibold text-base text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md ${
-                    selectedRole === 'STAFF' 
-                      ? 'bg-blue-600 hover:bg-blue-700' 
-                      : 'bg-orange-600 hover:bg-orange-700'
-                  }`}
-                >
-                  {isLoading ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span>Đang đăng nhập...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Đăng nhập</span>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                      </svg>
-                    </>
-                  )}
-                </button>
-              </form>
-
-              {/* Demo credentials hint */}
-              <div className="mt-6 p-4 bg-gray-50 border border-gray-300 rounded-md">
-                <div className="flex items-start gap-3">
-                  <div className={`flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center ${
-                    selectedRole === 'STAFF' ? 'bg-blue-600' : 'bg-orange-600'
-                  }`}>
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 mb-1 text-sm">Thông tin đăng nhập mẫu:</p>
-                    <p className="text-sm text-gray-700 break-words">
-                      {selectedRole === 'STAFF' ? (
-                        <>
-                          <span className="font-medium">Staff:</span>{' '}
-                          <span className="font-mono bg-white px-2 py-1 rounded border border-gray-300 text-gray-900 text-xs">staff@ocha.com</span>{' '}
-                          / <span className="font-mono bg-white px-2 py-1 rounded border border-gray-300 text-gray-900 text-xs">staff123</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="font-medium">Admin:</span>{' '}
-                          <span className="font-mono bg-white px-2 py-1 rounded border border-gray-300 text-gray-900 text-xs">admin@ocha.com</span>{' '}
-                          / <span className="font-mono bg-white px-2 py-1 rounded border border-gray-300 text-gray-900 text-xs">admin123</span>
-                        </>
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </>
           )}
-        </div>
-      </PageContainer>
-    </PageWrapper>
+        </Card>
+
+        <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2">
+          Secure POS Environment
+        </p>
+      </div>
+    </div>
   );
 };
 
 export default LoginPage;
-

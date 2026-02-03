@@ -1,7 +1,18 @@
 import React from 'react';
-import { PencilIcon, TrashIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import { formatPrice } from '@/utils/formatPrice';
 import type { Product } from '@/types/product';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Pencil, Trash2, Image as ImageIcon, Search } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ProductTableProps {
   products: Product[];
@@ -18,132 +29,129 @@ const ProductTable: React.FC<ProductTableProps> = ({
 }) => {
   if (isLoading && products.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
-        <p className="mt-4 text-gray-500">Đang tải dữ liệu...</p>
+      <div className="w-full h-64 flex flex-col items-center justify-center gap-4 bg-white rounded-xl border border-dashed border-slate-200">
+        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+        <p className="text-slate-400 text-sm font-medium">Đang đồng bộ dữ liệu sản phẩm...</p>
       </div>
     );
   }
 
   if (products.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-        <PhotoIcon className="mx-auto h-12 w-12 text-gray-400" />
-        <h3 className="mt-2 text-sm font-medium text-gray-900">Không có sản phẩm</h3>
-        <p className="mt-1 text-sm text-gray-500">Bắt đầu bằng cách thêm sản phẩm mới.</p>
+      <div className="w-full h-80 flex flex-col items-center justify-center gap-4 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 mt-4">
+        <div className="p-4 bg-white rounded-full shadow-sm">
+          <Search className="w-10 h-10 text-slate-300" />
+        </div>
+        <div className="text-center">
+          <h3 className="text-lg font-bold text-slate-700">Không tìm thấy sản phẩm</h3>
+          <p className="text-sm text-slate-400">Thử thay đổi bộ lọc hoặc thêm món mới vào menu.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Hình ảnh
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tên sản phẩm
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Danh mục
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Giá
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tồn kho
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Trạng thái
-              </th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Thao tác
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {products.map((product) => (
-              <tr key={product.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex-shrink-0 h-16 w-16">
-                    {product.image ? (
-                      <img
-                        className="h-16 w-16 rounded-lg object-cover border border-gray-200"
-                        src={product.image}
-                        alt={product.name}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = '/placeholder-product.png';
-                          target.onerror = null; // Prevent infinite loop
-                        }}
-                      />
-                    ) : (
-                      <div className="h-16 w-16 rounded-lg bg-gray-100 flex items-center justify-center">
-                        <PhotoIcon className="h-8 w-8 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                  {product.description && (
-                    <div className="text-sm text-gray-500 line-clamp-1">{product.description}</div>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                    {product.category || 'Chưa phân loại'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{formatPrice(product.price)}</div>
-                  {product.discount && product.discount > 0 && (
-                    <div className="text-xs text-red-600">Giảm {product.discount}%</div>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {product.stock !== undefined ? product.stock : '—'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {product.isAvailable !== false ? (
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                      Đang bán
-                    </span>
+    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden mt-6">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[100px]">Hình ảnh</TableHead>
+            <TableHead>Sản phẩm</TableHead>
+            <TableHead>Danh mục</TableHead>
+            <TableHead>Giá bán</TableHead>
+            <TableHead>Tồn kho</TableHead>
+            <TableHead>Trạng thái</TableHead>
+            <TableHead className="text-right">Thao tác</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {products.map((product) => (
+            <TableRow key={product.id} className="group transition-all">
+              <TableCell>
+                <div className="relative h-14 w-14 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm group-hover:scale-105 transition-transform">
+                  {product.image ? (
+                    <img
+                      className="h-full w-full object-cover"
+                      src={product.image}
+                      alt={product.name}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/placeholder-product.png';
+                      }}
+                    />
                   ) : (
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                      Ngừng bán
-                    </span>
+                    <div className="h-full w-full flex items-center justify-center">
+                      <ImageIcon className="h-6 w-6 text-slate-300" />
+                    </div>
                   )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex items-center justify-end space-x-2">
-                    <button
-                      onClick={() => onEdit(product)}
-                      className="text-orange-600 hover:text-orange-900 p-1 rounded"
-                      title="Chỉnh sửa"
-                    >
-                      <PencilIcon className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(product)}
-                      className="text-red-600 hover:text-red-900 p-1 rounded"
-                      title="Xóa"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="font-bold text-slate-800">{product.name}</div>
+                {product.description && (
+                  <div className="text-xs text-slate-400 line-clamp-1 mt-0.5">{product.description}</div>
+                )}
+              </TableCell>
+              <TableCell>
+                <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-medium text-[10px]">
+                  {product.category || 'Chưa phân loại'}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <div className="font-bold text-slate-900">{formatPrice(product.price)}</div>
+                {product.discount && product.discount > 0 && (
+                  <Badge className="bg-rose-50 text-rose-600 border-rose-100 text-[9px] h-4 px-1 mt-1">
+                    -{product.discount}%
+                  </Badge>
+                )}
+              </TableCell>
+              <TableCell>
+                <span className={cn(
+                  "font-mono font-bold",
+                  (product.stock || 0) <= 5 ? "text-rose-500" : "text-slate-600"
+                )}>
+                  {product.stock !== undefined ? product.stock : '—'}
+                </span>
+              </TableCell>
+              <TableCell>
+                {product.isAvailable !== false ? (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span className="text-xs font-bold text-emerald-700">Đang bán</span>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                    <span className="text-xs font-bold text-slate-400">Ngừng bán</span>
+                  </div>
+                )}
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="flex items-center justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onEdit(product)}
+                    className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/5"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onDelete(product)}
+                    className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 };
 
 export default ProductTable;
-

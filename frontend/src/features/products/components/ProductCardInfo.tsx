@@ -1,35 +1,51 @@
 import React from 'react';
 import type { Product } from '@/types/product';
 import { formatPrice } from '@/utils/formatPrice';
+import { Badge } from '@/components/ui/badge';
 
 interface ProductCardInfoProps {
   product: Product;
 }
 
 /**
- * ProductCardInfo - Component for product information (name, price, sizes)
+ * ProductCardInfo - Luxury Typography for product cards
  */
 export const ProductCardInfo: React.FC<ProductCardInfoProps> = ({ product }) => {
   return (
-    <div className="p-4">
-      <h3 className="font-semibold text-gray-800 text-base mb-1 line-clamp-1">
-        {product.name}
-      </h3>
-      
-      {/* Price - Prominent */}
-      <div className="flex items-center justify-between mt-2">
-        <span className="text-lg font-bold text-slate-700 product-card-price">
-          {formatPrice(product.price)}
-        </span>
-        
-        {/* Size Options Indicator */}
+    <div className="p-4 space-y-2 bg-white flex flex-col justify-between flex-1">
+      <div>
+        <h3 className="font-bold text-slate-800 text-sm leading-tight line-clamp-2 min-h-[2.5rem] group-hover:text-primary transition-colors">
+          {product.name}
+        </h3>
+        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+          {product.category || 'Specialty'}
+        </p>
+      </div>
+
+      <div className="flex items-end justify-between pt-2">
+        <div className="flex flex-col">
+          {product.discount && product.discount > 0 ? (
+            <>
+              <span className="text-[10px] text-slate-400 line-through font-medium">
+                {formatPrice(product.price)}
+              </span>
+              <span className="text-base font-black text-rose-500 tracking-tighter">
+                {formatPrice(product.price * (1 - product.discount / 100))}
+              </span>
+            </>
+          ) : (
+            <span className="text-base font-black text-slate-900 tracking-tighter">
+              {formatPrice(product.price)}
+            </span>
+          )}
+        </div>
+
         {product.sizes && product.sizes.length > 0 && (
-          <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700 product-card-size-badge">
-            {product.sizes.length} size
-          </span>
+          <Badge variant="secondary" className="bg-slate-100 text-slate-500 border-none font-bold text-[9px] h-5 px-1.5 uppercase tracking-tighter">
+            {product.sizes.length} Options
+          </Badge>
         )}
       </div>
     </div>
   );
 };
-

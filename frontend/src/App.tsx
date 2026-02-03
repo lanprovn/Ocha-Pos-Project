@@ -11,9 +11,8 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <div id="app-wrapper" className="w-screen min-h-screen bg-white">
-        <AppRouter />
-      </div>
+      {/* Giải phóng layout: không dùng wrapper có width giới hạn ở đây */}
+      <AppRouter />
     </ErrorBoundary>
   );
 }

@@ -1,6 +1,9 @@
 import React from 'react';
 import type { PaymentMethod } from '../types';
 import { PAYMENT_METHODS } from '../types';
+import { Banknote, QrCode, CreditCard, Info, CheckCircle2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface PaymentMethodSelectorProps {
   paymentMethod: PaymentMethod;
@@ -13,96 +16,91 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   onPaymentMethodChange,
   isCustomerDisplay = false
 }) => {
-  // For customer display: prioritize QR code
-  // For staff: show cash first, then QR
-  const paymentMethods: Array<{ key: PaymentMethod; icon: React.ReactNode; description?: string; priority?: number }> = isCustomerDisplay
-    ? [
-        { 
-          key: 'qr', 
-          icon: (
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-          ), 
-          description: 'QR Code ngân hàng', 
-          priority: 1 
-        },
-        { 
-          key: 'cash', 
-          icon: (
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          ), 
-          description: 'Tiền mặt', 
-          priority: 2 
-        }
-      ]
-    : [
-        { 
-          key: 'cash', 
-          icon: (
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          ), 
-          description: 'Tiền mặt' 
-        },
-        { 
-          key: 'qr', 
-          icon: (
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-          ), 
-          description: 'QR Code ngân hàng' 
-        }
-      ];
+  const methods: Array<{ key: PaymentMethod; icon: React.ReactNode; label: string; description: string; tag?: string }> = [
+    {
+      key: 'qr',
+      icon: <QrCode className="w-8 h-8" />,
+      label: 'QR Code',
+      description: 'Chuyển khoản / Ví điện tử',
+      tag: 'Khuyên dùng'
+    },
+    {
+      key: 'cash',
+      icon: <Banknote className="w-8 h-8" />,
+      label: 'Tiền mặt',
+      description: 'Thanh toán tại quầy',
+    },
+  ];
 
-  const primaryColorClass = 'border-slate-700 bg-slate-50 text-slate-700';
+  // Sắp xếp thứ tự ưu tiên: Khách hàng thì QR trước, Staff thì Cash trước
+  const sortedMethods = isCustomerDisplay ? [...methods] : [...methods].reverse();
 
   return (
-    <div className="bg-white rounded-md shadow-sm border border-gray-300 p-6">
-      <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-        <svg className="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-        </svg>
-        Phương thức thanh toán
-      </h3>
-      
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-xl font-black text-slate-800 tracking-tight uppercase">Thanh toán</h3>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Chọn phương thức phù hợp</p>
+        </div>
+        <CreditCard className="w-6 h-6 text-slate-200" />
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {paymentMethods.map((method) => (
+        {sortedMethods.map((method) => (
           <button
             key={method.key}
             onClick={() => onPaymentMethodChange(method.key)}
-            className={`p-6 rounded-md border transition-colors ${
+            className={cn(
+              "relative group p-6 rounded-3xl border-2 transition-all duration-300 text-left overflow-hidden",
               paymentMethod === method.key
-                ? `${primaryColorClass} shadow-sm`
-                : 'border-gray-300 hover:border-gray-400 text-gray-700 hover:bg-gray-50'
-            }`}
+                ? "border-slate-900 bg-slate-900 text-white shadow-xl shadow-slate-200"
+                : "border-slate-100 bg-slate-50/50 hover:border-slate-300 text-slate-600"
+            )}
           >
-            <div className="text-center">
-              <div className="flex justify-center mb-3 text-gray-700">{method.icon}</div>
-              <div className="font-semibold text-sm mb-1">{PAYMENT_METHODS[method.key]}</div>
-              {method.description && (
-                <div className="text-xs text-gray-500 mt-1">{method.description}</div>
-              )}
+            {/* Active Indicator Splash */}
+            <div className={cn(
+              "absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -mr-16 -mt-16 transition-transform duration-500",
+              paymentMethod === method.key ? "scale-100" : "scale-0"
+            )} />
+
+            <div className="relative z-10">
+              <div className={cn(
+                "w-12 h-12 rounded-2xl flex items-center justify-center mb-6 transition-colors",
+                paymentMethod === method.key ? "bg-white/10 text-white" : "bg-white text-slate-400 border border-slate-100 shadow-sm"
+              )}>
+                {method.icon}
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-sm uppercase tracking-tight">{PAYMENT_METHODS[method.key]}</span>
+                  {method.tag && (
+                    <Badge variant="outline" className={cn(
+                      "text-[8px] h-4 font-black uppercase tracking-widest px-1.5 border-none",
+                      paymentMethod === method.key ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "bg-emerald-50 text-emerald-600"
+                    )}>
+                      {method.tag}
+                    </Badge>
+                  )}
+                  {paymentMethod === method.key && <CheckCircle2 className="w-4 h-4 text-emerald-400 ml-auto" />}
+                </div>
+                <p className={cn("text-[10px] font-medium transition-colors", paymentMethod === method.key ? "text-slate-400" : "text-slate-400")}>
+                  {method.description}
+                </p>
+              </div>
             </div>
           </button>
         ))}
       </div>
-      
-      {isCustomerDisplay && paymentMethod === 'qr' && (
-        <div className="mt-4 p-3 bg-slate-50 border border-slate-300 rounded-md">
-          <p className="text-sm text-slate-700 flex items-center">
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Quét mã QR để thanh toán nhanh chóng và an toàn
+
+      {paymentMethod === 'qr' && (
+        <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 animate-in fade-in slide-in-from-top-2 duration-300">
+          <p className="text-xs text-emerald-700 font-bold flex items-center gap-2">
+            <Info className="w-4 h-4" />
+            Vui lòng chuẩn bị ứng dụng Ngân hàng hoặc Ví điện tử để quét mã QR ở bước tiếp theo.
           </p>
         </div>
       )}
     </div>
   );
 };
-

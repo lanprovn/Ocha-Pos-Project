@@ -66,3 +66,6 @@ backend/jest.config.js
 frontend/vitest.config.ts
 cleanup-unnecessary-files.ps1
 
+
+# Antigravity Brain
+.agent/

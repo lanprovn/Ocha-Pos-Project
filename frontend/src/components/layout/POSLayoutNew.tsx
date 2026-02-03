@@ -1,555 +1,279 @@
-import { useState, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCartIcon, MagnifyingGlassIcon, UserCircleIcon, ChartBarIcon, CubeIcon, ArrowRightOnRectangleIcon, DocumentChartBarIcon, BookmarkIcon } from '@heroicons/react/24/outline';
-import { useCart } from '@features/orders/hooks/useCart';
+import React, { useState, useMemo } from 'react';
+import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useProducts } from '@features/products/hooks/useProducts';
+import { useCart } from '@features/orders/hooks/useCart';
 import { useAuth } from '@features/auth/hooks/useAuth';
-import { usePOSDisplaySync, useDisplaySync } from '@/hooks/useDisplaySync';
 import ProductGrid from '@features/products/components/ProductGrid';
 import ProductModal from '@features/products/components/ProductModal';
-import StockAlertsPanel from '@features/stock/components/StockAlertsPanel';
-import { HoldOrderModal } from '@features/orders/OrderDisplayPage/components/HoldOrderModal';
-import { HoldOrdersList } from '@features/orders/OrderDisplayPage/components/HoldOrdersList';
+import { ParkedOrdersDrawer } from '@features/orders/components/ParkedOrdersDrawer';
+import { TableMapModal } from '@features/orders/components/TableMapModal';
 import { formatPrice } from '@/utils/formatPrice';
-import type { Product } from '@/types/product';
-import type { DisplayData } from '@/types/display';
+import { cn } from '@/lib/utils';
 
-/**
- * POSLayoutNew - Professional POS-style layout for staff
- * Similar to modern POS systems with header, left cart panel, and right product grid
- * Orange theme for staff interface
- */
-export default function POSLayoutNew() {
+// Shadcn UI
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  ShoppingCart, Search, Bell, LogOut,
+  LayoutGrid, Bookmark, ChevronRight, Trash2, Plus, Minus,
+  History, Info, Package, ChevronLeft, CreditCard
+} from 'lucide-react';
+
+const POSLayoutNew: React.FC = () => {
+  const { products, categories, isLoading } = useProducts();
+  const {
+    items, totalPrice, totalItems, removeFromCart, updateQuantity,
+    clearCart, addToCart, parkedOrders
+  } = useCart();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { items, totalPrice, totalItems, removeFromCart, updateQuantity, clearCart, setOrderCreator } = useCart();
-  const { filteredProducts, setSelectedCategory, searchQuery, setSearchQuery, isLoading, categories } = useProducts();
-  const { user, logout } = useAuth();
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showHoldModal, setShowHoldModal] = useState(false);
-  const [showHoldOrdersList, setShowHoldOrdersList] = useState(false);
-  
-  // Get discount rate from localStorage (set by checkout page) and display sync
-  const [discountRate, setDiscountRate] = useState<number>(0);
-  const { subscribeToDisplay } = useDisplaySync();
 
-  // Sync cart data to customer display (including discount rate)
-  usePOSDisplaySync(items, totalPrice, totalItems, 'creating', discountRate);
+  const isCheckout = location.pathname.startsWith('/checkout');
 
-  // Set order creator as staff when component mounts
-  useEffect(() => {
-    setOrderCreator({ type: 'staff', name: 'Nhân Viên POS' });
-    return () => {
-      setOrderCreator(null);
-    };
-  }, [setOrderCreator]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isParkedDrawerOpen, setIsParkedDrawerOpen] = useState(false);
+  const [isTableModalOpen, setIsTableModalOpen] = useState(false);
 
-  // Initialize category selection
-  useEffect(() => {
-    setSelectedCategory('all');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleCheckout = () => {
-    if (totalItems > 0) {
-      // Reset discount rate when going to checkout
-      localStorage.removeItem('checkout_discount_rate');
-      window.dispatchEvent(new CustomEvent('discountRateChanged'));
-      navigate('/checkout');
-    }
-  };
-
-  /**
-   * Reset tất cả state khi bấm nút Home
-   */
-  const handleHomeClick = () => {
-    // Clear cart
-    clearCart();
-    
-    // Reset search query
-    setSearchQuery('');
-    
-    // Reset category selection
-    setSelectedCategory('all');
-    setSelectedCategoryId('all');
-    
-    // Reset selected items
-    setSelectedItemId(null);
-    setSelectedProduct(null);
-    
-    // Close all modals
-    setIsModalOpen(false);
-    setShowHoldModal(false);
-    setShowHoldOrdersList(false);
-    
-    // Reset discount rate
-    localStorage.removeItem('checkout_discount_rate');
-    window.dispatchEvent(new CustomEvent('discountRateChanged'));
-    
-    // Navigate to home
-    navigate('/');
-  };
-
-  const handleCategorySelect = (categoryName: string) => {
-    setSelectedCategoryId(categoryName);
-    setSelectedCategory(categoryName);
-  };
-
-  const handleProductClick = (product: Product) => {
-    setSelectedProduct(product);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedProduct(null);
-  };
-
-  // Load and sync discount rate from localStorage and display sync
-  useEffect(() => {
-    const savedDiscountRate = localStorage.getItem('checkout_discount_rate');
-    if (savedDiscountRate) {
-      setDiscountRate(parseFloat(savedDiscountRate) || 0);
-    }
-    
-    // Listen for storage changes (when discountRate changes in checkout)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'checkout_discount_rate') {
-        setDiscountRate(parseFloat(e.newValue || '0') || 0);
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also listen for custom event (same-tab updates)
-    const handleDiscountChange = () => {
-      const saved = localStorage.getItem('checkout_discount_rate');
-      if (saved) {
-        setDiscountRate(parseFloat(saved) || 0);
-      }
-    };
-    
-    window.addEventListener('discountRateChanged', handleDiscountChange);
-    
-    // Subscribe to display sync to receive discountRate updates from checkout
-    const unsubscribe = subscribeToDisplay((data: DisplayData) => {
-      if (data.discountRate !== undefined) {
-        setDiscountRate(data.discountRate);
-        // Also update localStorage to keep in sync
-        localStorage.setItem('checkout_discount_rate', data.discountRate.toString());
-      }
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.id.toString().includes(searchQuery);
+      const matchCategory = !selectedCategory || p.category === selectedCategory || (selectedCategory === 'Tất cả');
+      return matchSearch && matchCategory;
     });
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('discountRateChanged', handleDiscountChange);
-      unsubscribe();
-    };
-  }, [subscribeToDisplay]);
+  }, [products, searchQuery, selectedCategory]);
 
-  // Calculate prices with discount
-  const subtotal = totalPrice;
-  const discountAmount = discountRate > 0 ? subtotal * (discountRate / 100) : 0;
-  const priceAfterDiscount = subtotal - discountAmount;
-  
-  const calculateTax = () => {
-    return priceAfterDiscount * 0.1; // 10% VAT on price after discount
+  const handleProductClick = (product: any) => {
+    setSelectedProduct(product);
+    setIsProductModalOpen(true);
   };
 
-  const finalTotal = priceAfterDiscount + calculateTax();
-
-  const selectedItem = items.find(item => item.id === selectedItemId);
+  const menuItems = [
+    { icon: LayoutGrid, label: 'Bàn', active: false, onClick: () => setIsTableModalOpen(true) },
+    { icon: Bookmark, label: 'Đã lưu', active: false, badge: parkedOrders.length, onClick: () => setIsParkedDrawerOpen(true) },
+    { icon: History, label: 'Lịch sử', active: false, onClick: () => navigate('/orders') },
+  ];
 
   return (
-    <div className="flex flex-col w-full h-screen overflow-hidden bg-gray-50">
-      <StockAlertsPanel />
-
-      {/* Top Header Bar */}
-      <header className="h-16 bg-white border-b border-gray-300 flex items-center justify-between px-6 flex-shrink-0 z-50 shadow-sm">
-        {/* Left: User Info, Navigation & Management Buttons */}
-        <div className="flex items-center space-x-4 flex-1 min-w-0">
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 bg-blue-600 rounded-md flex items-center justify-center">
-              <UserCircleIcon className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-800">{user?.name || 'Nhân Viên POS'}</p>
-              <div className="flex items-center space-x-1.5">
-                <div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div>
-                <span className="text-xs text-gray-600">{user?.role === 'ADMIN' ? 'Quản Trị Viên' : 'Nhân Viên'}</span>
+    <div className="flex h-screen w-full bg-slate-50 overflow-hidden font-sans">
+      {/* 1. Universal Header */}
+      <header className="fixed top-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-xl border-b border-slate-200 flex items-center justify-between px-8 z-50 shadow-sm">
+        <div className="flex items-center gap-8">
+          {isCheckout ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(-1)}
+              className="group font-bold text-slate-600 gap-2 hover:bg-slate-100"
+            >
+              <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+              Quay lại POS
+            </Button>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg transform rotate-3">
+                <Package className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-black text-slate-900 tracking-tighter uppercase leading-none">Ocha POS</h1>
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Premium Terminal</span>
               </div>
             </div>
-          </div>
-          <button
-            onClick={logout}
-            className="flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
-            title="Đăng xuất"
-          >
-            <ArrowRightOnRectangleIcon className="w-5 h-5" />
-            <span className="text-sm font-medium">Đăng xuất</span>
-          </button>
+          )}
 
-          {/* Breadcrumb */}
-          <div className="flex items-center space-x-2 text-sm text-gray-600 ml-6">
-            <button
-              onClick={handleHomeClick}
-              className="p-1 rounded hover:bg-gray-100 transition-colors cursor-pointer"
-              title="Về trang chủ và reset tất cả"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-            </button>
-            <span>/</span>
-            <ShoppingCartIcon className="w-4 h-4" />
-            <span className="font-medium text-gray-800">{selectedCategoryId === 'all' ? 'Tất cả' : selectedCategoryId}</span>
-          </div>
+          {!isCheckout && (
+            <div className="relative w-96 group animate-in fade-in slide-in-from-left duration-500">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
+              <Input
+                placeholder="Gõ tên món hoặc ID sản phẩm..."
+                className="pl-12 h-11 bg-slate-100/50 border-none rounded-2xl font-medium focus-visible:ring-slate-200 transition-all focus-within:bg-white focus-within:shadow-md"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          )}
 
-          {/* Management Buttons - Moved to left */}
-          <div className="flex items-center space-x-2 ml-6">
-            <button
-              onClick={() => setShowHoldOrdersList(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors shadow-sm"
-              title="Xem đơn hàng đã lưu"
-            >
-              <BookmarkIcon className="w-4 h-4" />
-              <span className="text-sm font-medium">Đơn Đã Lưu</span>
-            </button>
-            <button
-              onClick={() => window.open('/orders', '_blank')}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors shadow-sm"
-              title="Xem đơn hàng (mở tab mới)"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              <span className="text-sm font-medium">Đơn Hàng</span>
-            </button>
-            <button
-              onClick={() => navigate('/analytics')}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors shadow-sm"
-              title="Phân tích & Báo cáo"
-            >
-              <ChartBarIcon className="w-4 h-4" />
-              <span className="text-sm font-medium">Phân Tích</span>
-            </button>
-            {/* Admin Dashboard - Chỉ hiển thị cho Admin */}
-            {user?.role === 'ADMIN' && (
-              <button
-                onClick={() => navigate('/admin')}
-                className="flex items-center space-x-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md transition-colors font-semibold"
-                title="Admin Dashboard"
+          {isCheckout && (
+            <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+              <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg">
+                <CreditCard className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-black text-slate-800 tracking-tight leading-none uppercase">Xác nhận thanh toán</h1>
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest leading-none mt-1 inline-block">Secure Checkout</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 pr-4 border-r border-slate-200">
+            {menuItems.map((item, idx) => (
+              <Button
+                key={idx}
+                variant="ghost"
+                size="sm"
+                className="font-bold text-slate-600 gap-2 hover:bg-slate-100 relative"
+                onClick={item.onClick}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-                <span className="text-sm font-medium">Admin</span>
-              </button>
-            )}
+                <item.icon className="w-4 h-4" />
+                {item.label}
+                {item.badge && item.badge > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white rounded-full text-[10px] flex items-center justify-center border-2 border-white">
+                    {item.badge}
+                  </span>
+                )}
+              </Button>
+            ))}
+          </div>
 
-            {/* Search Bar - Moved next to Doanh Thu button */}
-            <div className="w-64 ml-3">
-              <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm sản phẩm..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors bg-white"
-                />
-              </div>
+          <div className="flex items-center gap-3 bg-white p-1 pl-3 rounded-2xl shadow-sm border border-slate-100">
+            <div className="text-right">
+              <p className="text-[10px] font-black uppercase text-slate-400 leading-none mb-1">Nhân Viên</p>
+              <p className="text-xs font-bold text-slate-800 leading-none">{user?.name || 'Staff'}</p>
             </div>
-
+            <Avatar className="w-8 h-8 rounded-xl border-2 border-slate-50">
+              <AvatarFallback className="bg-emerald-500 text-white font-black text-xs">{user?.name?.charAt(0) || 'P'}</AvatarFallback>
+            </Avatar>
+            <Button variant="ghost" size="icon" onClick={logout} className="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50"><LogOut className="w-4 h-4" /></Button>
           </div>
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Panel - Cart & Controls */}
-        <aside className="w-96 bg-white border-r border-gray-300 flex flex-col flex-shrink-0">
-          {/* Order List Header */}
-          <div className="p-4 border-b border-gray-300 bg-blue-50">
-            <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-              <ShoppingCartIcon className="w-5 h-5 mr-2 text-blue-600" />
-              Đơn hàng hiện tại
-            </h2>
-            <p className="text-xs text-gray-600 mt-1">{totalItems} món</p>
-          </div>
-
-          {/* Order Items List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {items.length === 0 ? (
-              <div className="text-center py-12">
-                <ShoppingCartIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <p className="text-gray-600 text-sm font-medium">Chưa có món nào</p>
-                <p className="text-gray-500 text-xs mt-1">Chọn món từ menu bên phải</p>
+      {/* 2. Sidebars & Main Content */}
+      <div className="flex flex-1 pt-20 overflow-hidden w-full">
+        {/* Cart Sidebar - Only visible on menu page */}
+        {!isCheckout && (
+          <aside className="w-[420px] bg-white border-r border-slate-200 flex flex-col animate-in slide-in-from-left duration-500">
+            <div className="p-8 pb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <ShoppingCart className="w-6 h-6 text-slate-900" />
+                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Giỏ Hàng</h2>
               </div>
-            ) : (
-              items.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => setSelectedItemId(item.id)}
-                  className={`p-3 rounded-md border cursor-pointer transition-colors ${selectedItemId === item.id
-                      ? 'bg-blue-50 border-blue-400 shadow-sm'
-                      : 'bg-white border-gray-300 hover:border-blue-400 hover:bg-gray-50'
-                    }`}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-800 text-sm">{item.name}</h4>
-                      {item.selectedSize && (
-                        <p className="text-xs text-gray-500 mt-1">Size: {item.selectedSize.name}</p>
-                      )}
-                      {item.selectedToppings.length > 0 && (
-                        <p className="text-xs text-gray-500">
-                          Topping: {item.selectedToppings.map(t => t.name).join(', ')}
-                        </p>
-                      )}
-                      {item.note && (
-                        <p className="text-xs text-gray-500 mt-1 italic">Ghi chú: {item.note}</p>
-                      )}
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeFromCart(item.id);
-                        if (selectedItemId === item.id) setSelectedItemId(null);
-                      }}
-                      className="text-gray-400 hover:text-red-600 text-sm font-semibold transition-colors w-5 h-5 flex items-center justify-center"
-                      title="Xóa món"
-                    >
-                      ×
-                    </button>
+              <Button variant="ghost" size="sm" onClick={clearCart} className="font-bold text-[10px] uppercase tracking-widest text-slate-400 hover:text-rose-500 hover:bg-rose-50 gap-2">
+                <Trash2 className="w-3 h-3" /> Clear
+              </Button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 no-scrollbar">
+              {items.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center opacity-40 space-y-4">
+                  <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center">
+                    <ShoppingCart className="w-10 h-10 text-slate-200" />
                   </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateQuantity(item.id, Math.max(1, item.quantity - 1));
-                        }}
-                        className="w-7 h-7 rounded border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center text-sm font-semibold text-gray-700 transition-colors"
-                      >
-                        −
-                      </button>
-                      <span className="text-sm font-semibold text-gray-800 min-w-[2rem] text-center">
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateQuantity(item.id, item.quantity + 1);
-                        }}
-                        className="w-7 h-7 rounded border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center text-sm font-semibold text-gray-700 transition-colors"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <span className="text-sm font-bold text-blue-700">
-                      {formatPrice(item.totalPrice)}
-                    </span>
-                  </div>
+                  <p className="text-sm font-bold uppercase tracking-widest text-slate-400">Giỏ hàng đang trống</p>
                 </div>
-              ))
-            )}
-          </div>
-
-          {/* Order Totals */}
-          <div className="p-4 border-t border-gray-300 bg-blue-50 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Tạm tính:</span>
-              <span className="font-semibold text-gray-800">{formatPrice(subtotal)}</span>
+              ) : (
+                <div className="space-y-4 py-4">
+                  {items.map((item) => (
+                    <div key={item.id} className="p-4 rounded-3xl bg-slate-50 border border-slate-50 hover:border-slate-200 transition-all group overflow-hidden relative">
+                      <div className="flex gap-4 items-center">
+                        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white shadow-sm flex-shrink-0">
+                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-slate-800 text-sm truncate uppercase tracking-tight">{item.name}</h4>
+                          <p className="text-xs font-black text-primary tracking-tighter mt-1">{formatPrice(item.totalPrice)}</p>
+                        </div>
+                        <div className="flex items-center gap-1 bg-white p-1 rounded-xl shadow-sm border border-slate-100">
+                          <Button variant="ghost" size="icon" className="w-7 h-7 rounded-lg hover:bg-slate-50" onClick={() => updateQuantity(item.id, item.quantity - 1)}>
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <span className="w-6 text-center text-xs font-black">{item.quantity}</span>
+                          <Button variant="ghost" size="icon" className="w-7 h-7 rounded-lg bg-slate-900 text-white hover:bg-black" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            {discountRate > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-green-600 font-medium">Giảm giá ({discountRate}%):</span>
-                <span className="text-green-600 font-medium">-{formatPrice(discountAmount)}</span>
+
+            <div className="p-8 bg-slate-50 border-t border-slate-100 space-y-6">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-xs font-bold uppercase text-slate-400 tracking-widest">
+                  <span>Hóa đơn</span>
+                  <span className="text-slate-900 font-black tracking-tighter text-lg">{formatPrice(totalPrice * 1.1)}</span>
+                </div>
               </div>
-            )}
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">VAT (10%):</span>
-              <span className="font-semibold text-gray-800">{formatPrice(calculateTax())}</span>
+              <Button
+                disabled={items.length === 0}
+                className="w-full h-16 bg-slate-900 hover:bg-black text-white rounded-2xl shadow-xl transition-all font-black uppercase tracking-[0.2em] text-lg flex items-center justify-center gap-3 group active:scale-[0.98]"
+                onClick={() => navigate('/checkout')}
+              >
+                THANH TOÁN <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
             </div>
-            <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-400">
-              <span className="text-gray-800">Tổng cộng:</span>
-              <span className="text-blue-700">{formatPrice(finalTotal)}</span>
-            </div>
-          </div>
+          </aside>
+        )}
 
-          {/* Action Buttons */}
-          <div className="p-4 border-t border-gray-300 bg-white space-y-2">
-            {selectedItem && (
-              <div className="grid grid-cols-3 gap-2 mb-2">
-                <button
-                  onClick={() => {
-                    const newQty = prompt('Nhập số lượng:', selectedItem.quantity.toString());
-                    if (newQty && !isNaN(Number(newQty)) && Number(newQty) > 0) {
-                      updateQuantity(selectedItem.id, Number(newQty));
-                    }
-                  }}
-                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors"
-                >
-                  Số lượng
-                </button>
-                <button
-                  onClick={() => {
-                    const discount = prompt('Nhập % giảm giá:', '0');
-                    if (discount && !isNaN(Number(discount))) {
-                      // Apply discount logic here
-                      alert(`Giảm giá ${discount}%`);
-                    }
-                  }}
-                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors"
-                >
-                  % Giảm
-                </button>
-                <button
-                  onClick={() => {
-                    const note = prompt('Ghi chú:', selectedItem.note || '');
-                    if (note !== null) {
-                      // Update note logic here
-                      alert(`Ghi chú: ${note}`);
-                    }
-                  }}
-                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors"
-                >
-                  Ghi chú
-                </button>
-              </div>
-            )}
-
-            <button
-              onClick={clearCart}
-              className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium text-gray-700 transition-colors"
-            >
-              Xóa tất cả
-            </button>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="p-4 border-t border-gray-300 bg-white space-y-2">
-            {/* Hold Order Button */}
-            <button
-              onClick={() => setShowHoldModal(true)}
-              disabled={totalItems === 0}
-              className={`w-full py-2.5 rounded-md font-semibold text-sm transition-colors flex items-center justify-center space-x-2 ${
-                totalItems === 0
-                  ? 'bg-gray-300 cursor-not-allowed text-gray-500'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-            >
-              <BookmarkIcon className="w-4 h-4" />
-              <span>Lưu đơn tạm</span>
-            </button>
-
-            {/* Checkout Button */}
-            <button
-              onClick={handleCheckout}
-              disabled={totalItems === 0}
-              className={`w-full py-3 rounded-md font-semibold text-white text-base transition-colors flex items-center justify-center space-x-2 ${
-                totalItems === 0
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-slate-700 hover:bg-slate-800'
-              }`}
-            >
-              <span>Thanh toán</span>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        </aside>
-
-        {/* Right Panel - Product Grid or Outlet */}
-        <main className="flex-1 overflow-y-auto bg-white">
-          {location.pathname === '/checkout' ? (
-            <Outlet />
-          ) : location.pathname === '/' || location.pathname.startsWith('/product/') ? (
-            <div className="p-6">
-              {/* Category Filter */}
-              <div className="mb-6">
-                <div className="flex overflow-x-auto space-x-2 pb-2 scrollbar-hide">
-                  <button
-                    onClick={() => handleCategorySelect('all')}
-                    className={`flex-shrink-0 px-4 py-2 rounded-md text-sm font-medium transition-colors ${selectedCategoryId === 'all'
-                        ? 'bg-slate-700 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                  >
-                    Tất cả
-                  </button>
-                  {categories.map((category) => (
-                    <button
-                      key={category.id}
-                      onClick={() => handleCategorySelect(category.name)}
-                      className={`flex-shrink-0 px-4 py-2 rounded-md text-sm font-medium transition-colors ${selectedCategoryId === category.name
-                          ? 'bg-slate-700 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
+        {/* 3. Products/Checkout Area */}
+        <main className="flex-1 flex flex-col overflow-hidden relative bg-slate-50">
+          {location.pathname === '/' ? (
+            <>
+              <div className="p-8 pb-0">
+                <div className="flex overflow-x-auto gap-3 no-scrollbar pb-6">
+                  {['Tất cả', ...categories.map(c => c.name)].map((categoryName) => (
+                    <Button
+                      key={categoryName}
+                      variant={selectedCategory === categoryName || (!selectedCategory && categoryName === 'Tất cả') ? 'default' : 'secondary'}
+                      size="sm"
+                      onClick={() => setSelectedCategory(categoryName === 'Tất cả' ? null : categoryName)}
+                      className={cn(
+                        "px-6 h-11 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all",
+                        (selectedCategory === categoryName || (!selectedCategory && categoryName === 'Tất cả'))
+                          ? "bg-slate-900 text-white shadow-xl shadow-slate-200 -translate-y-1"
+                          : "bg-white text-slate-400 border border-slate-100 hover:bg-white"
+                      )}
                     >
-                      {category.name}
-                    </button>
+                      {categoryName}
+                    </Button>
                   ))}
                 </div>
               </div>
 
-              {/* Product Grid or Outlet */}
-              {location.pathname === '/' ? (
-                isLoading ? (
-                  <div className="text-center py-20">
-                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-slate-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Đang tải sản phẩm...</p>
+              <div className="flex-1 overflow-y-auto px-8 pb-10 no-scrollbar">
+                {isLoading ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                    {[...Array(10)].map((_, i) => <div key={i} className="h-64 bg-slate-200 rounded-3xl animate-pulse" />)}
                   </div>
                 ) : (
-                  <ProductGrid products={filteredProducts} onProductClick={handleProductClick} />
-                )
-              ) : (
-                <Outlet />
-              )}
-            </div>
+                  <ProductGrid
+                    products={filteredProducts}
+                    onProductClick={handleProductClick}
+                    onQuickAdd={(p) => {
+                      const defaultSize = p.sizes?.[0];
+                      const basePrice = p.price + (defaultSize?.extraPrice || 0);
+                      addToCart({
+                        productId: p.id, name: p.name, image: p.image, basePrice: p.price,
+                        selectedSize: defaultSize, selectedToppings: [], note: '', quantity: 1, totalPrice: basePrice,
+                      });
+                    }}
+                  />
+                )}
+              </div>
+            </>
           ) : (
-            <div className="p-6">
+            <div className="flex-1 overflow-hidden animate-in fade-in zoom-in-95 duration-500">
               <Outlet />
             </div>
           )}
         </main>
       </div>
 
-      {/* Product Modal */}
-      {selectedProduct && (
-        <ProductModal
-          product={selectedProduct}
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-        />
-      )}
-
-      {/* Hold Order Modal */}
-      <HoldOrderModal
-        isOpen={showHoldModal}
-        onClose={() => setShowHoldModal(false)}
-        order={null}
-        createFromCart={true}
-        onSuccess={() => {
-          clearCart();
-          setShowHoldModal(false);
-        }}
-      />
-
-      {/* Hold Orders List Modal */}
-      <HoldOrdersList
-        isOpen={showHoldOrdersList}
-        onClose={() => setShowHoldOrdersList(false)}
-        onResume={(orderId) => {
-          setShowHoldOrdersList(false);
-          // Cart will be loaded by HoldOrdersList component
-        }}
-      />
+      <ProductModal product={selectedProduct} isOpen={isProductModalOpen} onClose={() => setIsProductModalOpen(false)} />
+      <ParkedOrdersDrawer isOpen={isParkedDrawerOpen} onClose={() => setIsParkedDrawerOpen(false)} />
+      <TableMapModal isOpen={isTableModalOpen} onClose={() => setIsTableModalOpen(false)} />
     </div>
   );
-}
+};
+
+export default POSLayoutNew;

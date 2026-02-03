@@ -1,18 +1,19 @@
 import React from 'react';
 import type { Product } from '@/types/product';
 import { useProductStock } from '@features/products/hooks/useProductStock';
+import { Badge } from '@/components/ui/badge';
+import { Flame, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 
 interface ProductCardBadgesProps {
   product: Product;
 }
 
 /**
- * ProductCardBadges - Component for product badges (Popular, Stock Availability)
+ * ProductCardBadges - High-end status badges for products
  */
 export const ProductCardBadges: React.FC<ProductCardBadgesProps> = ({ product }) => {
   const { isInStock, isOutOfStock, isLowStock, getStockQuantity } = useProductStock();
-  
-  // Convert product.id to string for stock lookup (backend uses UUID string)
+
   const productId = typeof product.id === 'number' ? product.id.toString() : product.id;
   const stockQuantity = getStockQuantity(productId);
   const outOfStock = isOutOfStock(productId);
@@ -20,29 +21,37 @@ export const ProductCardBadges: React.FC<ProductCardBadgesProps> = ({ product })
   const inStock = isInStock(productId);
 
   return (
-    <>
+    <div className="absolute inset-x-2 top-2 flex flex-col gap-1.5 pointer-events-none z-10">
       {/* Popular Badge */}
       {product.isPopular && (
-        <div className="absolute top-2 left-2 inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold leading-none bg-slate-700 text-white shadow-sm product-card-popular-badge z-10">
-          Phổ biến
-        </div>
+        <Badge className="w-fit bg-amber-500 hover:bg-amber-600 text-white border-none shadow-sm gap-1 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-tighter">
+          <Flame className="w-2.5 h-2.5 fill-current" /> Phổ biến
+        </Badge>
       )}
-      
-      {/* Stock Availability Badge */}
-      {outOfStock ? (
-        <div className="absolute bottom-2 left-2 inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold leading-none bg-red-600 text-white shadow-sm product-card-stock-badge z-10">
-          Hết hàng
-        </div>
-      ) : lowStock ? (
-        <div className="absolute bottom-2 left-2 inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold leading-none bg-amber-600 text-white shadow-sm product-card-stock-badge z-10">
-          Sắp hết ({stockQuantity})
-        </div>
-      ) : inStock && stockQuantity > 0 ? (
-        <div className="absolute bottom-2 left-2 inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold leading-none bg-green-600 text-white shadow-sm product-card-stock-badge z-10">
-          Còn hàng
-        </div>
-      ) : null}
-    </>
+
+      {/* Discount Badge */}
+      {product.discount && product.discount > 0 && (
+        <Badge className="w-fit bg-rose-500 hover:bg-rose-600 text-white border-none shadow-sm px-1.5 py-0.5 text-[9px] font-black uppercase tracking-tighter">
+          -{product.discount}% OFF
+        </Badge>
+      )}
+
+      {/* Stock Availability Badge - Bottom Positioned inside this container but visually at bottom via absolute */}
+      <div className="absolute top-[138px] left-0">
+        {outOfStock ? (
+          <Badge className="bg-slate-900/80 backdrop-blur-md text-white border-none px-1.5 py-0.5 text-[9px] font-black uppercase tracking-tighter gap-1">
+            <XCircle className="w-2.5 h-2.5" /> Hết hàng
+          </Badge>
+        ) : lowStock ? (
+          <Badge className="bg-amber-500/90 backdrop-blur-md text-white border-none px-1.5 py-0.5 text-[9px] font-black uppercase tracking-tighter gap-1">
+            <AlertTriangle className="w-2.5 h-2.5" /> Còn {stockQuantity}
+          </Badge>
+        ) : inStock && stockQuantity > 0 ? (
+          <Badge className="bg-emerald-500/90 backdrop-blur-md text-white border-none px-1.5 py-0.5 text-[9px] font-black uppercase tracking-tighter gap-1">
+            <CheckCircle className="w-2.5 h-2.5" /> Sẵn sàng
+          </Badge>
+        ) : null}
+      </div>
+    </div>
   );
 };
-
